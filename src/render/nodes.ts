@@ -1,0 +1,156 @@
+/**
+ * Отрисовка узлов сбора (6.1).
+ *
+ * Собранный узел не исчезает: он выглядит ощипанным, чтобы место не забывалось.
+ */
+
+import type { NodeKind } from '../data/gathering'
+
+const INK = '#3a2f24'
+
+function drawShadow(ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number): void {
+  ctx.fillStyle = 'rgba(58, 47, 36, 0.13)'
+  ctx.beginPath()
+  ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+function drawHerb(ctx: CanvasRenderingContext2D, x: number, y: number, ready: boolean): void {
+  drawShadow(ctx, x, y, 11, 4)
+
+  const height = ready ? 13 : 6
+  const blades = [
+    { offset: -7, lean: -2.5 },
+    { offset: -3, lean: -1 },
+    { offset: 0, lean: 0.5 },
+    { offset: 3, lean: 2 },
+    { offset: 7, lean: 2.8 },
+  ]
+
+  for (const blade of blades) {
+    ctx.strokeStyle = ready ? '#7d8f4a' : '#8f8a5e'
+    ctx.lineWidth = 1.6
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(x + blade.offset, y)
+    ctx.quadraticCurveTo(
+      x + blade.offset + blade.lean * 0.5,
+      y - height * 0.6,
+      x + blade.offset + blade.lean,
+      y - height,
+    )
+    ctx.stroke()
+  }
+  ctx.lineCap = 'butt'
+
+  if (ready) {
+    ctx.fillStyle = '#e3c96a'
+    ctx.beginPath()
+    ctx.arc(x - 3, y - height + 2, 1.5, 0, Math.PI * 2)
+    ctx.arc(x + 4, y - height + 1, 1.3, 0, Math.PI * 2)
+    ctx.fill()
+  }
+}
+
+function drawBerry(ctx: CanvasRenderingContext2D, x: number, y: number, ready: boolean): void {
+  drawShadow(ctx, x, y, 14, 4.5)
+
+  ctx.fillStyle = ready ? '#6f8140' : '#8a8a5f'
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.2
+  ctx.beginPath()
+  ctx.arc(x - 5, y - 6, 8, 0, Math.PI * 2)
+  ctx.arc(x + 5, y - 6, 7.5, 0, Math.PI * 2)
+  ctx.arc(x, y - 12, 8, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  if (ready) {
+    ctx.fillStyle = '#a83b3b'
+    const berries = [
+      [-6, -8],
+      [2, -10],
+      [6, -4],
+      [-2, -4],
+      [0, -15],
+    ]
+    for (const [dx, dy] of berries) {
+      ctx.beginPath()
+      ctx.arc(x + (dx ?? 0), y + (dy ?? 0), 1.9, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+}
+
+function drawBranch(ctx: CanvasRenderingContext2D, x: number, y: number, ready: boolean): void {
+  drawShadow(ctx, x, y, 12, 4)
+
+  ctx.strokeStyle = ready ? '#8a5f38' : '#9d8f7a'
+  ctx.lineWidth = 2.6
+  ctx.lineCap = 'round'
+
+  const sticks = ready
+    ? [
+        [-10, 0, 8, -5],
+        [-7, -2, 9, 2],
+        [-11, -4, 3, -1],
+      ]
+    : [[-6, 0, 4, -1]]
+
+  for (const [x1, y1, x2, y2] of sticks) {
+    ctx.beginPath()
+    ctx.moveTo(x + (x1 ?? 0), y + (y1 ?? 0))
+    ctx.lineTo(x + (x2 ?? 0), y + (y2 ?? 0))
+    ctx.stroke()
+  }
+  ctx.lineCap = 'butt'
+}
+
+function drawStone(ctx: CanvasRenderingContext2D, x: number, y: number, ready: boolean): void {
+  drawShadow(ctx, x, y, 13, 4.5)
+
+  ctx.fillStyle = ready ? '#9a958a' : '#b3ada2'
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.2
+
+  const stones = ready
+    ? [
+        [0, 0, 6.5, 4.5],
+        [-7, 1, 4.5, 3.2],
+        [7, 1, 4.2, 3],
+      ]
+    : [
+        [0, 0, 4, 2.6],
+        [6, 1, 3, 2],
+      ]
+
+  for (const [dx, dy, rx, ry] of stones) {
+    ctx.beginPath()
+    ctx.ellipse(x + (dx ?? 0), y + (dy ?? 0), rx ?? 4, ry ?? 3, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+  }
+}
+
+export function drawGatheringNode(
+  ctx: CanvasRenderingContext2D,
+  kind: NodeKind,
+  x: number,
+  y: number,
+  ready: boolean,
+): void {
+  switch (kind) {
+    case 'herb':
+      drawHerb(ctx, x, y, ready)
+      break
+    case 'berry':
+      drawBerry(ctx, x, y, ready)
+      break
+    case 'branch':
+      drawBranch(ctx, x, y, ready)
+      break
+    case 'stone':
+      drawStone(ctx, x, y, ready)
+      break
+  }
+}

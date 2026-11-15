@@ -124,8 +124,18 @@ function normalizeInventory(value: unknown, capacityKg: number): Inventory {
   return { capacityKg: capacity, stacks }
 }
 
-function normalizeEquipment(value: unknown): Equipment {
+function normalizeNodes(value: unknown): Record<string, number> {
   const source = asRecord(value)
+  const nodes: Record<string, number> = {}
+  for (const [key, raw] of Object.entries(source)) {
+    if (typeof raw === 'number' && Number.isFinite(raw) && raw >= 0) {
+      nodes[key] = Math.trunc(raw)
+    }
+  }
+  return nodes
+}
+
+function normalizeEquipment(value: unknown): Equipment {  const source = asRecord(value)
   const readSlot = (key: string): string | null => {
     const raw = source[key]
     return typeof raw === 'string' && raw !== '' ? raw : null
@@ -167,6 +177,7 @@ export function normalizeSave(data: SaveRecord): GameState {
       population: asInt(village['population'], 20, 0, 1_000_000),
       storage: normalizeInventory(village['storage'], VILLAGE_STORAGE_KG),
     },
+    world: { nodes: normalizeNodes(asRecord(data['world'])['nodes']) },
     flags: normalizeFlags(data['flags']),
     journal: normalizeJournal(data['journal']),
     playtimeMs: asInt(data['playtimeMs'], 0, 0, Number.MAX_SAFE_INTEGER),

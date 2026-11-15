@@ -48,6 +48,12 @@ const migrations: Record<number, Migration> = {
       facing: 'down',
     },
   }),
+  // 3 → 4: появились узлы сбора и их сроки восстановления (6.1).
+  3: (data) => ({
+    ...data,
+    version: 4,
+    world: { nodes: {} },
+  }),
 }
 
 export class MigrationError extends Error {}

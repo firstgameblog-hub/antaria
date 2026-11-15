@@ -6,10 +6,11 @@
  */
 
 import { createEquipment, createInventory, type Equipment, type Inventory } from './inventory'
+import type { NodeReadyAt } from './gathering'
 import type { Facing, Point } from './movement'
 
 /** Версия формата сохранения. Поднимается при несовместимом изменении структуры. */
-export const SAVE_VERSION = 3
+export const SAVE_VERSION = 4
 
 export interface ClockState {
   /** Год от начала игры. */
@@ -54,12 +55,19 @@ export interface GameState {
   clock: ClockState
   player: PlayerState
   village: VillageState
+  world: WorldState
   flags: Flags
   journal: JournalEntry[]
   /** Наигранное время в миллисекундах. */
   playtimeMs: number
   /** Когда сохранение было записано (Unix ms). */
   savedAt: number
+}
+
+/** Мир вокруг деревни: состояние узлов сбора и прочие отметки местности. */
+export interface WorldState {
+  /** id узла → абсолютные игровые минуты, когда он снова готов. */
+  nodes: NodeReadyAt
 }
 
 /** Сколько килограммов герой уносит на себе. */
@@ -87,6 +95,7 @@ export function createInitialState(now: number = Date.now()): GameState {
       population: 20,
       storage: createInventory(VILLAGE_STORAGE_KG),
     },
+    world: { nodes: {} },
     flags: {},
     journal: [],
     playtimeMs: 0,

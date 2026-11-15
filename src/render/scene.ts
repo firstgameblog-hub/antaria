@@ -4,8 +4,10 @@
  */
 
 import { SCENE_TILES, START_VILLAGE, VILLAGE_PROPS, type PlacedProp } from '../content/scene'
+import type { NodeKind } from '../data/gathering'
 import type { Facing, Point, Rect } from '../core/movement'
 import { drawBuilding } from './buildings'
+import { drawGatheringNode } from './nodes'
 import { PALETTE } from './palette'
 import { drawPlayer } from './player'
 
@@ -509,12 +511,22 @@ export interface ScenePlayer {
   moving: boolean
 }
 
+export interface SceneNode {
+  id: string
+  kind: NodeKind
+  x: number
+  y: number
+  ready: boolean
+}
+
 export interface SceneOptions {
   time: number
   showGrid: boolean
   hoveredId: string | null
   player: ScenePlayer | null
   moveTarget: Point | null
+  nodes: readonly SceneNode[]
+  hoveredNode: { x: number; y: number; label: string } | null
 }
 
 interface SceneDrawable {
@@ -557,22 +569,26 @@ function drawHover(ctx: CanvasRenderingContext2D, building: (typeof START_VILLAG
   ctx.setLineDash([6, 5])
   ctx.strokeRect(x - 3, y - 3, w + 6, h + 6)
   ctx.setLineDash([])
+  ctx.restore()
 
-  const label = building.label
+  drawLabel(ctx, building.label, x + w / 2, y - 30)
+}
+
+function drawLabel(ctx: CanvasRenderingContext2D, text: string, centerX: number, topY: number): void {
+  ctx.save()
   ctx.font = '13px Georgia, serif'
-  const textWidth = ctx.measureText(label).width
-  const boxX = x + w / 2 - textWidth / 2 - 8
-  const boxY = y - 30
+  const textWidth = ctx.measureText(text).width
+  const boxX = centerX - textWidth / 2 - 8
 
   ctx.fillStyle = 'rgba(239, 230, 214, 0.95)'
   ctx.strokeStyle = 'rgba(58, 47, 36, 0.35)'
   ctx.lineWidth = 1
-  ctx.fillRect(boxX, boxY, textWidth + 16, 21)
-  ctx.strokeRect(boxX, boxY, textWidth + 16, 21)
+  ctx.fillRect(boxX, topY, textWidth + 16, 21)
+  ctx.strokeRect(boxX, topY, textWidth + 16, 21)
 
   ctx.fillStyle = '#2b2118'
   ctx.textBaseline = 'middle'
-  ctx.fillText(label, boxX + 8, boxY + 11)
+  ctx.fillText(text, boxX + 8, topY + 11)
   ctx.restore()
 }
 
@@ -630,6 +646,16 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
     })
   }
 
+  for (const node of options.nodes) {
+    drawables.push({
+      baseY: node.y,
+      bounds: { x: node.x - 14, y: node.y - 18, w: 28, h: 20 },
+      draw: () => {
+        drawGatheringNode(ctx, node.kind, node.x, node.y, node.ready)
+      },
+    })
+  }
+
   const player = options.player
   const playerBounds: Rect | null = player
     ? { x: player.x - 8, y: player.y - 32, w: 16, h: 32 }
@@ -665,5 +691,19 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
   if (options.hoveredId !== null) {
     const hovered = START_VILLAGE.find((building) => building.id === options.hoveredId)
     if (hovered) drawHover(ctx, hovered)
+  }
+
+  const hoveredNode = options.hoveredNode
+  if (hoveredNode) {
+    ctx.save()
+    ctx.strokeStyle = 'rgba(138, 90, 43, 0.85)'
+    ctx.lineWidth = 2
+    ctx.setLineDash([5, 4])
+    ctx.beginPath()
+    ctx.ellipse(hoveredNode.x, hoveredNode.y, 18, 8, 0, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
+
+    drawLabel(ctx, hoveredNode.label, hoveredNode.x, hoveredNode.y - 38)
   }
 }

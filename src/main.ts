@@ -1,9 +1,12 @@
 import './styles.css'
 import { createInitialState, type GameState } from './core/state'
 import { addItems, weightOf } from './core/inventory'
-import { facingOf, findFreeSpot, movePlayer, stepToward, type Point } from './core/movement'
+import { describeRestore, isReady, markGathered, minutesUntilReady } from './core/gathering'
+import { distance, facingOf, findFreeSpot, movePlayer, stepToward, type Point } from './core/movement'
 import { AUTO_SLOT, readBackup, readSlot, writeSlot } from './core/storage'
-import { nextMorning } from './core/time'
+import { ACTION_MINUTES, absoluteMinutes, addMinutes, nextMorning } from './core/time'
+import type { GatheringNodeDef } from './data/gathering'
+import { GATHERING_NODES } from './content/gathering'
 import { ITEM_BY_ID, itemDef, itemName } from './content/items'
 import { Camera } from './render/camera'
 import { OBSTACLES, PLAYER_RADIUS, TILE, VILLAGE_WALKABLE, WORLD, drawVillage } from './render/scene'
@@ -13,6 +16,8 @@ import { stageLabel } from './ui/labels'
 import { START_VILLAGE } from './content/scene'
 
 const PLAYER_SPEED = 135
+const NODE_HOVER_RADIUS = 22
+const INTERACT_RANGE = 46
 
 const root = document.querySelector<HTMLDivElement>('#app')
 if (!root) throw new Error('Не найден корневой элемент #app')
@@ -37,8 +42,11 @@ app.append(hud.element)
 let state: GameState
 let statusNote = ''
 let nightNote = ''
+let actionNote = ''
 let showGrid = true
 let hoveredId: string | null = null
+let hoveredNodeId: string | null = null
+let pendingNodeId: string | null = null
 let pixelRatio = 1
 let moveTarget: Point | null = null
 let followPaused = false
@@ -79,7 +87,7 @@ function updateHud(): void {
     clock: state.clock,
     stage: stageLabel(state.village.stageId),
     population: state.village.population,
-    notes: [statusNote, nightNote],
+    notes: [statusNote, actionNote, nightNote],
     resources: inventory.stacks.map((stack) => ({
       label: itemName(stack.id),
       value: stack.count,
@@ -154,6 +162,7 @@ function updateMovement(dt: number): boolean {
 
   if (axisX !== 0 || axisY !== 0) {
     moveTarget = null
+    pendingNodeId = null
     const length = Math.hypot(axisX, axisY)
     delta = {
       x: (axisX / length) * PLAYER_SPEED * dt,
@@ -190,12 +199,40 @@ function frame(time: number): void {
 
   const walking = updateMovement(dt)
 
+  if (pendingNodeId !== null) {
+    const node = GATHERING_NODES.find((candidate) => candidate.id === pendingNodeId)
+    if (!node) {
+      pendingNodeId = null
+    } else if (distance(state.player.position, { x: node.x, y: node.y }) <= INTERACT_RANGE) {
+      pendingNodeId = null
+      moveTarget = null
+      interactWithNode(node)
+    }
+  }
+
   if (!followPaused && dt > 0) {
     camera.focusOn(state.player.position.x, state.player.position.y, dt)
   }
 
   const width = canvas.width / pixelRatio
   const height = canvas.height / pixelRatio
+
+  const now = absoluteMinutes(state.clock)
+  const sceneNodes = GATHERING_NODES.map((node) => ({
+    id: node.id,
+    kind: node.kind,
+    x: node.x,
+    y: node.y,
+    ready: isReady(state.world.nodes, node.id, now),
+  }))
+
+  const hoveredDef =
+    hoveredNodeId === null
+      ? undefined
+      : GATHERING_NODES.find((node) => node.id === hoveredNodeId)
+  const hoveredNode = hoveredDef
+    ? { x: hoveredDef.x, y: hoveredDef.y, label: nodeLabel(hoveredDef, now) }
+    : null
 
   ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   ctx.fillStyle = '#cdd0a4'
@@ -210,6 +247,8 @@ function frame(time: number): void {
     showGrid,
     hoveredId,
     moveTarget,
+    nodes: sceneNodes,
+    hoveredNode,
     player: {
       x: state.player.position.x,
       y: state.player.position.y,
@@ -234,11 +273,67 @@ function buildingAt(worldX: number, worldY: number): string | null {
   return null
 }
 
+function nodeAt(worldX: number, worldY: number): GatheringNodeDef | null {
+  let closest: GatheringNodeDef | null = null
+  let closestDistance = NODE_HOVER_RADIUS
+
+  for (const node of GATHERING_NODES) {
+    const distanceToNode = Math.hypot(worldX - node.x, worldY - node.y)
+    if (distanceToNode <= closestDistance) {
+      closest = node
+      closestDistance = distanceToNode
+    }
+  }
+
+  return closest
+}
+
+function nodeLabel(node: GatheringNodeDef, now: number): string {
+  if (isReady(state.world.nodes, node.id, now)) return node.name
+  const left = minutesUntilReady(state.world.nodes, node.id, now)
+  return `${node.name} · ${describeRestore(left)}`
+}
+
+function interactWithNode(node: GatheringNodeDef): void {
+  const now = absoluteMinutes(state.clock)
+
+  if (!isReady(state.world.nodes, node.id, now)) {
+    actionNote = `${node.name}: ${describeRestore(minutesUntilReady(state.world.nodes, node.id, now))}.`
+    updateHud()
+    return
+  }
+
+  const def = itemDef(node.itemId)
+  if (!def) return
+
+  const added = addItems(state.player.inventory, def, node.count, 1, ITEM_BY_ID)
+
+  if (added === 0) {
+    actionNote = 'Не влезло: груз переполнен.'
+    updateHud()
+    return
+  }
+
+  markGathered(state.world.nodes, node.id, now, node.restoreMinutes)
+  state.clock = addMinutes(state.clock, ACTION_MINUTES.gather).clock
+
+  actionNote =
+    added < node.count
+      ? `Собрано: ${def.name} ×${added} из ${node.count} — больше не влезло.`
+      : `Собрано: ${def.name} ×${added}`
+
+  persist()
+  updateHud()
+}
+
 function updateHover(event: PointerEvent): void {
   const rect = canvas.getBoundingClientRect()
   const world = camera.toWorld(event.clientX - rect.left, event.clientY - rect.top)
-  hoveredId = buildingAt(world.x, world.y)
-  canvas.style.cursor = hoveredId === null ? 'default' : 'pointer'
+
+  const node = nodeAt(world.x, world.y)
+  hoveredNodeId = node?.id ?? null
+  hoveredId = node === null ? buildingAt(world.x, world.y) : null
+  canvas.style.cursor = node !== null || hoveredId !== null ? 'pointer' : 'default'
 }
 
 // Указатель: короткий клик — идти, перетаскивание — сдвинуть обзор (4.2.2, 5.2).
@@ -284,8 +379,22 @@ canvas.addEventListener('pointermove', (event) => {
 function endPointer(event: PointerEvent): void {
   if (pointerStart && !pointerDragged) {
     const rect = canvas.getBoundingClientRect()
-    moveTarget = camera.toWorld(event.clientX - rect.left, event.clientY - rect.top)
-    followPaused = false
+    const world = camera.toWorld(event.clientX - rect.left, event.clientY - rect.top)
+    const node = nodeAt(world.x, world.y)
+
+    if (node) {
+      if (distance(state.player.position, { x: node.x, y: node.y }) <= INTERACT_RANGE) {
+        interactWithNode(node)
+      } else {
+        pendingNodeId = node.id
+        moveTarget = { x: node.x, y: node.y }
+        followPaused = false
+      }
+    } else {
+      pendingNodeId = null
+      moveTarget = world
+      followPaused = false
+    }
   }
 
   pointerStart = null

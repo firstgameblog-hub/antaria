@@ -94,3 +94,9 @@ export function formatDate(clock: ClockState): string {
 export function formatDateTime(clock: ClockState): string {
   return `${formatDate(clock)} · ${formatTime(clock.minutes)}`
 }
+
+/** Время в абсолютных минутах от начала игры: удобно сравнивать сроки. */
+export function absoluteMinutes(clock: ClockState): number {
+  const dayIndex = (clock.year - 1) * DAYS_PER_YEAR + (clock.day - 1)
+  return dayIndex * MINUTES_PER_DAY + clock.minutes
+}
