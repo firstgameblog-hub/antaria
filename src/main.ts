@@ -1,5 +1,6 @@
 import './styles.css'
 import { createInitialState, type GameState } from './core/state'
+import { canCraft, craftRecipe } from './core/crafting'
 import { addItems, weightOf } from './core/inventory'
 import { describeRestore, isReady, markGathered, minutesUntilReady } from './core/gathering'
 import { distance, facingOf, findFreeSpot, movePlayer, stepToward, type Point } from './core/movement'
@@ -8,10 +9,12 @@ import { ACTION_MINUTES, absoluteMinutes, addMinutes, nextMorning } from './core
 import type { GatheringNodeDef, NodeKind } from './data/gathering'
 import { GATHERING_NODES } from './content/gathering'
 import { ITEM_BY_ID, itemDef, itemName } from './content/items'
+import { recipeById } from './content/recipes'
 import { Camera } from './render/camera'
 import { OBSTACLES, PLAYER_RADIUS, TILE, VILLAGE_WALKABLE, WORLD, drawVillage } from './render/scene'
 import { createHud } from './ui/hud'
 import { openSaveScreen } from './ui/saveScreen'
+import { openCraftScreen } from './ui/craftScreen'
 import { stageLabel } from './ui/labels'
 import { START_VILLAGE } from './content/scene'
 
@@ -44,6 +47,7 @@ const camera = new Camera(WORLD)
 const hud = createHud({
   onSleep: () => sleep(),
   onSaves: () => openSaves(),
+  onCraft: () => openCraft(),
 })
 app.append(hud.element)
 
@@ -126,8 +130,28 @@ function persist(): void {
   }
 }
 
-function openSaves(): void {
-  openSaveScreen({
+function openCraft(): void {
+  openCraftScreen({
+    getInventory: () => state.player.inventory,
+    canCraft: (recipeId) => {
+      const recipe = recipeById(recipeId)
+      return recipe ? canCraft(recipe, state.player.inventory, ITEM_BY_ID) : false
+    },
+    onCraft: (recipeId) => {
+      const recipe = recipeById(recipeId)
+      if (!recipe) return 'Такого рецепта нет'
+
+      const result = craftRecipe(state, recipe, ITEM_BY_ID)
+      if (!result.ok) return result.reason
+
+      persist()
+      updateHud()
+      return result.message
+    },
+  })
+}
+
+function openSaves(): void {  openSaveScreen({
     getState: () => state,
     onLoad: (loaded) => {
       state = loaded

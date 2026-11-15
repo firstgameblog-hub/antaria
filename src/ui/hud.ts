@@ -34,6 +34,7 @@ export interface HudData {
 export interface HudHandlers {
   onSleep: () => void
   onSaves: () => void
+  onCraft: () => void
 }
 
 export interface Hud {
@@ -95,6 +96,7 @@ export function createHud(handlers: HudHandlers): Hud {
       <div class="hud__row hud__row--bars" data-ref="statuses" hidden></div>
       <p class="hud__note" data-ref="note" hidden></p>
       <div class="hud__actions">
+        <button class="hud__button" data-action="craft">Ремесло</button>
         <button class="hud__button" data-action="sleep">Лечь спать</button>
         <button class="hud__button" data-action="saves">Сохранения</button>
       </div>
@@ -113,6 +115,9 @@ export function createHud(handlers: HudHandlers): Hud {
   })
   element.querySelector<HTMLButtonElement>('[data-action="saves"]')?.addEventListener('click', () => {
     handlers.onSaves()
+  })
+  element.querySelector<HTMLButtonElement>('[data-action="craft"]')?.addEventListener('click', () => {
+    handlers.onCraft()
   })
 
   return {

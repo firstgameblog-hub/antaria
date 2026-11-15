@@ -330,3 +330,71 @@ body {
   padding: 0.9rem 1.25rem;
   border-top: 1px solid rgba(43, 33, 24, 0.15);
 }
+
+/* ---------- Ремесло ---------- */
+
+.recipes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.recipe {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid rgba(43, 33, 24, 0.1);
+}
+
+.recipe__info {
+  min-width: 0;
+}
+
+.recipe__name {
+  font-size: 1rem;
+}
+
+.recipe__inputs {
+  margin-top: 0.15rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.recipe__have {
+  opacity: 0.75;
+}
+
+.recipe__lack {
+  color: #8c2f2f;
+}
+
+.recipe__meta {
+  margin-top: 0.1rem;
+  font-size: 0.78rem;
+  opacity: 0.5;
+}
+
+.recipe button {
+  flex-shrink: 0;
+  padding: 0.4rem 0.9rem;
+  font-family: var(--font-text);
+  font-size: 0.85rem;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid rgba(43, 33, 24, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.recipe button:hover:not(:disabled) {
+  background: rgba(138, 90, 43, 0.1);
+  border-color: var(--accent);
+}
+
+.recipe button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
