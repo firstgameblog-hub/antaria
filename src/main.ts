@@ -1,6 +1,7 @@
 import './styles.css'
 import { createInitialState, type GameState } from './core/state'
 import { AUTO_SLOT, readBackup, readSlot, writeSlot } from './core/storage'
+import { formatDateTime, nextMorning } from './core/time'
 import { openSaveScreen } from './ui/saveScreen'
 import { escapeHtml } from './ui/html'
 import { stageLabel } from './ui/labels'
@@ -11,6 +12,7 @@ const app: HTMLDivElement = root
 
 let state: GameState
 let statusNote = ''
+let nightNote = ''
 
 function loadState(): GameState {
   const read = readSlot(AUTO_SLOT)
@@ -28,38 +30,50 @@ function loadState(): GameState {
   return createInitialState()
 }
 
-function formatTime(minutes: number): string {
-  const hours = Math.floor(minutes / 60)
-  const rest = minutes % 60
-  return `${String(hours).padStart(2, '0')}:${String(rest).padStart(2, '0')}`
-}
-
 function render(): void {
   const name = state.player.name || 'сын старосты'
+  const notes = [statusNote, nightNote].filter((note) => note !== '')
 
   app.innerHTML = `
     <main class="boot">
       <h1 class="boot__title">Хроники Антарии</h1>
       <p class="boot__subtitle">${escapeHtml(name)}</p>
-      <p class="clock">Год ${state.clock.year} · день ${state.clock.day} · ${formatTime(state.clock.minutes)}</p>
+      <p class="clock">${escapeHtml(formatDateTime(state.clock))}</p>
       <p class="settlement">${escapeHtml(stageLabel(state.village.stageId))} · людей: ${state.village.population}</p>
-      ${statusNote ? `<p class="notice">${escapeHtml(statusNote)}</p>` : ''}
-      <button class="menu-button" data-action="saves">Сохранения</button>
+      ${notes.map((note) => `<p class="notice">${escapeHtml(note)}</p>`).join('')}
+      <div class="buttons">
+        <button class="menu-button" data-action="sleep">Лечь спать</button>
+        <button class="menu-button" data-action="saves">Сохранения</button>
+      </div>
       <p class="boot__note">Каркас проекта. Сцена деревни появится на вехе M0.</p>
     </main>
   `
 
+  app.querySelector<HTMLButtonElement>('[data-action="sleep"]')?.addEventListener('click', sleep)
   app.querySelector<HTMLButtonElement>('[data-action="saves"]')?.addEventListener('click', () => {
     openSaveScreen({
       getState: () => state,
       onLoad: (loaded) => {
         state = loaded
         statusNote = ''
+        nightNote = ''
         persist()
         render()
       },
     })
   })
+}
+
+/** Ночь (3.2.6). Время идёт вперёд, утром — сводка. Следы в деревне появятся с 7.16. */
+function sleep(): void {
+  const step = nextMorning(state.clock)
+  state.clock = step.clock
+  nightNote =
+    step.daysPassed > 1
+      ? `Ты проспал мимо ${step.daysPassed} ночей. В деревне пока тихо.`
+      : 'Ночь прошла. В деревне пока тихо.'
+  persist()
+  render()
 }
 
 function persist(): void {

@@ -7,6 +7,7 @@
  */
 
 import { migrate, MigrationError, type SaveRecord } from './migrations'
+import { DAYS_PER_YEAR } from './time'
 import { SAVE_VERSION, type ClockState, type FlagValue, type Flags, type GameState, type JournalEntry } from './state'
 
 export class SaveError extends Error {}
@@ -67,7 +68,7 @@ function normalizeClock(value: unknown): ClockState {
   const clock = asRecord(value)
   return {
     year: asInt(clock['year'], 1, 1, 9999),
-    day: asInt(clock['day'], 1, 1, 360),
+    day: asInt(clock['day'], 1, 1, DAYS_PER_YEAR),
     minutes: asInt(clock['minutes'], 8 * 60, 0, 24 * 60 - 1),
   }
 }

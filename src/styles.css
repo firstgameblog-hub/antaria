@@ -87,7 +87,6 @@ body {
 }
 
 .menu-button {
-  margin-top: 2rem;
   padding: 0.55rem 1.4rem;
   font-family: var(--font-text);
   font-size: 0.95rem;
@@ -100,6 +99,12 @@ body {
   transition:
     background 0.15s ease,
     border-color 0.15s ease;
+}
+
+.buttons {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 2rem;
 }
 
 .menu-button:hover {
