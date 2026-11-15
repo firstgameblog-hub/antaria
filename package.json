@@ -1,0 +1,23 @@
+{
+  "name": "hroniki-antarii",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Хроники Антарии — браузерная RPG о медленном возрождении деревни",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "prettier": "^3.10.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.8"
+  }
+}
