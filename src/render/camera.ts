@@ -62,9 +62,15 @@ export class Camera {
     this.clamp()
   }
 
+  /** Поставить масштаб напрямую (например, щипком на телефоне). */
+  setZoom(value: number): void {
+    this.zoom = Math.min(Math.max(value, this.minZoom), this.maxZoom)
+    this.userZoom = true
+    this.clamp()
+  }
+
   /** Плавно подтянуть обзор к точке. */
-  focusOn(targetX: number, targetY: number, dt: number): void {
-    const factor = Math.min(1, Math.max(0, 1 - Math.exp(-7 * dt)))
+  focusOn(targetX: number, targetY: number, dt: number): void {    const factor = Math.min(1, Math.max(0, 1 - Math.exp(-7 * dt)))
     this.x += (targetX - this.x) * factor
     this.y += (targetY - this.y) * factor
     this.clamp()

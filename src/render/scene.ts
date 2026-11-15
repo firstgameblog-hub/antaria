@@ -527,6 +527,37 @@ export interface SceneOptions {
   moveTarget: Point | null
   nodes: readonly SceneNode[]
   hoveredNode: { x: number; y: number; label: string } | null
+  gatherProgress: { x: number; y: number; value: number } | null
+}
+
+function drawGatherProgress(
+  ctx: CanvasRenderingContext2D,
+  progress: { x: number; y: number; value: number },
+): void {
+  const radius = 12
+  const centerY = progress.y - 30
+
+  ctx.save()
+  ctx.lineWidth = 3
+  ctx.lineCap = 'round'
+
+  ctx.strokeStyle = 'rgba(58, 47, 36, 0.22)'
+  ctx.beginPath()
+  ctx.arc(progress.x, centerY, radius, 0, Math.PI * 2)
+  ctx.stroke()
+
+  ctx.strokeStyle = '#8a5a2b'
+  ctx.beginPath()
+  ctx.arc(
+    progress.x,
+    centerY,
+    radius,
+    -Math.PI / 2,
+    -Math.PI / 2 + Math.PI * 2 * Math.min(1, Math.max(0, progress.value)),
+  )
+  ctx.stroke()
+
+  ctx.restore()
 }
 
 interface SceneDrawable {
@@ -706,4 +737,6 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
 
     drawLabel(ctx, hoveredNode.label, hoveredNode.x, hoveredNode.y - 38)
   }
+
+  if (options.gatherProgress) drawGatherProgress(ctx, options.gatherProgress)
 }

@@ -5,7 +5,7 @@ import { describeRestore, isReady, markGathered, minutesUntilReady } from './cor
 import { distance, facingOf, findFreeSpot, movePlayer, stepToward, type Point } from './core/movement'
 import { AUTO_SLOT, readBackup, readSlot, writeSlot } from './core/storage'
 import { ACTION_MINUTES, absoluteMinutes, addMinutes, nextMorning } from './core/time'
-import type { GatheringNodeDef } from './data/gathering'
+import type { GatheringNodeDef, NodeKind } from './data/gathering'
 import { GATHERING_NODES } from './content/gathering'
 import { ITEM_BY_ID, itemDef, itemName } from './content/items'
 import { Camera } from './render/camera'
@@ -18,6 +18,14 @@ import { START_VILLAGE } from './content/scene'
 const PLAYER_SPEED = 135
 const NODE_HOVER_RADIUS = 22
 const INTERACT_RANGE = 46
+
+/** Сколько длится сам сбор. Секунды реального времени — это усилие, а не ожидание. */
+const GATHER_SECONDS: Record<NodeKind, number> = {
+  herb: 1.2,
+  berry: 1.6,
+  branch: 1.8,
+  stone: 2.6,
+}
 
 const root = document.querySelector<HTMLDivElement>('#app')
 if (!root) throw new Error('Не найден корневой элемент #app')
@@ -51,6 +59,7 @@ let pixelRatio = 1
 let moveTarget: Point | null = null
 let followPaused = false
 let previousFrameTime = 0
+let gathering: { nodeId: string; elapsed: number; duration: number } | null = null
 
 const pressed = new Set<string>()
 
@@ -161,6 +170,7 @@ function updateMovement(dt: number): boolean {
   if (pressed.has('s') || pressed.has('arrowdown') || pressed.has('ы')) axisY += 1
 
   if (axisX !== 0 || axisY !== 0) {
+    if (gathering !== null) gathering = null
     moveTarget = null
     pendingNodeId = null
     const length = Math.hypot(axisX, axisY)
@@ -199,6 +209,11 @@ function frame(time: number): void {
 
   const walking = updateMovement(dt)
 
+  if (gathering !== null) {
+    gathering.elapsed += dt
+    if (gathering.elapsed >= gathering.duration) finishGathering()
+  }
+
   if (pendingNodeId !== null) {
     const node = GATHERING_NODES.find((candidate) => candidate.id === pendingNodeId)
     if (!node) {
@@ -206,7 +221,7 @@ function frame(time: number): void {
     } else if (distance(state.player.position, { x: node.x, y: node.y }) <= INTERACT_RANGE) {
       pendingNodeId = null
       moveTarget = null
-      interactWithNode(node)
+      startGathering(node)
     }
   }
 
@@ -234,6 +249,19 @@ function frame(time: number): void {
     ? { x: hoveredDef.x, y: hoveredDef.y, label: nodeLabel(hoveredDef, now) }
     : null
 
+  const activeGather = gathering
+  const gatherNode = activeGather
+    ? GATHERING_NODES.find((node) => node.id === activeGather.nodeId)
+    : undefined
+  const gatherProgress =
+    activeGather && gatherNode
+      ? {
+          x: gatherNode.x,
+          y: gatherNode.y,
+          value: activeGather.elapsed / activeGather.duration,
+        }
+      : null
+
   ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   ctx.fillStyle = '#cdd0a4'
   ctx.fillRect(0, 0, width, height)
@@ -249,11 +277,12 @@ function frame(time: number): void {
     moveTarget,
     nodes: sceneNodes,
     hoveredNode,
+    gatherProgress,
     player: {
       x: state.player.position.x,
       y: state.player.position.y,
       facing: state.player.facing,
-      moving: walking,
+      moving: walking || gathering !== null,
     },
   })
 
@@ -294,7 +323,7 @@ function nodeLabel(node: GatheringNodeDef, now: number): string {
   return `${node.name} · ${describeRestore(left)}`
 }
 
-function interactWithNode(node: GatheringNodeDef): void {
+function startGathering(node: GatheringNodeDef): void {
   const now = absoluteMinutes(state.clock)
 
   if (!isReady(state.world.nodes, node.id, now)) {
@@ -303,8 +332,29 @@ function interactWithNode(node: GatheringNodeDef): void {
     return
   }
 
+  gathering = { nodeId: node.id, elapsed: 0, duration: GATHER_SECONDS[node.kind] }
+  moveTarget = null
+  pendingNodeId = null
+}
+
+function finishGathering(): void {
+  const current = gathering
+  gathering = null
+  if (!current) return
+
+  const node = GATHERING_NODES.find((candidate) => candidate.id === current.nodeId)
+  if (!node) return
+
   const def = itemDef(node.itemId)
   if (!def) return
+
+  const now = absoluteMinutes(state.clock)
+
+  if (!isReady(state.world.nodes, node.id, now)) {
+    actionNote = `${node.name}: ${describeRestore(minutesUntilReady(state.world.nodes, node.id, now))}.`
+    updateHud()
+    return
+  }
 
   const added = addItems(state.player.inventory, def, node.count, 1, ITEM_BY_ID)
 
@@ -336,9 +386,19 @@ function updateHover(event: PointerEvent): void {
   canvas.style.cursor = node !== null || hoveredId !== null ? 'pointer' : 'default'
 }
 
-// Указатель: короткий клик — идти, перетаскивание — сдвинуть обзор (4.2.2, 5.2).
+// Указатель: короткий тап — идти, перетаскивание — сдвиг, два пальца — масштаб (4.2.2, 5.2).
 let pointerStart: Point | null = null
 let pointerDragged = false
+const activePointers = new Map<number, Point>()
+let pinch: { distance: number; zoom: number } | null = null
+
+function pointerDistance(): number {
+  const points = [...activePointers.values()]
+  const first = points[0]
+  const second = points[1]
+  if (!first || !second) return 0
+  return Math.hypot(second.x - first.x, second.y - first.y)
+}
 
 canvas.addEventListener(
   'wheel',
@@ -350,41 +410,80 @@ canvas.addEventListener(
 )
 
 canvas.addEventListener('pointerdown', (event) => {
-  pointerStart = { x: event.clientX, y: event.clientY }
-  pointerDragged = false
-  canvas.setPointerCapture(event.pointerId)
+  activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+  try {
+    canvas.setPointerCapture(event.pointerId)
+  } catch {
+    // Синтетические события и старые браузеры могут не поддерживать захват.
+  }
+
+  if (activePointers.size === 1) {
+    pointerStart = { x: event.clientX, y: event.clientY }
+    pointerDragged = false
+  } else if (activePointers.size === 2) {
+    pointerDragged = true
+    pinch = { distance: pointerDistance(), zoom: camera.zoom }
+    followPaused = true
+    canvas.classList.add('scene--dragging')
+  }
 })
 
 canvas.addEventListener('pointermove', (event) => {
-  if (pointerStart) {
-    const dx = event.clientX - pointerStart.x
-    const dy = event.clientY - pointerStart.y
+  if (!activePointers.has(event.pointerId)) {
+    updateHover(event)
+    return
+  }
 
-    if (!pointerDragged && Math.hypot(dx, dy) > 6) {
-      pointerDragged = true
-      followPaused = true
-      canvas.classList.add('scene--dragging')
-    }
+  activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
 
-    if (pointerDragged) {
-      camera.pan(dx, dy)
-      pointerStart = { x: event.clientX, y: event.clientY }
+  if (activePointers.size >= 2) {
+    if (pinch && pinch.distance > 0) {
+      camera.setZoom(pinch.zoom * (pointerDistance() / pinch.distance))
     }
     return
   }
 
-  updateHover(event)
+  if (!pointerStart) return
+
+  const dx = event.clientX - pointerStart.x
+  const dy = event.clientY - pointerStart.y
+
+  if (!pointerDragged && Math.hypot(dx, dy) > 6) {
+    pointerDragged = true
+    followPaused = true
+    canvas.classList.add('scene--dragging')
+  }
+
+  if (pointerDragged) {
+    camera.pan(dx, dy)
+    pointerStart = { x: event.clientX, y: event.clientY }
+    gathering = null
+    pendingNodeId = null
+  }
 })
 
 function endPointer(event: PointerEvent): void {
-  if (pointerStart && !pointerDragged) {
+  const wasOnlyPointer = activePointers.size === 1
+  activePointers.delete(event.pointerId)
+
+  if (activePointers.size < 2) pinch = null
+
+  if (wasOnlyPointer && pointerStart && !pointerDragged) {
     const rect = canvas.getBoundingClientRect()
     const world = camera.toWorld(event.clientX - rect.left, event.clientY - rect.top)
     const node = nodeAt(world.x, world.y)
 
+    gathering = null
+
     if (node) {
-      if (distance(state.player.position, { x: node.x, y: node.y }) <= INTERACT_RANGE) {
-        interactWithNode(node)
+      const now = absoluteMinutes(state.clock)
+
+      if (!isReady(state.world.nodes, node.id, now)) {
+        actionNote = `${node.name}: ${describeRestore(minutesUntilReady(state.world.nodes, node.id, now))}.`
+        updateHud()
+      } else if (distance(state.player.position, { x: node.x, y: node.y }) <= INTERACT_RANGE) {
+        startGathering(node)
       } else {
         pendingNodeId = node.id
         moveTarget = { x: node.x, y: node.y }
@@ -397,14 +496,20 @@ function endPointer(event: PointerEvent): void {
     }
   }
 
-  pointerStart = null
-  canvas.classList.remove('scene--dragging')
+  if (activePointers.size === 0) {
+    pointerStart = null
+    canvas.classList.remove('scene--dragging')
+  }
 }
 
 canvas.addEventListener('pointerup', endPointer)
-canvas.addEventListener('pointercancel', () => {
-  pointerStart = null
-  canvas.classList.remove('scene--dragging')
+canvas.addEventListener('pointercancel', (event) => {
+  activePointers.delete(event.pointerId)
+  if (activePointers.size < 2) pinch = null
+  if (activePointers.size === 0) {
+    pointerStart = null
+    canvas.classList.remove('scene--dragging')
+  }
 })
 
 canvas.addEventListener('pointerleave', () => {
