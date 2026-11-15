@@ -88,32 +88,43 @@ export function drawPlayer(
   ctx.fill()
   ctx.stroke()
 
-  // Волосы и лицо зависят от направления
-  ctx.fillStyle = HAIR
+  // Волосы. Маска по голове, чтобы причёска не вылезала за силуэт.
+  ctx.save()
   ctx.beginPath()
-  if (facing === 'up') {
-    ctx.arc(x, headY + 4, 6, 0, Math.PI * 2)
-  } else if (facing === 'left') {
-    ctx.arc(x + 1.5, headY + 3.4, 5.6, Math.PI * 0.55, Math.PI * 1.85)
-  } else if (facing === 'right') {
-    ctx.arc(x - 1.5, headY + 3.4, 5.6, Math.PI * 1.15, Math.PI * 0.45)
-  } else {
-    ctx.arc(x, headY + 3.2, 5.8, Math.PI * 1.02, Math.PI * 1.98)
-  }
-  ctx.fill()
+  ctx.arc(x, headY + 4, 6, 0, Math.PI * 2)
+  ctx.clip()
 
-  if (facing === 'down' || facing === 'left' || facing === 'right') {
-    ctx.fillStyle = INK
-    const eyeShift = facing === 'left' ? -1.8 : facing === 'right' ? 1.8 : 0
-    if (facing === 'down') {
-      ctx.beginPath()
-      ctx.arc(x - 2.2, headY + 5.4, 0.9, 0, Math.PI * 2)
-      ctx.arc(x + 2.2, headY + 5.4, 0.9, 0, Math.PI * 2)
-      ctx.fill()
-    } else {
-      ctx.beginPath()
-      ctx.arc(x + eyeShift, headY + 5.4, 0.9, 0, Math.PI * 2)
-      ctx.fill()
-    }
+  ctx.fillStyle = HAIR
+  if (facing === 'up') {
+    ctx.fillRect(x - 7, headY - 3, 14, 14)
+  } else if (facing === 'down') {
+    ctx.fillRect(x - 7, headY - 3, 14, 6.6)
+  } else if (facing === 'right') {
+    ctx.fillRect(x - 7, headY - 3, 7.2, 14)
+  } else {
+    ctx.fillRect(x - 0.2, headY - 3, 7.2, 14)
+  }
+  ctx.restore()
+
+  // Лицо
+  ctx.fillStyle = '#3a2f24'
+  if (facing === 'down') {
+    ctx.beginPath()
+    ctx.arc(x - 2.2, headY + 5.8, 0.9, 0, Math.PI * 2)
+    ctx.arc(x + 2.2, headY + 5.8, 0.9, 0, Math.PI * 2)
+    ctx.fill()
+  } else if (facing === 'right' || facing === 'left') {
+    const direction = facing === 'right' ? 1 : -1
+
+    ctx.beginPath()
+    ctx.arc(x + direction * 3.1, headY + 5.4, 0.9, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.strokeStyle = INK
+    ctx.lineWidth = 1.1
+    ctx.beginPath()
+    ctx.moveTo(x + direction * 5.2, headY + 4.9)
+    ctx.lineTo(x + direction * 6.4, headY + 5.6)
+    ctx.stroke()
   }
 }

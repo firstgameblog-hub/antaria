@@ -29,3 +29,29 @@ export const START_VILLAGE: readonly PlacedBuilding[] = [
   { id: 'field_b', kind: 'field', x: 26, y: 21, w: 7, h: 5, label: 'Поле' },
   { id: 'campfire', kind: 'campfire', x: 19, y: 16, w: 2, h: 2, label: 'Костёр' },
 ]
+
+export type PropKind = 'woodpile' | 'barrel' | 'log_seat'
+
+export interface PlacedProp {
+  id: string
+  kind: PropKind
+  /** Левый верхний угол основания в тайлах. */
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/**
+ * Дворовые мелочи. Общие для отрисовки и столкновений: если предмет здесь,
+ * он и виден, и непроходим. Раньше они рисовались отдельно и герой сквозь них ходил.
+ */
+export const VILLAGE_PROPS: readonly PlacedProp[] = [
+  { id: 'woodpile', kind: 'woodpile', x: 13.6, y: 17, w: 1.6, h: 1 },
+  { id: 'barrel_a', kind: 'barrel', x: 15.9, y: 9, w: 0.5, h: 0.55 },
+  { id: 'barrel_b', kind: 'barrel', x: 16.6, y: 9.5, w: 0.5, h: 0.55 },
+  { id: 'barrel_c', kind: 'barrel', x: 31.1, y: 16.5, w: 0.5, h: 0.55 },
+  { id: 'seat_left', kind: 'log_seat', x: 18.12, y: 17.1, w: 1, h: 0.32 },
+  { id: 'seat_right', kind: 'log_seat', x: 20.86, y: 17.1, w: 1, h: 0.32 },
+  { id: 'seat_bottom', kind: 'log_seat', x: 19.84, y: 17.55, w: 0.32, h: 1 },
+]

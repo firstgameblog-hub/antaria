@@ -3,7 +3,7 @@
  * Рисует в мировых координатах; камера ставится снаружи.
  */
 
-import { SCENE_TILES, START_VILLAGE } from '../content/scene'
+import { SCENE_TILES, START_VILLAGE, VILLAGE_PROPS, type PlacedProp } from '../content/scene'
 import type { Facing, Point, Rect } from '../core/movement'
 import { drawBuilding } from './buildings'
 import { PALETTE } from './palette'
@@ -36,15 +36,27 @@ export const VILLAGE_WALKABLE: Rect = {
   h: VILLAGE_BOUNDS.h - 66,
 }
 
-/** Постройки, сквозь которые не пройти. Поля проходимы. */
-export const OBSTACLES: readonly Rect[] = START_VILLAGE.filter(
-  (building) => building.kind !== 'field',
-).map((building) => ({
-  x: building.x * TILE,
-  y: building.y * TILE,
-  w: building.w * TILE,
-  h: building.h * TILE,
-}))
+/** Постройки и поля, сквозь которые не пройти. Поле обнесено изгородью — заходить туда нечего. */
+export const OBSTACLES: readonly Rect[] = [
+  ...START_VILLAGE.map((building) => ({
+    x: building.x * TILE,
+    y: building.y * TILE,
+    w: building.w * TILE,
+    h: building.h * TILE,
+  })),
+  ...VILLAGE_PROPS.map((prop) => {
+    const width = prop.w * TILE
+    const height = prop.h * TILE
+    const insetX = width * 0.15
+    const insetY = height * 0.15
+    return {
+      x: prop.x * TILE + insetX,
+      y: prop.y * TILE + insetY,
+      w: width - insetX * 2,
+      h: height - insetY * 2,
+    }
+  }),
+]
 
 interface Tuft {
   x: number
@@ -363,52 +375,70 @@ function drawFieldFence(ctx: CanvasRenderingContext2D, x: number, y: number, w: 
   ctx.stroke()
 }
 
-function drawBarrel(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+function drawBarrel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+  const cx = x + w / 2
+  const cy = y + h * 0.62
+  const rx = w * 0.44
+  const ry = h * 0.34
+
   ctx.fillStyle = PALETTE.wood
   ctx.strokeStyle = PALETTE.ink
   ctx.lineWidth = 1.4
   ctx.beginPath()
-  ctx.ellipse(x, y, 7, 9, 0, 0, Math.PI * 2)
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2)
   ctx.fill()
   ctx.stroke()
 
   ctx.strokeStyle = PALETTE.woodDark
   ctx.lineWidth = 1.6
   ctx.beginPath()
-  ctx.ellipse(x, y - 3, 7, 3.4, 0, 0, Math.PI * 2)
-  ctx.ellipse(x, y + 3, 7, 3.4, 0, 0, Math.PI * 2)
+  ctx.ellipse(cx, cy - ry * 0.45, rx, ry * 0.5, 0, 0, Math.PI * 2)
+  ctx.ellipse(cx, cy + ry * 0.45, rx, ry * 0.5, 0, 0, Math.PI * 2)
   ctx.stroke()
 }
 
-function drawLogSeat(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number): void {
-  ctx.save()
-  ctx.translate(x, y)
-  ctx.rotate(angle)
+function drawLogSeat(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+  const horizontal = w >= h
 
   ctx.fillStyle = PALETTE.woodDark
   ctx.strokeStyle = PALETTE.ink
   ctx.lineWidth = 1.4
-  ctx.beginPath()
-  ctx.rect(-16, -5, 32, 10)
-  ctx.fill()
-  ctx.stroke()
 
-  ctx.fillStyle = PALETTE.thatchDark
-  ctx.beginPath()
-  ctx.ellipse(16, 0, 3.4, 5, 0, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.stroke()
+  if (horizontal) {
+    ctx.beginPath()
+    ctx.rect(x, y, w, h)
+    ctx.fill()
+    ctx.stroke()
 
-  ctx.restore()
+    ctx.fillStyle = PALETTE.thatchDark
+    ctx.beginPath()
+    ctx.ellipse(x + w, y + h / 2, Math.max(1.6, h * 0.34), h / 2, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+  } else {
+    ctx.beginPath()
+    ctx.rect(x, y, w, h)
+    ctx.fill()
+    ctx.stroke()
+
+    ctx.fillStyle = PALETTE.thatchDark
+    ctx.beginPath()
+    ctx.ellipse(x + w / 2, y + h, w / 2, Math.max(1.6, w * 0.34), 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+  }
 }
 
-function drawWoodpile(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-  const radius = 5
+function drawWoodpile(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+  const radius = Math.min(w / 4.4, h / 3.4)
+  const baseX = x + w / 2 - radius * 2.4
+  const baseY = y + h - radius
+
   for (let row = 0; row < 3; row += 1) {
     const count = 4 - row
-    for (let i = 0; i < count; i += 1) {
-      const cx = x + i * (radius * 1.9) + row * radius * 0.95
-      const cy = y - row * radius * 1.7
+    for (let index = 0; index < count; index += 1) {
+      const cx = baseX + index * radius * 2.05 + row * radius * 1.02
+      const cy = baseY - row * radius * 1.75
 
       ctx.fillStyle = row % 2 === 0 ? PALETTE.wood : PALETTE.woodDark
       ctx.strokeStyle = PALETTE.ink
@@ -420,14 +450,33 @@ function drawWoodpile(ctx: CanvasRenderingContext2D, x: number, y: number): void
 
       ctx.fillStyle = PALETTE.thatchDark
       ctx.beginPath()
-      ctx.arc(cx, cy, radius * 0.4, 0, Math.PI * 2)
+      ctx.arc(cx, cy, radius * 0.42, 0, Math.PI * 2)
       ctx.fill()
     }
   }
 }
 
-/** Дворовые мелочи: утоптанное место у костра, брёвна-скамьи, поленница, бочки. */
-function drawProps(ctx: CanvasRenderingContext2D): void {
+function drawProp(ctx: CanvasRenderingContext2D, prop: PlacedProp, tile: number): void {
+  const x = prop.x * tile
+  const y = prop.y * tile
+  const w = prop.w * tile
+  const h = prop.h * tile
+
+  switch (prop.kind) {
+    case 'woodpile':
+      drawWoodpile(ctx, x, y, w, h)
+      break
+    case 'barrel':
+      drawBarrel(ctx, x, y, w, h)
+      break
+    case 'log_seat':
+      drawLogSeat(ctx, x, y, w, h)
+      break
+  }
+}
+
+/** Утоптанное место у костра и изгороди вокруг полей: земляной слой, не мешают ходить. */
+function drawGroundProps(ctx: CanvasRenderingContext2D): void {
   const fire = START_VILLAGE.find((building) => building.kind === 'campfire')
   if (fire) {
     const fireX = (fire.x + fire.w / 2) * TILE
@@ -439,28 +488,18 @@ function drawProps(ctx: CanvasRenderingContext2D): void {
     ctx.ellipse(fireX, fireY + 6, 58, 26, 0, 0, Math.PI * 2)
     ctx.fill()
     ctx.globalAlpha = 1
-
-    drawLogSeat(ctx, fireX - 44, fireY + 8, 0.1)
-    drawLogSeat(ctx, fireX + 44, fireY + 8, -0.12)
-    drawLogSeat(ctx, fireX, fireY + 34, Math.PI / 2)
   }
 
   for (const building of START_VILLAGE) {
-    if (building.kind === 'field') {
-      drawFieldFence(
-        ctx,
-        building.x * TILE,
-        building.y * TILE,
-        building.w * TILE,
-        building.h * TILE,
-      )
-    }
+    if (building.kind !== 'field') continue
+    drawFieldFence(
+      ctx,
+      building.x * TILE,
+      building.y * TILE,
+      building.w * TILE,
+      building.h * TILE,
+    )
   }
-
-  drawWoodpile(ctx, 14.2 * TILE, 17.6 * TILE)
-  drawBarrel(ctx, 16.2 * TILE, 9.4 * TILE)
-  drawBarrel(ctx, 16.9 * TILE, 9.9 * TILE)
-  drawBarrel(ctx, 31.4 * TILE, 16.8 * TILE)
 }
 
 export interface ScenePlayer {
@@ -535,17 +574,35 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
     drawTree(ctx, tree)
   }
 
-  drawProps(ctx)
+  drawGroundProps(ctx)
   drawPalisade(ctx)
+
+  // Поля — плоская земля: рисуются всегда под всем, иначе герой «проваливается» под них
+  for (const building of START_VILLAGE) {
+    if (building.kind === 'field') {
+      drawBuilding(ctx, building, TILE, options.time)
+    }
+  }
 
   if (options.moveTarget) drawMoveTarget(ctx, options.moveTarget, options.time)
 
-  const drawables: Array<{ baseY: number; draw: () => void }> = START_VILLAGE.map((building) => ({
+  const drawables: Array<{ baseY: number; draw: () => void }> = START_VILLAGE.filter(
+    (building) => building.kind !== 'field',
+  ).map((building) => ({
     baseY: (building.y + building.h) * TILE,
     draw: () => {
       drawBuilding(ctx, building, TILE, options.time)
     },
   }))
+
+  for (const prop of VILLAGE_PROPS) {
+    drawables.push({
+      baseY: (prop.y + prop.h) * TILE,
+      draw: () => {
+        drawProp(ctx, prop, TILE)
+      },
+    })
+  }
 
   const player = options.player
   if (player) {
