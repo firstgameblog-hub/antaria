@@ -39,6 +39,11 @@
   gap: 0.35rem;
 }
 
+.dev-panel__give button {
+  font-size: 0.68rem;
+  padding: 0.2rem 0.45rem;
+}
+
 .dev-panel__actions button {
   padding: 0.28rem 0.6rem;
   font-family: inherit;

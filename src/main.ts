@@ -1,7 +1,9 @@
 import './styles.css'
 import { createInitialState, type GameState } from './core/state'
+import { addItems, weightOf } from './core/inventory'
 import { AUTO_SLOT, readBackup, readSlot, writeSlot } from './core/storage'
 import { nextMorning } from './core/time'
+import { ITEM_BY_ID, itemDef, itemName } from './content/items'
 import { START_VILLAGE } from './content/scene'
 import { Camera } from './render/camera'
 import { TILE, WORLD, drawVillage } from './render/scene'
@@ -53,14 +55,19 @@ function loadState(): GameState {
 }
 
 function updateHud(): void {
+  const inventory = state.player.inventory
+  const weight = Math.round(weightOf(inventory, ITEM_BY_ID) * 10) / 10
+
   hud.update({
     clock: state.clock,
     stage: stageLabel(state.village.stageId),
     population: state.village.population,
     notes: [statusNote, nightNote],
-    // Ресурсы, деньги, здоровье, усталость и погода появятся вместе со своими системами.
-    resources: [],
-    statuses: [],
+    resources: inventory.stacks.map((stack) => ({
+      label: itemName(stack.id),
+      value: stack.count,
+    })),
+    statuses: [{ label: 'Груз', value: weight, max: inventory.capacityKg }],
   })
 }
 
@@ -229,6 +236,23 @@ if (import.meta.env.DEV) {
       refitCamera: () => camera.refit(),
       toggleGrid: () => {
         showGrid = !showGrid
+      },
+      giveItem: (id: string, count: number) => {
+        const def = itemDef(id)
+        if (!def) return
+
+        const added = addItems(state.player.inventory, def, count, 1, ITEM_BY_ID)
+
+        if (added === count) {
+          statusNote = ''
+        } else if (added === 0) {
+          statusNote = 'Не влезло: груз переполнен.'
+        } else {
+          statusNote = `Влезло только ${added} из ${count}: груз почти полон.`
+        }
+
+        persist()
+        updateHud()
       },
     })
 

@@ -1,7 +1,7 @@
 /**
- * Миграции формата сохранения (3.1.3).
+ * Миграции формата сохранения (3.1.3, 3.1.8).
  *
- * Правило: сохранение старой версии обязано грузиться (3.1.8).
+ * Правило: сохранение старой версии обязано грузиться.
  * Поэтому любое изменение структуры GameState сопровождается миграцией
  * и поднятием SAVE_VERSION.
  */
@@ -13,13 +13,32 @@ export type SaveRecord = Record<string, unknown>
 /** Миграция поднимает сохранение с версии `from` до `from + 1`. */
 type Migration = (data: SaveRecord) => SaveRecord
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {}
+}
+
 /**
- * Ключ — версия, С КОТОРОЙ мигрируем. Пока формат не менялся, словарь пуст.
+ * Ключ — версия, С КОТОРОЙ мигрируем.
  *
- * Пример на будущее:
- *   1: (data) => ({ ...data, inventory: {}, version: 2 })
+ * 1 → 2: появились инвентарь героя, экипировка и склад деревни (3.4).
  */
-const migrations: Record<number, Migration> = {}
+const migrations: Record<number, Migration> = {
+  1: (data) => ({
+    ...data,
+    version: 2,
+    player: {
+      ...asRecord(data['player']),
+      inventory: { capacityKg: 25, stacks: [] },
+      equipment: { tool: null, weapon: null, armor: null },
+    },
+    village: {
+      ...asRecord(data['village']),
+      storage: { capacityKg: 1_000_000, stacks: [] },
+    },
+  }),
+}
 
 export class MigrationError extends Error {}
 

@@ -3,12 +3,12 @@
  *
  * Всё, чего здесь нет, считается статичным контентом из `src/content`
  * и только читается (см. 2.2.5). Любое изменение мира идёт через этот объект.
- *
- * Заглушки: разделы игрока и деревни уточняются в 3.4–3.5, время — в 3.2.
  */
 
+import { createEquipment, createInventory, type Equipment, type Inventory } from './inventory'
+
 /** Версия формата сохранения. Поднимается при несовместимом изменении структуры. */
-export const SAVE_VERSION = 1
+export const SAVE_VERSION = 2
 
 export interface ClockState {
   /** Год от начала игры. */
@@ -22,12 +22,16 @@ export interface ClockState {
 export interface PlayerState {
   /** Имя, которое игрок введёт или получит по сюжету. Пустое — значит ещё не назван. */
   name: string
+  inventory: Inventory
+  equipment: Equipment
 }
 
 export interface VillageState {
   /** Строковый id стадии (2.2.6). Номера стадий в коде не используются. */
   stageId: string
   population: number
+  /** Общий склад деревни (3.4.3). */
+  storage: Inventory
 }
 
 export type FlagValue = string | number | boolean
@@ -54,12 +58,26 @@ export interface GameState {
   savedAt: number
 }
 
+/** Сколько килограммов герой уносит на себе. */
+export const PLAYER_CAPACITY_KG = 25
+
+/** Склад деревни практически безграничен, но не бесконечен: число должно выжить в JSON. */
+export const VILLAGE_STORAGE_KG = 1_000_000
+
 export function createInitialState(now: number = Date.now()): GameState {
   return {
     version: SAVE_VERSION,
     clock: { year: 1, day: 1, minutes: 8 * 60 },
-    player: { name: '' },
-    village: { stageId: 'stage_dying', population: 20 },
+    player: {
+      name: '',
+      inventory: createInventory(PLAYER_CAPACITY_KG),
+      equipment: createEquipment(),
+    },
+    village: {
+      stageId: 'stage_dying',
+      population: 20,
+      storage: createInventory(VILLAGE_STORAGE_KG),
+    },
     flags: {},
     journal: [],
     playtimeMs: 0,

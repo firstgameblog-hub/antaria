@@ -7,8 +7,18 @@
  */
 
 import { migrate, MigrationError, type SaveRecord } from './migrations'
+import type { Equipment, Inventory, Stack } from './inventory'
 import { DAYS_PER_YEAR } from './time'
-import { SAVE_VERSION, type ClockState, type FlagValue, type Flags, type GameState, type JournalEntry } from './state'
+import {
+  PLAYER_CAPACITY_KG,
+  SAVE_VERSION,
+  VILLAGE_STORAGE_KG,
+  type ClockState,
+  type FlagValue,
+  type Flags,
+  type GameState,
+  type JournalEntry,
+} from './state'
 
 export class SaveError extends Error {}
 
@@ -64,6 +74,51 @@ function normalizeJournal(value: unknown): JournalEntry[] {
   return entries
 }
 
+function normalizeInventory(value: unknown, capacityKg: number): Inventory {
+  const source = asRecord(value)
+  const rawCapacity = source['capacityKg']
+  const capacity =
+    typeof rawCapacity === 'number' && Number.isFinite(rawCapacity) && rawCapacity > 0
+      ? rawCapacity
+      : capacityKg
+
+  const stacks: Stack[] = []
+  const rawStacks = source['stacks']
+  if (Array.isArray(rawStacks)) {
+    for (const entry of rawStacks) {
+      if (!isRecord(entry)) continue
+
+      const id = asString(entry['id'])
+      const count = asInt(entry['count'], 0, 0, 1_000_000)
+      if (id === '' || count <= 0) continue
+
+      const rawQuality = entry['quality']
+      const quality =
+        typeof rawQuality === 'number' && Number.isFinite(rawQuality)
+          ? Math.min(1, Math.max(0, rawQuality))
+          : 1
+
+      stacks.push({ id, count, quality })
+    }
+  }
+
+  return { capacityKg: capacity, stacks }
+}
+
+function normalizeEquipment(value: unknown): Equipment {
+  const source = asRecord(value)
+  const readSlot = (key: string): string | null => {
+    const raw = source[key]
+    return typeof raw === 'string' && raw !== '' ? raw : null
+  }
+
+  return {
+    tool: readSlot('tool'),
+    weapon: readSlot('weapon'),
+    armor: readSlot('armor'),
+  }
+}
+
 function normalizeClock(value: unknown): ClockState {
   const clock = asRecord(value)
   return {
@@ -81,10 +136,15 @@ export function normalizeSave(data: SaveRecord): GameState {
   return {
     version: SAVE_VERSION,
     clock: normalizeClock(data['clock']),
-    player: { name: asString(player['name']) },
+    player: {
+      name: asString(player['name']),
+      inventory: normalizeInventory(player['inventory'], PLAYER_CAPACITY_KG),
+      equipment: normalizeEquipment(player['equipment']),
+    },
     village: {
       stageId: asString(village['stageId'], 'stage_dying') || 'stage_dying',
       population: asInt(village['population'], 20, 0, 1_000_000),
+      storage: normalizeInventory(village['storage'], VILLAGE_STORAGE_KG),
     },
     flags: normalizeFlags(data['flags']),
     journal: normalizeJournal(data['journal']),

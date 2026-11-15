@@ -7,6 +7,7 @@
  */
 
 import type { GameState } from '../core/state'
+import { ITEMS } from '../content/items'
 import { escapeHtml } from './html'
 
 export interface DevPanelHandlers {
@@ -15,6 +16,7 @@ export interface DevPanelHandlers {
   reset: () => void
   refitCamera: () => void
   toggleGrid: () => void
+  giveItem: (id: string, count: number) => void
 }
 
 export interface DevPanel {
@@ -40,6 +42,9 @@ export function createDevPanel(handlers: DevPanelHandlers): DevPanel {
         <button data-dev="refit">Вписать камеру</button>
         <button data-dev="grid">Сетка</button>
         <button data-dev="reset">Сбросить игру</button>
+      </div>
+      <div class="dev-panel__actions dev-panel__give">
+        ${ITEMS.map((item) => `<button data-give="${item.id}">+5 ${escapeHtml(item.name)}</button>`).join('')}
       </div>
       <pre class="dev-panel__state">${escapeHtml(
         JSON.stringify(
@@ -75,6 +80,15 @@ export function createDevPanel(handlers: DevPanelHandlers): DevPanel {
     element.querySelector('[data-dev="reset"]')?.addEventListener('click', () => {
       handlers.reset()
       render()
+    })
+
+    element.querySelectorAll<HTMLButtonElement>('button[data-give]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const id = button.dataset['give']
+        if (!id) return
+        handlers.giveItem(id, 5)
+        render()
+      })
     })
   }
 
