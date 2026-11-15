@@ -16,6 +16,7 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -26,91 +27,105 @@ body {
 }
 
 #app {
+  position: relative;
   height: 100%;
 }
 
-.boot {
+/* ---------- Сцена ---------- */
+
+.scene {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+
+.scene--dragging {
+  cursor: grabbing;
+}
+
+/* ---------- Подсказки поверх сцены ---------- */
+
+.hud {
+  position: absolute;
+  left: 0;
+  right: 0;
   display: flex;
+  pointer-events: none;
+  color: var(--ink);
+}
+
+.hud--top {
+  top: 0;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.85rem 1.4rem 1.6rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+  background: linear-gradient(to bottom, rgba(239, 230, 214, 0.92), rgba(239, 230, 214, 0));
+}
+
+.hud__date {
+  font-variant-numeric: tabular-nums;
+}
+
+.hud__stage {
+  opacity: 0.65;
+}
+
+.hud--bottom {
+  bottom: 0;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 0.5rem;
-  text-align: center;
-  padding: 2rem;
-  background:
-    radial-gradient(circle at 50% 40%, var(--paper) 0%, var(--paper-deep) 100%);
+  gap: 0.65rem;
+  padding: 2.5rem 1.4rem 1.3rem;
+  background: linear-gradient(to top, rgba(239, 230, 214, 0.94), rgba(239, 230, 214, 0));
 }
 
-.boot__title {
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 6vw, 4rem);
-  font-weight: 400;
-  letter-spacing: 0.06em;
+.hud__note {
   margin: 0;
-  color: var(--accent);
-}
-
-.boot__subtitle {
-  margin: 0;
-  font-style: italic;
-  opacity: 0.7;
-}
-
-.boot__note {
-  margin-top: 2rem;
-  font-size: 0.9rem;
-  opacity: 0.5;
-}
-
-.clock {
-  margin: 1.5rem 0 0;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.08em;
-  opacity: 0.75;
-}
-
-.settlement {
-  margin: 0.25rem 0 0;
-  font-size: 0.95rem;
-  opacity: 0.6;
-}
-
-.notice {
-  margin: 1.5rem 0 0;
-  max-width: 34rem;
-  padding: 0.6rem 0.9rem;
+  max-width: 42rem;
+  padding: 0.55rem 0.95rem;
   border-left: 2px solid var(--accent);
-  background: rgba(138, 90, 43, 0.08);
-  font-size: 0.85rem;
+  background: rgba(239, 230, 214, 0.8);
+  font-size: 0.88rem;
+  line-height: 1.45;
   text-align: left;
 }
 
-.menu-button {
-  padding: 0.55rem 1.4rem;
+.hud__actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.hud__button,
+.screen__foot button,
+.slot__actions button {
+  padding: 0.45rem 1.1rem;
   font-family: var(--font-text);
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
   color: var(--ink);
-  background: transparent;
+  background: rgba(239, 230, 214, 0.75);
   border: 1px solid rgba(43, 33, 24, 0.35);
   border-radius: 2px;
   cursor: pointer;
+  pointer-events: auto;
   transition:
     background 0.15s ease,
     border-color 0.15s ease;
 }
 
-.buttons {
-  display: flex;
-  gap: 0.6rem;
-  margin-top: 2rem;
-}
-
-.menu-button:hover {
-  background: rgba(138, 90, 43, 0.1);
+.hud__button:hover,
+.screen__foot button:hover,
+.slot__actions button:hover:not(:disabled) {
+  background: rgba(138, 90, 43, 0.12);
   border-color: var(--accent);
 }
+
+/* ---------- Экран сохранений ---------- */
 
 .overlay {
   position: fixed;
@@ -218,22 +233,9 @@ body {
   flex-shrink: 0;
 }
 
-.slot__actions button,
-.screen__foot button {
+.slot__actions button {
   padding: 0.35rem 0.75rem;
-  font-family: var(--font-text);
   font-size: 0.85rem;
-  color: var(--ink);
-  background: transparent;
-  border: 1px solid rgba(43, 33, 24, 0.3);
-  border-radius: 2px;
-  cursor: pointer;
-}
-
-.slot__actions button:hover:not(:disabled),
-.screen__foot button:hover {
-  background: rgba(138, 90, 43, 0.1);
-  border-color: var(--accent);
 }
 
 .slot__actions button:disabled {

@@ -1,0 +1,27 @@
+/** Палитра сцены. Одна на весь визуальный слой, чтобы стиль не расползался. */
+
+export const PALETTE = {
+  grass: '#cdd0a4',
+  grassDark: '#b9bd8c',
+  grassLight: '#dde0b9',
+  dirt: '#b8996f',
+  dirtDark: '#9d7f58',
+  dirtLight: '#cbb28c',
+  ink: '#3a2f24',
+  wood: '#a9784a',
+  woodDark: '#8a5f38',
+  thatch: '#c3a666',
+  thatchDark: '#a88a4d',
+  roofWood: '#8d5b3f',
+  roofWoodDark: '#74472f',
+  soil: '#8b6b4a',
+  soilDark: '#74563a',
+  soilLight: '#9c7a56',
+  crop: '#8fa055',
+  cropDark: '#75853f',
+  flame: '#e08a3c',
+  flameCore: '#f2c96b',
+  stone: '#9a958a',
+  stoneDark: '#7d786e',
+  shadow: 'rgba(58, 47, 36, 0.16)',
+} as const
