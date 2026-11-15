@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "push": "node tools/push.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
