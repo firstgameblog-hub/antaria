@@ -3,7 +3,7 @@
  */
 
 const STAGE_LABELS: Record<string, string> = {
-  stage_dying: 'Умирающая',
+  stage_dying: 'Последний очаг',
 }
 
 export function stageLabel(stageId: string): string {

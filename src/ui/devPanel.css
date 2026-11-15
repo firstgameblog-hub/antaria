@@ -1,0 +1,71 @@
+.dev-panel {
+  position: absolute;
+  top: 3.4rem;
+  right: 1rem;
+  width: min(24rem, calc(100% - 2rem));
+  max-height: calc(100% - 8rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  background: rgba(28, 24, 19, 0.92);
+  color: #e8ddc9;
+  border: 1px solid rgba(232, 221, 201, 0.25);
+  font-family: 'Consolas', 'Menlo', monospace;
+  font-size: 0.75rem;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.dev-panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  opacity: 0.85;
+}
+
+.dev-panel__hint {
+  opacity: 0.5;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.dev-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.dev-panel__actions button {
+  padding: 0.28rem 0.6rem;
+  font-family: inherit;
+  font-size: 0.72rem;
+  color: #e8ddc9;
+  background: rgba(232, 221, 201, 0.08);
+  border: 1px solid rgba(232, 221, 201, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.dev-panel__actions button:hover {
+  background: rgba(232, 221, 201, 0.18);
+}
+
+.dev-panel__state {
+  margin: 0;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: auto;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.dev-panel__note {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  opacity: 0.55;
+}
