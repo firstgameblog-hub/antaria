@@ -62,6 +62,21 @@ export class Camera {
     this.clamp()
   }
 
+  /** Плавно подтянуть обзор к точке. */
+  focusOn(targetX: number, targetY: number, dt: number): void {
+    const factor = Math.min(1, Math.max(0, 1 - Math.exp(-7 * dt)))
+    this.x += (targetX - this.x) * factor
+    this.y += (targetY - this.y) * factor
+    this.clamp()
+  }
+
+  /** Поставить обзор сразу, без анимации. */
+  centerOn(targetX: number, targetY: number): void {
+    this.x = targetX
+    this.y = targetY
+    this.clamp()
+  }
+
   /** Перевод координат указателя в мировые. */
   toWorld(screenX: number, screenY: number): { x: number; y: number } {
     return {

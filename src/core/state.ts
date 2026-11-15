@@ -6,9 +6,10 @@
  */
 
 import { createEquipment, createInventory, type Equipment, type Inventory } from './inventory'
+import type { Facing, Point } from './movement'
 
 /** Версия формата сохранения. Поднимается при несовместимом изменении структуры. */
-export const SAVE_VERSION = 2
+export const SAVE_VERSION = 3
 
 export interface ClockState {
   /** Год от начала игры. */
@@ -22,6 +23,9 @@ export interface ClockState {
 export interface PlayerState {
   /** Имя, которое игрок введёт или получит по сюжету. Пустое — значит ещё не назван. */
   name: string
+  /** Положение на сцене в мировых пикселях. */
+  position: Point
+  facing: Facing
   inventory: Inventory
   equipment: Equipment
 }
@@ -64,12 +68,17 @@ export const PLAYER_CAPACITY_KG = 25
 /** Склад деревни практически безграничен, но не бесконечен: число должно выжить в JSON. */
 export const VILLAGE_STORAGE_KG = 1_000_000
 
+/** Где герой появляется: чуть южнее костра, на утоптанном месте. */
+export const SPAWN_POINT: Point = { x: 20 * 32, y: 19 * 32 }
+
 export function createInitialState(now: number = Date.now()): GameState {
   return {
     version: SAVE_VERSION,
     clock: { year: 1, day: 1, minutes: 8 * 60 },
     player: {
       name: '',
+      position: { ...SPAWN_POINT },
+      facing: 'down',
       inventory: createInventory(PLAYER_CAPACITY_KG),
       equipment: createEquipment(),
     },

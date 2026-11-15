@@ -4,8 +4,10 @@
  */
 
 import { SCENE_TILES, START_VILLAGE } from '../content/scene'
+import type { Facing, Point, Rect } from '../core/movement'
 import { drawBuilding } from './buildings'
 import { PALETTE } from './palette'
+import { drawPlayer } from './player'
 
 export const TILE = 32
 
@@ -22,6 +24,27 @@ export const VILLAGE_BOUNDS = {
   w: WORLD.w - 104,
   h: WORLD.h - 120,
 } as const
+
+/** Радиус героя для столкновений. */
+export const PLAYER_RADIUS = 9
+
+/** Куда герой может зайти: внутри частокола, с отступом от кольев. */
+export const VILLAGE_WALKABLE: Rect = {
+  x: VILLAGE_BOUNDS.x + 26,
+  y: VILLAGE_BOUNDS.y + 32,
+  w: VILLAGE_BOUNDS.w - 52,
+  h: VILLAGE_BOUNDS.h - 66,
+}
+
+/** Постройки, сквозь которые не пройти. Поля проходимы. */
+export const OBSTACLES: readonly Rect[] = START_VILLAGE.filter(
+  (building) => building.kind !== 'field',
+).map((building) => ({
+  x: building.x * TILE,
+  y: building.y * TILE,
+  w: building.w * TILE,
+  h: building.h * TILE,
+}))
 
 interface Tuft {
   x: number
@@ -440,10 +463,33 @@ function drawProps(ctx: CanvasRenderingContext2D): void {
   drawBarrel(ctx, 31.4 * TILE, 16.8 * TILE)
 }
 
+export interface ScenePlayer {
+  x: number
+  y: number
+  facing: Facing
+  moving: boolean
+}
+
 export interface SceneOptions {
   time: number
   showGrid: boolean
   hoveredId: string | null
+  player: ScenePlayer | null
+  moveTarget: Point | null
+}
+
+function drawMoveTarget(ctx: CanvasRenderingContext2D, point: Point, time: number): void {
+  const pulse = 0.6 + Math.sin(time / 260) * 0.2
+  ctx.save()
+  ctx.strokeStyle = `rgba(138, 90, 43, ${0.55 * pulse + 0.2})`
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.ellipse(point.x, point.y, 11, 5.5, 0, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.ellipse(point.x, point.y, 4, 2, 0, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.restore()
 }
 
 function drawHover(ctx: CanvasRenderingContext2D, building: (typeof START_VILLAGE)[number]): void {
@@ -492,16 +538,30 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
   drawProps(ctx)
   drawPalisade(ctx)
 
-  const ordered = [...START_VILLAGE].sort(
-    (first, second) => first.y + first.h - (second.y + second.h),
-  )
+  if (options.moveTarget) drawMoveTarget(ctx, options.moveTarget, options.time)
 
-  for (const building of ordered) {
-    drawBuilding(ctx, building, TILE, options.time)
+  const drawables: Array<{ baseY: number; draw: () => void }> = START_VILLAGE.map((building) => ({
+    baseY: (building.y + building.h) * TILE,
+    draw: () => {
+      drawBuilding(ctx, building, TILE, options.time)
+    },
+  }))
+
+  const player = options.player
+  if (player) {
+    drawables.push({
+      baseY: player.y,
+      draw: () => {
+        drawPlayer(ctx, player.x, player.y, player.facing, options.time, player.moving)
+      },
+    })
   }
 
+  drawables.sort((first, second) => first.baseY - second.baseY)
+  for (const drawable of drawables) drawable.draw()
+
   if (options.hoveredId !== null) {
-    const hovered = ordered.find((building) => building.id === options.hoveredId)
+    const hovered = START_VILLAGE.find((building) => building.id === options.hoveredId)
     if (hovered) drawHover(ctx, hovered)
   }
 }

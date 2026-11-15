@@ -8,10 +8,12 @@
 
 import { migrate, MigrationError, type SaveRecord } from './migrations'
 import type { Equipment, Inventory, Stack } from './inventory'
+import type { Facing, Point } from './movement'
 import { DAYS_PER_YEAR } from './time'
 import {
   PLAYER_CAPACITY_KG,
   SAVE_VERSION,
+  SPAWN_POINT,
   VILLAGE_STORAGE_KG,
   type ClockState,
   type FlagValue,
@@ -40,6 +42,23 @@ function asInt(value: unknown, fallback: number, min: number, max: number): numb
 
 function asString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback
+}
+
+function asNumber(value: unknown, fallback: number, min: number, max: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
+  return Math.min(Math.max(value, min), max)
+}
+
+function normalizePosition(value: unknown): Point {
+  const source = asRecord(value)
+  return {
+    x: asNumber(source['x'], SPAWN_POINT.x, -10_000, 100_000),
+    y: asNumber(source['y'], SPAWN_POINT.y, -10_000, 100_000),
+  }
+}
+
+function normalizeFacing(value: unknown): Facing {
+  return value === 'up' || value === 'down' || value === 'left' || value === 'right' ? value : 'down'
 }
 
 function asFlagValue(value: unknown): FlagValue | undefined {
@@ -138,6 +157,8 @@ export function normalizeSave(data: SaveRecord): GameState {
     clock: normalizeClock(data['clock']),
     player: {
       name: asString(player['name']),
+      position: normalizePosition(player['position']),
+      facing: normalizeFacing(player['facing']),
       inventory: normalizeInventory(player['inventory'], PLAYER_CAPACITY_KG),
       equipment: normalizeEquipment(player['equipment']),
     },

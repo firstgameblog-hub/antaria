@@ -38,6 +38,16 @@ const migrations: Record<number, Migration> = {
       storage: { capacityKg: 1_000_000, stacks: [] },
     },
   }),
+  // 2 → 3: герой получил место на сцене и направление взгляда (5.2).
+  2: (data) => ({
+    ...data,
+    version: 3,
+    player: {
+      ...asRecord(data['player']),
+      position: { x: 640, y: 608 },
+      facing: 'down',
+    },
+  }),
 }
 
 export class MigrationError extends Error {}
