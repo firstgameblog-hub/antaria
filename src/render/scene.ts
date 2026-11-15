@@ -517,8 +517,22 @@ export interface SceneOptions {
   moveTarget: Point | null
 }
 
-function drawMoveTarget(ctx: CanvasRenderingContext2D, point: Point, time: number): void {
-  const pulse = 0.6 + Math.sin(time / 260) * 0.2
+interface SceneDrawable {
+  baseY: number
+  bounds: Rect
+  draw: () => void
+}
+
+function intersects(first: Rect, second: Rect): boolean {
+  return (
+    first.x < second.x + second.w &&
+    first.x + first.w > second.x &&
+    first.y < second.y + second.h &&
+    first.y + first.h > second.y
+  )
+}
+
+function drawMoveTarget(ctx: CanvasRenderingContext2D, point: Point, time: number): void {  const pulse = 0.6 + Math.sin(time / 260) * 0.2
   ctx.save()
   ctx.strokeStyle = `rgba(138, 90, 43, ${0.55 * pulse + 0.2})`
   ctx.lineWidth = 1.5
@@ -586,10 +600,16 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
 
   if (options.moveTarget) drawMoveTarget(ctx, options.moveTarget, options.time)
 
-  const drawables: Array<{ baseY: number; draw: () => void }> = START_VILLAGE.filter(
+  const drawables: SceneDrawable[] = START_VILLAGE.filter(
     (building) => building.kind !== 'field',
   ).map((building) => ({
     baseY: (building.y + building.h) * TILE,
+    bounds: {
+      x: building.x * TILE,
+      y: building.y * TILE,
+      w: building.w * TILE,
+      h: building.h * TILE,
+    },
     draw: () => {
       drawBuilding(ctx, building, TILE, options.time)
     },
@@ -598,6 +618,12 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
   for (const prop of VILLAGE_PROPS) {
     drawables.push({
       baseY: (prop.y + prop.h) * TILE,
+      bounds: {
+        x: prop.x * TILE,
+        y: prop.y * TILE,
+        w: prop.w * TILE,
+        h: prop.h * TILE,
+      },
       draw: () => {
         drawProp(ctx, prop, TILE)
       },
@@ -605,9 +631,14 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
   }
 
   const player = options.player
+  const playerBounds: Rect | null = player
+    ? { x: player.x - 8, y: player.y - 32, w: 16, h: 32 }
+    : null
+
   if (player) {
     drawables.push({
       baseY: player.y,
+      bounds: playerBounds ?? { x: player.x - 8, y: player.y - 32, w: 16, h: 32 },
       draw: () => {
         drawPlayer(ctx, player.x, player.y, player.facing, options.time, player.moving)
       },
@@ -616,6 +647,20 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
 
   drawables.sort((first, second) => first.baseY - second.baseY)
   for (const drawable of drawables) drawable.draw()
+
+  // Если герой закрыт высоким предметом или домом — показываем силуэт поверх.
+  if (player && playerBounds) {
+    const occluded = drawables.some(
+      (drawable) => drawable.baseY > player.y && intersects(drawable.bounds, playerBounds),
+    )
+
+    if (occluded) {
+      ctx.save()
+      ctx.globalAlpha = 0.5
+      drawPlayer(ctx, player.x, player.y, player.facing, options.time, player.moving)
+      ctx.restore()
+    }
+  }
 
   if (options.hoveredId !== null) {
     const hovered = START_VILLAGE.find((building) => building.id === options.hoveredId)
