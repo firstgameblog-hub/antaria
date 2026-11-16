@@ -164,6 +164,17 @@ function normalizeHealth(value: unknown): { current: number; max: number } {
   return { current, max }
 }
 
+function normalizeBuildings(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+
+  const result: string[] = []
+  for (const entry of value) {
+    if (typeof entry !== 'string' || entry === '') continue
+    if (!result.includes(entry)) result.push(entry)
+  }
+  return result
+}
+
 function normalizeStory(value: unknown): StoryProgress | null {
   if (!isRecord(value)) return null
 
@@ -212,6 +223,7 @@ export function normalizeSave(data: SaveRecord): GameState {
       trader: {
         trust: asInt(asRecord(asRecord(data['world'])['trader'])['trust'], 0, 0, 100),
       },
+      buildings: normalizeBuildings(asRecord(data['world'])['buildings']),
     },
     flags: normalizeFlags(data['flags']),
     journal: normalizeJournal(data['journal']),

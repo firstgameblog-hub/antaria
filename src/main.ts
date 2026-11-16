@@ -8,6 +8,9 @@ import { ROOF_THREAD, threadById, type ThreadDef } from './content/threads'
 import { openRequestScreen, closeRequestScreen } from './ui/requestScreen'
 import { openVillageScreen, closeVillageScreen } from './ui/villageScreen'
 import { nextStage, stageById } from './content/stages'
+import { STRUCTURES, structureById } from './content/buildings'
+import type { StructureDef } from './data/buildings'
+import { openBuildScreen, closeBuildScreen } from './ui/buildScreen'
 import { canCraft, craftRecipe } from './core/crafting'
 import { addItems, countOf, removeItems, transfer, weightOf } from './core/inventory'
 import { describeRestore, isReady, markGathered, minutesUntilReady } from './core/gathering'
@@ -23,7 +26,15 @@ import { sceneById } from './content/story'
 import type { StoryScene } from './data/story'
 import { buy, completeOrder, sell } from './core/trade'
 import { Camera } from './render/camera'
-import { OBSTACLES, PLAYER_RADIUS, TILE, VILLAGE_WALKABLE, WORLD, drawVillage } from './render/scene'
+import {
+  OBSTACLES,
+  PLAYER_RADIUS,
+  TILE,
+  VILLAGE_WALKABLE,
+  WORLD,
+  buildObstacles,
+  drawVillage,
+} from './render/scene'
 import { createHud } from './ui/hud'
 import { openSaveScreen } from './ui/saveScreen'
 import { openCraftScreen } from './ui/craftScreen'
@@ -92,6 +103,7 @@ let hoveredId: string | null = null
 let hoveredNodeId: string | null = null
 let hoveredNpcId: string | null = null
 let hoveredSpotId: string | null = null
+let hoveredPlotId: string | null = null
 let pendingNodeId: string | null = null
 let pendingNpcId: string | null = null
 let pixelRatio = 1
@@ -105,6 +117,11 @@ let storyOpen = false
 let audioGreeted = false
 let lastFireDistance = -1
 let combat: CombatState | null = null
+let obstacles: ReturnType<typeof buildObstacles> = buildObstacles([])
+
+function refreshObstacles(): void {
+  obstacles = buildObstacles(state.world.buildings)
+}
 
 const pressed = new Set<string>()
 
@@ -491,6 +508,7 @@ function openSaves(): void {
     onLoad: (loaded) => {
       state = loaded
       ensureFreePosition()
+      refreshObstacles()
       statusNote = ''
       actionNote = null
       nightNote = null
@@ -501,6 +519,7 @@ function openSaves(): void {
     },
     onNewGame: () => {
       state = createInitialState()
+      refreshObstacles()
       moveTarget = null
       pendingNodeId = null
       pendingNpcId = null
@@ -561,7 +580,7 @@ function updateMovement(dt: number): boolean {
 
   if (delta.x === 0 && delta.y === 0) return false
 
-  const next = movePlayer(position, delta, PLAYER_RADIUS, OBSTACLES, VILLAGE_WALKABLE)
+  const next = movePlayer(position, delta, PLAYER_RADIUS, obstacles, VILLAGE_WALKABLE)
 
   if (next.x === position.x && next.y === position.y) {
     // Упёрлись в стену — цель больше не имеет смысла.
@@ -671,6 +690,8 @@ function frame(time: number): void {
   const hoveredSpotDef =
     hoveredSpotId === null ? undefined : HUNT_SPOTS.find((spot) => spot.id === hoveredSpotId)
 
+  const hoveredPlotDef = hoveredPlotId === null ? undefined : structureById(hoveredPlotId)
+
   const sceneSpots = HUNT_SPOTS.map((spot) => ({
     id: spot.id,
     x: spot.x,
@@ -696,7 +717,13 @@ function frame(time: number): void {
             const npc = activeNpcs().find((candidate) => candidate.id === hoveredNpcId)
             return npc ? { x: npc.x, y: npc.y, label: npc.label } : null
           })()
-        : null
+        : hoveredPlotDef
+          ? {
+              x: (hoveredPlotDef.x + hoveredPlotDef.w / 2) * TILE,
+              y: (hoveredPlotDef.y + hoveredPlotDef.h) * TILE,
+              label: `${hoveredPlotDef.name} · участок`,
+            }
+          : null
 
   const activeGather = gathering
   const gatherNode = activeGather
@@ -735,6 +762,7 @@ function frame(time: number): void {
     spots: sceneSpots,
     nearby,
     stageId: state.village.stageId,
+    buildings: state.world.buildings,
     drips:
       state.flags[`${ROOF_THREAD.id}.done`] === true ? [] : [{ x: ROOF_THREAD.drip.x, y: ROOF_THREAD.drip.y }],
     hoveredLabel,
@@ -874,8 +902,56 @@ function openThread(thread: ThreadDef): void {
   })
 }
 
-function spotAt(worldX: number, worldY: number): HuntSpot | null {
-  let closest: HuntSpot | null = null
+function plotAt(worldX: number, worldY: number): StructureDef | null {
+  for (const structure of STRUCTURES) {
+    if (state.world.buildings.includes(structure.id)) continue
+
+    const x = structure.x * TILE
+    const y = structure.y * TILE
+    const w = structure.w * TILE
+    const h = structure.h * TILE
+
+    if (worldX >= x && worldX <= x + w && worldY >= y && worldY <= y + h) return structure
+  }
+
+  return null
+}
+
+function openBuild(structure: StructureDef): void {
+  openBuildScreen({
+    name: structure.name,
+    description: structure.description,
+    costs: structure.cost.map((cost) => ({
+      label: itemName(cost.itemId),
+      have: countOf(state.village.storage, cost.itemId),
+      need: cost.count,
+    })),
+    minutes: structure.minutes,
+    onBuild: () => {
+      const missing = structure.cost.some(
+        (cost) => countOf(state.village.storage, cost.itemId) < cost.count,
+      )
+      if (missing) return 'На складе не хватает материалов'
+
+      for (const cost of structure.cost) {
+        removeItems(state.village.storage, cost.itemId, cost.count)
+      }
+
+      state.world.buildings.push(structure.id)
+      state.clock = addMinutes(state.clock, structure.minutes).clock
+      addJournal(structure.journal)
+      refreshObstacles()
+      persist()
+      updateHud()
+      flash(`Построено: ${structure.name}`, 5000)
+      closeBuildScreen()
+      return ''
+    },
+    onClose: () => undefined,
+  })
+}
+
+function spotAt(worldX: number, worldY: number): HuntSpot | null {  let closest: HuntSpot | null = null
   let closestDistance = 22
 
   for (const spot of HUNT_SPOTS) {
@@ -1019,14 +1095,22 @@ function updateHover(event: PointerEvent): void {
   const npc = npcAt(world.x, world.y)
   const spot = npc === null ? spotAt(world.x, world.y) : null
   const node = npc === null && spot === null ? nodeAt(world.x, world.y) : null
+  const plot =
+    npc === null && spot === null && node === null ? plotAt(world.x, world.y) : null
 
   hoveredNpcId = npc?.id ?? null
   hoveredSpotId = spot?.id ?? null
   hoveredNodeId = node?.id ?? null
-  hoveredId = npc === null && spot === null && node === null ? buildingAt(world.x, world.y) : null
+  hoveredPlotId = plot?.id ?? null
+  hoveredId =
+    npc === null && spot === null && node === null && plot === null
+      ? buildingAt(world.x, world.y)
+      : null
 
   canvas.style.cursor =
-    npc !== null || spot !== null || node !== null || hoveredId !== null ? 'pointer' : 'default'
+    npc !== null || spot !== null || node !== null || plot !== null || hoveredId !== null
+      ? 'pointer'
+      : 'default'
 }
 
 // Указатель: короткий тап — идти, перетаскивание — сдвиг, два пальца — масштаб (4.2.2, 5.2).
@@ -1118,8 +1202,15 @@ function endPointer(event: PointerEvent): void {
     const npc = npcAt(world.x, world.y)
     const spot = npc === null ? spotAt(world.x, world.y) : null
     const node = npc === null && spot === null ? nodeAt(world.x, world.y) : null
+    const plot =
+      npc === null && spot === null && node === null ? plotAt(world.x, world.y) : null
 
     gathering = null
+
+    if (plot) {
+      openBuild(plot)
+      return
+    }
 
     if (spot) {
       const spotDistance = distance(state.player.position, { x: spot.x, y: spot.y })
@@ -1226,6 +1317,7 @@ globalThis.addEventListener('pagehide', () => {
 
 state = loadState()
 ensureFreePosition()
+refreshObstacles()
 resize()
 camera.centerOn(state.player.position.x, state.player.position.y)
 updateHud()
@@ -1246,6 +1338,7 @@ if (import.meta.env.DEV) {
       nextDay: () => sleep(),
       reset: () => {
         state = createInitialState()
+        refreshObstacles()
         moveTarget = null
         camera.centerOn(state.player.position.x, state.player.position.y)
         persist()
@@ -1301,6 +1394,7 @@ if (import.meta.env.DEV) {
       },
       fireLevel: () => ambience.getFireLevel(),
       fireDistance: () => lastFireDistance,
+      obstacleCount: () => obstacles.length,
       ambush: () => startAmbush(),
       get ambience() {
         return ambience
@@ -1312,6 +1406,7 @@ if (import.meta.env.DEV) {
       load: () => {
         state = loadState()
         ensureFreePosition()
+        refreshObstacles()
         camera.centerOn(state.player.position.x, state.player.position.y)
         updateHud()
         return state

@@ -4,6 +4,8 @@
  */
 
 import { SCENE_TILES, START_VILLAGE, VILLAGE_PROPS, type PlacedProp } from '../content/scene'
+import { STRUCTURES } from '../content/buildings'
+import { drawPlot, drawStructure } from './structures'
 import type { NodeKind } from '../data/gathering'
 import type { Facing, Point, Rect } from '../core/movement'
 import { drawBuilding } from './buildings'
@@ -540,6 +542,17 @@ export interface SceneSpot {
   ready: boolean
 }
 
+export function buildObstacles(built: readonly string[]): Rect[] {
+  const extra = STRUCTURES.filter((structure) => built.includes(structure.id)).map((structure) => ({
+    x: structure.x * TILE,
+    y: structure.y * TILE,
+    w: structure.w * TILE,
+    h: structure.h * TILE,
+  }))
+
+  return [...OBSTACLES, ...extra]
+}
+
 export interface SceneOptions {
   time: number
   showGrid: boolean
@@ -552,6 +565,7 @@ export interface SceneOptions {
   drips: readonly SceneDrip[]
   nearby: readonly Point[]
   stageId: string
+  buildings: readonly string[]
   hoveredLabel: { x: number; y: number; label: string } | null
   gatherProgress: { x: number; y: number; value: number } | null
 }
@@ -722,6 +736,18 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
     drawNearby(ctx, point, options.time)
   }
 
+  // Пустые участки под будущие постройки — на земле, без глубины.
+  for (const structure of STRUCTURES) {
+    if (options.buildings.includes(structure.id)) continue
+    drawPlot(
+      ctx,
+      structure.x * TILE,
+      structure.y * TILE,
+      structure.w * TILE,
+      structure.h * TILE,
+    )
+  }
+
   // Поля — плоская земля: рисуются всегда под всем, иначе герой «проваливается» под них
   for (const building of START_VILLAGE) {
     if (building.kind === 'field') {
@@ -791,6 +817,31 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
       bounds: { x: spot.x - 18, y: spot.y - 10, w: 36, h: 14 },
       draw: () => {
         drawTracks(ctx, spot.x, spot.y, spot.ready)
+      },
+    })
+  }
+
+  for (const structure of STRUCTURES) {
+    if (!options.buildings.includes(structure.id)) continue
+
+    drawables.push({
+      baseY: (structure.y + structure.h) * TILE,
+      bounds: {
+        x: structure.x * TILE,
+        y: structure.y * TILE,
+        w: structure.w * TILE,
+        h: structure.h * TILE,
+      },
+      draw: () => {
+        drawStructure(
+          ctx,
+          structure.kind,
+          structure.x * TILE,
+          structure.y * TILE,
+          structure.w * TILE,
+          structure.h * TILE,
+          options.time,
+        )
       },
     })
   }
