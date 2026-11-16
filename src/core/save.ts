@@ -85,11 +85,19 @@ function normalizeJournal(value: unknown): JournalEntry[] {
     if (!isRecord(raw)) continue
     const text = asString(raw['text']).trim()
     if (text === '') continue
-    entries.push({
+
+    const entry: JournalEntry = {
       year: asInt(raw['year'], 1, 1, 9999),
       day: asInt(raw['day'], 1, 1, 360),
       text,
-    })
+    }
+
+    const minutes = raw['minutes']
+    if (typeof minutes === 'number' && Number.isFinite(minutes)) {
+      entry.minutes = asInt(minutes, 0, 0, 24 * 60 - 1)
+    }
+
+    entries.push(entry)
   }
   return entries
 }

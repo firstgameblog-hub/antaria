@@ -160,7 +160,12 @@ function persist(): void {
 /** Запись в дневник-хронику (9.4), без повторов. */
 function addJournal(text: string): void {
   if (state.journal.some((entry) => entry.text === text)) return
-  state.journal.push({ year: state.clock.year, day: state.clock.day, text })
+  state.journal.push({
+    year: state.clock.year,
+    day: state.clock.day,
+    minutes: state.clock.minutes,
+    text,
+  })
 }
 
 function recordJournal(scene: StoryScene, beat: number): void {

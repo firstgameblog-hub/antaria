@@ -6,7 +6,7 @@
  */
 
 import type { JournalEntry } from '../core/state'
-import { formatDate } from '../core/time'
+import { formatDate, formatTime } from '../core/time'
 import { escapeHtml } from './html'
 
 export interface JournalScreenOptions {
@@ -44,6 +44,17 @@ export function closeJournalScreen(): void {
   options = null
 }
 
+function renderEntry(entry: JournalEntry): string {
+  const time = entry.minutes === undefined ? '' : formatTime(entry.minutes)
+
+  return `
+    <div class="journal__entry">
+      <span class="journal__time">${time === '' ? '—' : time}</span>
+      <span class="journal__text">${escapeHtml(entry.text)}</span>
+    </div>
+  `
+}
+
 function render(): void {
   if (!overlay || !options) return
 
@@ -64,9 +75,7 @@ function render(): void {
                   (chapter) => `
               <section class="journal__chapter">
                 <h3 class="journal__date">${escapeHtml(chapter.date)}</h3>
-                ${chapter.items
-                  .map((entry) => `<p class="journal__entry">${escapeHtml(entry.text)}</p>`)
-                  .join('')}
+                ${chapter.items.map((entry) => renderEntry(entry)).join('')}
               </section>`,
                 )
                 .join('')

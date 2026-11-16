@@ -49,6 +49,8 @@ export type Flags = Record<string, FlagValue>
 export interface JournalEntry {
   year: number
   day: number
+  /** Час и минуты события. У старых записей может отсутствовать. */
+  minutes?: number
   text: string
 }
 
