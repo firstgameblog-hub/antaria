@@ -335,6 +335,49 @@ body {
   border-top: 1px solid rgba(43, 33, 24, 0.15);
 }
 
+/* ---------- Хроника ---------- */
+
+.journal {
+  width: min(40rem, 100%);
+}
+
+.journal__body {
+  padding: 0.5rem 1.6rem 1.8rem;
+  overflow-y: auto;
+}
+
+.journal__chapter {
+  margin-top: 1.4rem;
+}
+
+.journal__chapter:first-child {
+  margin-top: 0.6rem;
+}
+
+.journal__date {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.journal__entry {
+  margin: 0 0 0.8rem;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  line-height: 1.7;
+}
+
+.journal__empty {
+  margin: 1.5rem 0;
+  font-style: italic;
+  opacity: 0.55;
+}
+
 /* ---------- Сцена (книга) ---------- */
 
 .story-overlay {

@@ -21,6 +21,7 @@ import { openSaveScreen } from './ui/saveScreen'
 import { openCraftScreen } from './ui/craftScreen'
 import { openTradeScreen } from './ui/tradeScreen'
 import { openStoryScreen } from './ui/storyScreen'
+import { openJournalScreen } from './ui/journalScreen'
 import { stageLabel } from './ui/labels'
 import { START_VILLAGE } from './content/scene'
 
@@ -54,6 +55,7 @@ const hud = createHud({
   onSleep: () => sleep(),
   onSaves: () => openSaves(),
   onCraft: () => openCraft(),
+  onJournal: () => openJournal(),
 })
 app.append(hud.element)
 
@@ -156,12 +158,18 @@ function persist(): void {
 }
 
 /** Запись в дневник-хронику (9.4), без повторов. */
+function addJournal(text: string): void {
+  if (state.journal.some((entry) => entry.text === text)) return
+  state.journal.push({ year: state.clock.year, day: state.clock.day, text })
+}
+
 function recordJournal(scene: StoryScene, beat: number): void {
   const text = scene.beats[beat]?.journal
-  if (!text) return
-  if (state.journal.some((entry) => entry.text === text)) return
+  if (text) addJournal(text)
+}
 
-  state.journal.push({ year: state.clock.year, day: state.clock.day, text })
+function openJournal(): void {
+  openJournalScreen({ getEntries: () => state.journal })
 }
 
 function startStory(sceneId: string, startBeat = 0): void {
@@ -211,6 +219,13 @@ function openCraft(): void {
 
       const result = craftRecipe(state, recipe, ITEM_BY_ID)
       if (!result.ok) return result.reason
+
+      if (state.flags['journal.firstCraft'] !== true) {
+        state.flags['journal.firstCraft'] = true
+        addJournal(
+          `Первое, что я сделал здесь своими руками, — ${itemName(recipe.output.itemId).toLowerCase()}.`,
+        )
+      }
 
       persist()
       updateHud()
@@ -444,6 +459,11 @@ function openTrade(): void {
       const result = sell(state, itemId, 1, ITEM_BY_ID)
       if (!result.ok) return result.reason
 
+      if (state.flags['journal.firstTrade'] !== true) {
+        state.flags['journal.firstTrade'] = true
+        addJournal('Корней взял у меня первый товар и отсчитал монету. Здесь это ещё что-то значит.')
+      }
+
       persist()
       updateHud()
       return result.message
@@ -451,6 +471,11 @@ function openTrade(): void {
     onOrder: () => {
       const result = completeOrder(state, TRADER.order, ITEM_BY_ID)
       if (!result.ok) return result.reason
+
+      if (state.flags['journal.firstOrder'] !== true) {
+        state.flags['journal.firstOrder'] = true
+        addJournal('Впервые выполнил чью-то просьбу. Не за награду — потому что обещал.')
+      }
 
       persist()
       updateHud()

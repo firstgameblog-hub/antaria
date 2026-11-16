@@ -35,6 +35,7 @@ export interface HudHandlers {
   onSleep: () => void
   onSaves: () => void
   onCraft: () => void
+  onJournal: () => void
 }
 
 export interface Hud {
@@ -96,6 +97,7 @@ export function createHud(handlers: HudHandlers): Hud {
       <div class="hud__row hud__row--bars" data-ref="statuses" hidden></div>
       <p class="hud__note" data-ref="note" hidden></p>
       <div class="hud__actions">
+        <button class="hud__button" data-action="journal">Хроника</button>
         <button class="hud__button" data-action="craft">Ремесло</button>
         <button class="hud__button" data-action="sleep">Лечь спать</button>
         <button class="hud__button" data-action="saves">Сохранения</button>
@@ -118,6 +120,9 @@ export function createHud(handlers: HudHandlers): Hud {
   })
   element.querySelector<HTMLButtonElement>('[data-action="craft"]')?.addEventListener('click', () => {
     handlers.onCraft()
+  })
+  element.querySelector<HTMLButtonElement>('[data-action="journal"]')?.addEventListener('click', () => {
+    handlers.onJournal()
   })
 
   return {
