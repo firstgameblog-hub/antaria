@@ -379,7 +379,8 @@ function openCraft(): void {
   })
 }
 
-function openSaves(): void {  openSaveScreen({
+function openSaves(): void {
+  openSaveScreen({
     getState: () => state,
     onLoad: (loaded) => {
       state = loaded
@@ -391,6 +392,20 @@ function openSaves(): void {  openSaveScreen({
       camera.centerOn(state.player.position.x, state.player.position.y)
       persist()
       updateHud()
+    },
+    onNewGame: () => {
+      state = createInitialState()
+      moveTarget = null
+      pendingNodeId = null
+      pendingNpcId = null
+      combat = null
+      statusNote = ''
+      actionNote = null
+      nightNote = null
+      persist()
+      updateHud()
+      camera.centerOn(state.player.position.x, state.player.position.y)
+      startStory('prologue')
     },
   })
 }

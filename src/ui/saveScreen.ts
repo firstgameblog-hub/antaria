@@ -21,6 +21,7 @@ import { downloadSave, readSaveFile } from './saveFile'
 export interface SaveScreenOptions {
   getState: () => GameState
   onLoad: (state: GameState) => void
+  onNewGame: () => void
 }
 
 const SLOT_LABELS: Record<SaveSlotId, string> = {
@@ -120,6 +121,7 @@ function renderScreen(): void {
       <footer class="screen__foot">
         <button data-action="export">Выгрузить в файл</button>
         <button data-action="import">Загрузить из файла</button>
+        <button class="screen__new" data-action="new">Начать заново</button>
         <input class="screen__file" type="file" accept="application/json,.json" hidden />
       </footer>
     </div>
@@ -179,6 +181,14 @@ function handleAction(action: string | undefined, slot: string | undefined): voi
 
   if (action === 'import') {
     overlay?.querySelector<HTMLInputElement>('input[type=file]')?.click()
+    return
+  }
+
+  if (action === 'new') {
+    if (!globalThis.confirm('Начать заново? Текущая деревня и хроника пропадут.')) return
+    const start = options.onNewGame
+    closeSaveScreen()
+    start()
     return
   }
 
