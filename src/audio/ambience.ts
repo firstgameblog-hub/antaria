@@ -100,7 +100,7 @@ class Ambience {
     filter.frequency.value = 220
 
     const gain = ctx.createGain()
-    gain.gain.value = 0.12
+    gain.gain.value = 0.08
 
     source.connect(filter).connect(gain).connect(this.fireGain ?? buses.ambience)
     source.start()
@@ -132,10 +132,10 @@ class Ambience {
     air.Q.value = 0.7
 
     const lowGain = ctx.createGain()
-    lowGain.gain.value = 0.1
+    lowGain.gain.value = 0.018
 
     const airGain = ctx.createGain()
-    airGain.gain.value = 0.032
+    airGain.gain.value = 0.006
 
     source.connect(low).connect(lowGain).connect(ambience)
     source.connect(air).connect(airGain).connect(ambience)
@@ -145,14 +145,14 @@ class Ambience {
     const gust = ctx.createOscillator()
     gust.frequency.value = 0.07
     const gustDepth = ctx.createGain()
-    gustDepth.gain.value = 0.05
+    gustDepth.gain.value = 0.009
     gust.connect(gustDepth).connect(lowGain.gain)
     gust.start()
 
     const gustAir = ctx.createOscillator()
     gustAir.frequency.value = 0.11
     const gustAirDepth = ctx.createGain()
-    gustAirDepth.gain.value = 0.018
+    gustAirDepth.gain.value = 0.003
     gustAir.connect(gustAirDepth).connect(airGain.gain)
     gustAir.start()
 
