@@ -1,8 +1,9 @@
 import './styles.css'
 import { createInitialState, SPAWN_POINT, type GameState } from './core/state'
 import { createCombat, resolveTurn, type CombatState } from './core/combat'
-import { WOLF } from './content/enemies'
-import type { CombatAction } from './data/combat'
+import { WOLF, DEER } from './content/enemies'
+import type { CombatAction, EnemyDef } from './data/combat'
+import { HUNT_SPOTS, type HuntSpot } from './content/hunting'
 import { canCraft, craftRecipe } from './core/crafting'
 import { addItems, weightOf } from './core/inventory'
 import { describeRestore, isReady, markGathered, minutesUntilReady } from './core/gathering'
@@ -84,6 +85,7 @@ let showGrid = true
 let hoveredId: string | null = null
 let hoveredNodeId: string | null = null
 let hoveredNpcId: string | null = null
+let hoveredSpotId: string | null = null
 let pendingNodeId: string | null = null
 let pendingNpcId: string | null = null
 let pixelRatio = 1
@@ -193,10 +195,10 @@ function playerCombatStats(): { maxHp: number; minDamage: number; maxDamage: num
   }
 }
 
-function startAmbush(): void {
+function beginCombat(enemy: EnemyDef, options: { playerFirst?: boolean } = {}): void {
   if (combat) return
 
-  combat = createCombat(WOLF, state.player.health.current, playerCombatStats())
+  combat = createCombat(enemy, state.player.health.current, playerCombatStats(), options)
   ambience.setDucked(true)
 
   openCombatScreen({
@@ -208,6 +210,23 @@ function startAmbush(): void {
     },
     onFinish: () => finishCombat(),
   })
+}
+
+function startAmbush(): void {
+  beginCombat(WOLF)
+}
+
+function startHunt(spot: HuntSpot): void {
+  const now = absoluteMinutes(state.clock)
+
+  if (!isReady(state.world.nodes, spot.id, now)) {
+    flash(`${spot.label}: ${describeRestore(minutesUntilReady(state.world.nodes, spot.id, now))}.`)
+    return
+  }
+
+  markGathered(state.world.nodes, spot.id, now, spot.restoreMinutes)
+  persist()
+  beginCombat(DEER, { playerFirst: true })
 }
 
 function finishCombat(): void {
@@ -224,7 +243,17 @@ function finishCombat(): void {
       }
 
       state.player.health.current = Math.max(1, result.playerHp)
-      addJournal('Волк на тропе у хвороста. Я остался стоять, он — нет.')
+
+      addJournal(
+        result.enemy.id === 'roe_deer'
+          ? 'Вышел по следам на поляну и взял косулю. Мясо будет.'
+          : 'Волк на тропе у хвороста. Я остался стоять, он — нет.',
+      )
+    }
+
+    if (result.outcome === 'escaped') {
+      state.player.health.current = Math.max(1, result.playerHp)
+      addJournal('Зверь ушёл. Следы остались, но добычи нет.')
     }
 
     if (result.outcome === 'defeat') {
@@ -514,11 +543,29 @@ function frame(time: number): void {
       ? undefined
       : GATHERING_NODES.find((node) => node.id === hoveredNodeId)
 
+  const hoveredSpotDef =
+    hoveredSpotId === null ? undefined : HUNT_SPOTS.find((spot) => spot.id === hoveredSpotId)
+
+  const sceneSpots = HUNT_SPOTS.map((spot) => ({
+    id: spot.id,
+    x: spot.x,
+    y: spot.y,
+    ready: isReady(state.world.nodes, spot.id, now),
+  }))
+
   const hoveredLabel = hoveredDef
     ? { x: hoveredDef.x, y: hoveredDef.y, label: nodeLabel(hoveredDef, now) }
-    : hoveredNpcId !== null
-      ? { x: TRADER.x, y: TRADER.y, label: `${TRADER.name} · ${TRADER.title}` }
-      : null
+    : hoveredSpotDef
+      ? {
+          x: hoveredSpotDef.x,
+          y: hoveredSpotDef.y,
+          label: isReady(state.world.nodes, hoveredSpotDef.id, now)
+            ? hoveredSpotDef.label
+            : `${hoveredSpotDef.label} · ${describeRestore(minutesUntilReady(state.world.nodes, hoveredSpotDef.id, now))}`,
+        }
+      : hoveredNpcId !== null
+        ? { x: TRADER.x, y: TRADER.y, label: `${TRADER.name} · ${TRADER.title}` }
+        : null
 
   const activeGather = gathering
   const gatherNode = activeGather
@@ -548,6 +595,7 @@ function frame(time: number): void {
     moveTarget,
     nodes: sceneNodes,
     npcs: [{ id: TRADER.id, x: TRADER.x, y: TRADER.y, facing: TRADER.facing }],
+    spots: sceneSpots,
     hoveredLabel,
     gatherProgress,
     player: {
@@ -576,6 +624,21 @@ function buildingAt(worldX: number, worldY: number): string | null {
 
 function npcAt(worldX: number, worldY: number): string | null {
   return Math.hypot(worldX - TRADER.x, worldY - (TRADER.y - 14)) <= 26 ? TRADER.id : null
+}
+
+function spotAt(worldX: number, worldY: number): HuntSpot | null {
+  let closest: HuntSpot | null = null
+  let closestDistance = 22
+
+  for (const spot of HUNT_SPOTS) {
+    const d = Math.hypot(worldX - spot.x, worldY - spot.y)
+    if (d <= closestDistance) {
+      closest = spot
+      closestDistance = d
+    }
+  }
+
+  return closest
 }
 
 function openTrade(): void {
@@ -706,13 +769,16 @@ function updateHover(event: PointerEvent): void {
   const world = camera.toWorld(event.clientX - rect.left, event.clientY - rect.top)
 
   const npc = npcAt(world.x, world.y)
-  const node = npc === null ? nodeAt(world.x, world.y) : null
+  const spot = npc === null ? spotAt(world.x, world.y) : null
+  const node = npc === null && spot === null ? nodeAt(world.x, world.y) : null
 
   hoveredNpcId = npc
+  hoveredSpotId = spot?.id ?? null
   hoveredNodeId = node?.id ?? null
-  hoveredId = npc === null && node === null ? buildingAt(world.x, world.y) : null
+  hoveredId = npc === null && spot === null && node === null ? buildingAt(world.x, world.y) : null
 
-  canvas.style.cursor = npc !== null || node !== null || hoveredId !== null ? 'pointer' : 'default'
+  canvas.style.cursor =
+    npc !== null || spot !== null || node !== null || hoveredId !== null ? 'pointer' : 'default'
 }
 
 // Указатель: короткий тап — идти, перетаскивание — сдвиг, два пальца — масштаб (4.2.2, 5.2).
@@ -802,9 +868,22 @@ function endPointer(event: PointerEvent): void {
     const rect = canvas.getBoundingClientRect()
     const world = camera.toWorld(event.clientX - rect.left, event.clientY - rect.top)
     const npc = npcAt(world.x, world.y)
-    const node = npc === null ? nodeAt(world.x, world.y) : null
+    const spot = npc === null ? spotAt(world.x, world.y) : null
+    const node = npc === null && spot === null ? nodeAt(world.x, world.y) : null
 
     gathering = null
+
+    if (spot) {
+      const spotDistance = distance(state.player.position, { x: spot.x, y: spot.y })
+      if (spotDistance <= INTERACT_RANGE) {
+        startHunt(spot)
+      } else {
+        pendingNodeId = null
+        moveTarget = { x: spot.x, y: spot.y }
+        followPaused = false
+      }
+      return
+    }
 
     if (npc !== null) {
       const npcDistance = distance(state.player.position, { x: TRADER.x, y: TRADER.y })

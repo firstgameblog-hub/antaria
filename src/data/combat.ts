@@ -15,9 +15,11 @@ export interface EnemyDef {
   initiative: number
   /** Что говорит сцена, когда враг появляется. */
   intro: string
+  /** Раненый зверь может уйти: тогда добычи не будет. */
+  escapesWhenHurt?: boolean
   loot?: readonly EnemyLoot[]
 }
 
 export type CombatAction = 'attack' | 'defend' | 'flee'
 
-export type CombatOutcome = 'victory' | 'defeat' | 'fled'
+export type CombatOutcome = 'victory' | 'defeat' | 'fled' | 'escaped'

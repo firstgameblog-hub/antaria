@@ -7,7 +7,7 @@ import { SCENE_TILES, START_VILLAGE, VILLAGE_PROPS, type PlacedProp } from '../c
 import type { NodeKind } from '../data/gathering'
 import type { Facing, Point, Rect } from '../core/movement'
 import { drawBuilding } from './buildings'
-import { drawGatheringNode } from './nodes'
+import { drawGatheringNode, drawTracks } from './nodes'
 import { drawTrader } from './npc'
 import { PALETTE } from './palette'
 import { drawPlayer } from './player'
@@ -527,6 +527,13 @@ export interface SceneNpc {
   facing: Facing
 }
 
+export interface SceneSpot {
+  id: string
+  x: number
+  y: number
+  ready: boolean
+}
+
 export interface SceneOptions {
   time: number
   showGrid: boolean
@@ -535,6 +542,7 @@ export interface SceneOptions {
   moveTarget: Point | null
   nodes: readonly SceneNode[]
   npcs: readonly SceneNpc[]
+  spots: readonly SceneSpot[]
   hoveredLabel: { x: number; y: number; label: string } | null
   gatherProgress: { x: number; y: number; value: number } | null
 }
@@ -702,6 +710,16 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
       bounds: { x: npc.x - 10, y: npc.y - 32, w: 20, h: 32 },
       draw: () => {
         drawTrader(ctx, npc.x, npc.y, npc.facing, options.time)
+      },
+    })
+  }
+
+  for (const spot of options.spots) {
+    drawables.push({
+      baseY: spot.y,
+      bounds: { x: spot.x - 18, y: spot.y - 10, w: 36, h: 14 },
+      draw: () => {
+        drawTracks(ctx, spot.x, spot.y, spot.ready)
       },
     })
   }

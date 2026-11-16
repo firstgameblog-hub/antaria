@@ -154,3 +154,25 @@ export function drawGatheringNode(
       break
   }
 }
+
+/** Следы зверя: пара отпечатков, уходящих в сторону. */
+export function drawTracks(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  ready: boolean,
+): void {
+  ctx.save()
+  ctx.fillStyle = ready ? 'rgba(84, 66, 46, 0.5)' : 'rgba(84, 66, 46, 0.16)'
+
+  for (let index = 0; index < 4; index += 1) {
+    const offsetX = -13 + index * 9
+    const offsetY = index % 2 === 0 ? -3 : 4
+
+    ctx.beginPath()
+    ctx.ellipse(x + offsetX, y + offsetY, 2.3, 3.4, 0.35, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  ctx.restore()
+}

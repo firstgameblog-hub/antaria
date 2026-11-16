@@ -14,6 +14,8 @@ export interface CombatState {
   playerMaxHp: number
   /** Игрок закрылся — урон по нему в этот ход меньше. */
   defending: boolean
+  /** Охотник бьёт первым: враг отвечает только со второго хода. */
+  playerFirst: boolean
   outcome: CombatOutcome | null
   log: string[]
 }
@@ -39,6 +41,7 @@ export function createCombat(
   enemy: EnemyDef,
   playerHp: number,
   stats: PlayerCombatStats,
+  options: { playerFirst?: boolean } = {},
 ): CombatState {
   return {
     enemy,
@@ -46,6 +49,7 @@ export function createCombat(
     playerHp: Math.max(1, Math.min(playerHp, stats.maxHp)),
     playerMaxHp: stats.maxHp,
     defending: false,
+    playerFirst: options.playerFirst ?? false,
     outcome: null,
     log: [enemy.intro],
   }
@@ -72,7 +76,7 @@ export function resolveTurn(
 
   if (action === 'flee') {
     if (Math.random() < 0.5) {
-      pushLog(state, 'Ты отступаешь в кусты. Волк не преследует.')
+      pushLog(state, `Ты отступаешь. ${state.enemy.name} не преследует.`)
       state.outcome = 'fled'
       return state
     }
@@ -86,11 +90,29 @@ export function resolveTurn(
     pushLog(state, `Ты бьёшь: ${damage} урона.`)
     checkOutcome(state)
     if (state.outcome !== null) return state
+
+    // Раненый зверь может вырваться: тогда добычи не будет.
+    if (
+      state.enemy.escapesWhenHurt === true &&
+      state.enemyHp <= state.enemy.maxHp / 2 &&
+      Math.random() < 0.45
+    ) {
+      pushLog(state, `${state.enemy.name} вырывается и уходит в кусты.`)
+      state.outcome = 'escaped'
+      return state
+    }
   }
 
   if (action === 'defend') {
     state.defending = true
     pushLog(state, 'Ты закрываешься и ждёшь.')
+  }
+
+  // Засада охотника: враг не успевает ответить на первый удар.
+  if (state.playerFirst) {
+    state.playerFirst = false
+    pushLog(state, 'Ты успел первым — враг только разворачивается.')
+    return state
   }
 
   // Ответ врага

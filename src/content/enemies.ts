@@ -21,4 +21,20 @@ export const WOLF: EnemyDef = {
   ],
 }
 
-export const ENEMIES: readonly EnemyDef[] = [WOLF]
+/** Косуля: добыча мяса и шкуры, но раненой часто уходит. */
+export const DEER: EnemyDef = {
+  id: 'roe_deer',
+  name: 'Косуля',
+  maxHp: 10,
+  minDamage: 1,
+  maxDamage: 2,
+  initiative: 0,
+  intro: 'Следы выводят на поляну. Косуля вскидывает голову — ты успеваешь ударить первым.',
+  escapesWhenHurt: true,
+  loot: [
+    { itemId: 'meat', count: 2 },
+    { itemId: 'hide', count: 1, chance: 0.8 },
+  ],
+}
+
+export const ENEMIES: readonly EnemyDef[] = [WOLF, DEER]
