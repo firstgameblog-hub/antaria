@@ -37,4 +37,22 @@ export const DEER: EnemyDef = {
   ],
 }
 
-export const ENEMIES: readonly EnemyDef[] = [WOLF, DEER]
+/** Голодная собака: слабее волка, но пугает внезапностью. */
+export const DOG: EnemyDef = {
+  id: 'hungry_dog',
+  name: 'Голодная собака',
+  maxHp: 9,
+  minDamage: 1,
+  maxDamage: 2,
+  initiative: 1,
+  intro: 'Из-под частокола выбирается тощая собака. Она не лает — только скалится и отходит на шаг, если шагнуть к ней.',
+  loot: [{ itemId: 'meat', count: 1, chance: 0.4 }],
+}
+
+/** Таблица встреч у края деревни: кто выходит на шум. */
+export const WILD_ENCOUNTERS: readonly { enemy: EnemyDef; weight: number }[] = [
+  { enemy: DOG, weight: 3 },
+  { enemy: WOLF, weight: 2 },
+]
+
+export const ENEMIES: readonly EnemyDef[] = [WOLF, DEER, DOG]

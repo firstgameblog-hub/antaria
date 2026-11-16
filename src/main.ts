@@ -1,7 +1,7 @@
 import './styles.css'
 import { createInitialState, SPAWN_POINT, type GameState } from './core/state'
 import { createCombat, resolveTurn, type CombatState } from './core/combat'
-import { WOLF, DEER } from './content/enemies'
+import { WOLF, DEER, WILD_ENCOUNTERS } from './content/enemies'
 import type { CombatAction, EnemyDef } from './data/combat'
 import { HUNT_SPOTS, type HuntSpot } from './content/hunting'
 import { ROOF_THREAD, threadById, type ThreadDef } from './content/threads'
@@ -126,6 +126,8 @@ let storyOpen = false
 let audioGreeted = false
 let lastFireDistance = -1
 let combat: CombatState | null = null
+let danger = 0
+let pendingAmbush = false
 let obstacles: ReturnType<typeof buildObstacles> = buildObstacles([])
 
 function refreshObstacles(): void {
@@ -232,6 +234,9 @@ function sleep(): void {
 
   advanceTime(after - before)
 
+  danger = 0
+  pendingAmbush = false
+
   nightNote = {
     text:
       step.daysPassed > 1
@@ -288,6 +293,37 @@ function startAmbush(): void {
   beginCombat(WOLF)
 }
 
+function pickEncounter(): typeof WOLF {
+  const total = WILD_ENCOUNTERS.reduce((sum, entry) => sum + entry.weight, 0)
+  let roll = Math.random() * total
+
+  for (const entry of WILD_ENCOUNTERS) {
+    roll -= entry.weight
+    if (roll <= 0) return entry.enemy
+  }
+
+  return WILD_ENCOUNTERS[0]?.enemy ?? WOLF
+}
+
+/** Заметность и встреча (6.7–6.9, 8.10): чем больше шумишь, тем вероятнее гость. */
+function tryAmbush(): void {
+  if (pendingAmbush) {
+    pendingAmbush = false
+    danger = 0
+    beginCombat(pickEncounter())
+    return
+  }
+
+  const fromCenter = distance(state.player.position, CAMPFIRE_POINT)
+  danger = Math.min(100, danger + (fromCenter > 320 ? 16 : 10))
+
+  const chance = Math.min(0.5, danger / 200 + (fromCenter > 320 ? 0.05 : 0))
+  if (Math.random() >= chance) return
+
+  pendingAmbush = true
+  flash('В кустах стало тихо. Слишком тихо. Ещё один сбор — и кто-то выйдет.', 6000)
+}
+
 function startHunt(spot: HuntSpot): void {
   const now = absoluteMinutes(state.clock)
 
@@ -304,6 +340,8 @@ function startHunt(spot: HuntSpot): void {
 function finishCombat(): void {
   const result = combat
   combat = null
+  danger = 0
+  pendingAmbush = false
   ambience.setDucked(storyOpen)
 
   if (result) {
@@ -1137,7 +1175,11 @@ function finishGathering(): void {
   if (state.flags['ambush.first'] !== true && node.kind === 'branch') {
     state.flags['ambush.first'] = true
     startAmbush()
+    return
   }
+
+  // Дальше — по заметности: чем больше шумишь, тем вероятнее встреча.
+  tryAmbush()
 }
 
 function updateHover(event: PointerEvent): void {
@@ -1448,6 +1490,10 @@ if (import.meta.env.DEV) {
       fireDistance: () => lastFireDistance,
       obstacleCount: () => obstacles.length,
       ambush: () => startAmbush(),
+      ambushRoll: () => {
+        tryAmbush()
+        return { danger, pending: pendingAmbush, inCombat: combat !== null }
+      },
       get ambience() {
         return ambience
       },
