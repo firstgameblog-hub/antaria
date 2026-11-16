@@ -32,6 +32,15 @@ const PLAYER_SPEED = 135
 const NODE_HOVER_RADIUS = 22
 const INTERACT_RANGE = 46
 
+/** Центр костра: от него считается слышимость огня. */
+const campfireBuilding = START_VILLAGE.find((building) => building.kind === 'campfire')
+const CAMPFIRE_POINT: Point = campfireBuilding
+  ? {
+      x: (campfireBuilding.x + campfireBuilding.w / 2) * TILE,
+      y: (campfireBuilding.y + campfireBuilding.h / 2) * TILE,
+    }
+  : { x: 0, y: 0 }
+
 /** Сколько длится сам сбор. Секунды реального времени — это усилие, а не ожидание. */
 const GATHER_SECONDS: Record<NodeKind, number> = {
   herb: 1.2,
@@ -82,6 +91,7 @@ let gatherSoundTimer = 0
 let stepDistance = 0
 let storyOpen = false
 let audioGreeted = false
+let lastFireDistance = -1
 
 const pressed = new Set<string>()
 
@@ -376,6 +386,13 @@ function frame(time: number): void {
   if (notesChanged) updateHud()
 
   const walking = updateMovement(dt)
+
+  // Костёр слышно только вблизи: громкость считается по расстоянию (4.4.3).
+  const fireDistance = distance(state.player.position, CAMPFIRE_POINT)
+  if (Math.abs(fireDistance - lastFireDistance) > 4) {
+    lastFireDistance = fireDistance
+    ambience.setFireDistance(fireDistance)
+  }
 
   if (gathering !== null) {
     gathering.elapsed += dt
@@ -883,6 +900,11 @@ if (import.meta.env.DEV) {
       playTestSound: () => {
         ensureAudio()
         playCoin()
+      },
+      fireLevel: () => ambience.getFireLevel(),
+      fireDistance: () => lastFireDistance,
+      get ambience() {
+        return ambience
       },
       save: () => {
         persist()

@@ -44,20 +44,52 @@ function crackle(buses: AudioBuses, destination: GainNode): void {
 class Ambience {
   private started = false
   private fireTimer: number | null = null
+  private fireGain: GainNode | null = null
+  private fireBase = 1
 
   start(): void {
     const buses = audio.get()
     if (!buses || this.started) return
     this.started = true
 
+    // Огонь идёт через свою ручку громкости: она зависит от расстояния до героя.
+    const fire = buses.ctx.createGain()
+    fire.gain.value = this.fireBase
+    fire.connect(buses.ambience)
+    this.fireGain = fire
+
     this.startWind(buses)
     this.startFireBody(buses)
     this.scheduleFire()
   }
 
+  /**
+   * Громкость костра по расстоянию (в пикселях мира).
+   * Примерный масштаб: 16 пикселей на метр, слышно до ~24 метров днём.
+   */
+  setFireDistance(distancePx: number): void {
+    const maxDistance = 24 * 16
+    const falloff = Math.max(0, Math.min(1, 1 - distancePx / maxDistance))
+    const level = falloff * falloff * this.fireBase
+
+    const gain = this.fireGain
+    const buses = audio.get()
+    if (!gain || !buses) return
+
+    const now = buses.ctx.currentTime
+    gain.gain.cancelScheduledValues(now)
+    gain.gain.setValueAtTime(gain.gain.value, now)
+    gain.gain.linearRampToValueAtTime(level, now + 0.3)
+  }
+
+  /** Текущая громкость костра: для отладки. */
+  getFireLevel(): number {
+    return this.fireGain?.gain.value ?? 0
+  }
+
   /** Низкое гудение пламени: даёт телу огня то, чего не даёт треск. */
   private startFireBody(buses: AudioBuses): void {
-    const { ctx, noise, ambience } = buses
+    const { ctx, noise } = buses
 
     const source = ctx.createBufferSource()
     source.buffer = noise
@@ -68,9 +100,9 @@ class Ambience {
     filter.frequency.value = 220
 
     const gain = ctx.createGain()
-    gain.gain.value = 0.16
+    gain.gain.value = 0.12
 
-    source.connect(filter).connect(gain).connect(ambience)
+    source.connect(filter).connect(gain).connect(this.fireGain ?? buses.ambience)
     source.start()
 
     const lfo = ctx.createOscillator()
@@ -113,7 +145,7 @@ class Ambience {
     this.fireTimer = globalThis.setTimeout(() => {
       const current = audio.get()
       if (!current) return
-      crackle(current, current.ambience)
+      crackle(current, this.fireGain ?? current.ambience)
       this.scheduleFire()
     }, delay)
   }
