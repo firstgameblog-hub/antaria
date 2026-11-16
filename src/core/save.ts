@@ -157,6 +157,13 @@ function normalizeEquipment(value: unknown): Equipment {  const source = asRecor
   }
 }
 
+function normalizeHealth(value: unknown): { current: number; max: number } {
+  const source = asRecord(value)
+  const max = asInt(source['max'], 30, 1, 10_000)
+  const current = asInt(source['current'], max, 0, max)
+  return { current, max }
+}
+
 function normalizeStory(value: unknown): StoryProgress | null {
   if (!isRecord(value)) return null
 
@@ -191,6 +198,7 @@ export function normalizeSave(data: SaveRecord): GameState {
       position: normalizePosition(player['position']),
       facing: normalizeFacing(player['facing']),
       money: asInt(player['money'], 0, 0, 1_000_000_000),
+      health: normalizeHealth(player['health']),
       inventory: normalizeInventory(player['inventory'], PLAYER_CAPACITY_KG),
       equipment: normalizeEquipment(player['equipment']),
     },

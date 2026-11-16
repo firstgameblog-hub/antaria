@@ -10,7 +10,7 @@ import type { NodeReadyAt } from './gathering'
 import type { Facing, Point } from './movement'
 
 /** Версия формата сохранения. Поднимается при несовместимом изменении структуры. */
-export const SAVE_VERSION = 6
+export const SAVE_VERSION = 7
 
 export interface ClockState {
   /** Год от начала игры. */
@@ -29,6 +29,8 @@ export interface PlayerState {
   facing: Facing
   /** Монеты (6.6). */
   money: number
+  /** Здоровье (3.5.3). */
+  health: { current: number; max: number }
   inventory: Inventory
   equipment: Equipment
 }
@@ -106,6 +108,7 @@ export function createInitialState(now: number = Date.now()): GameState {
       position: { ...SPAWN_POINT },
       facing: 'down',
       money: 15,
+      health: { current: 30, max: 30 },
       inventory: createInventory(PLAYER_CAPACITY_KG),
       equipment: createEquipment(),
     },

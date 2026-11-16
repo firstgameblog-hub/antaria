@@ -453,6 +453,119 @@ body {
   opacity: 0.55;
 }
 
+/* ---------- Бой ---------- */
+
+.combat-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 22;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at 50% 30%, #2a231b 0%, #14100c 100%);
+}
+
+.combat {
+  width: min(34rem, 100%);
+  color: #e8ddc9;
+  text-align: center;
+}
+
+.combat__side {
+  margin-bottom: 0.4rem;
+}
+
+.combat__name {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+}
+
+.combat__hp {
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.55;
+}
+
+.bar-line {
+  display: block;
+  height: 0.5rem;
+  margin: 0.35rem 0 0;
+  background: rgba(232, 221, 201, 0.14);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bar-line__fill {
+  display: block;
+  height: 100%;
+  background: #a8756a;
+  transition: width 0.2s ease;
+}
+
+.bar-line--player .bar-line__fill {
+  background: #8a9a6a;
+}
+
+.combat__log {
+  margin: 1.2rem 0;
+  padding: 0.8rem 1rem;
+  min-height: 7.5rem;
+  background: rgba(232, 221, 201, 0.05);
+  border-left: 2px solid rgba(232, 221, 201, 0.3);
+  text-align: left;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.combat__log p {
+  margin: 0 0 0.3rem;
+}
+
+.combat__log p:last-child {
+  margin-bottom: 0;
+  opacity: 1;
+}
+
+.combat__log p:not(:last-child) {
+  opacity: 0.55;
+}
+
+.combat__actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+}
+
+.combat__button {
+  padding: 0.6rem 1.1rem;
+  font-family: var(--font-text);
+  font-size: 0.95rem;
+  color: #e8ddc9;
+  background: rgba(232, 221, 201, 0.07);
+  border: 1px solid rgba(232, 221, 201, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.combat__button:hover {
+  background: rgba(232, 221, 201, 0.16);
+  border-color: rgba(232, 221, 201, 0.6);
+}
+
+.combat__outcome {
+  margin-bottom: 1rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
 /* ---------- Сцена (книга) ---------- */
 
 .story-overlay {

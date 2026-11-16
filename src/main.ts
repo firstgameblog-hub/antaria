@@ -1,5 +1,8 @@
 import './styles.css'
-import { createInitialState, type GameState } from './core/state'
+import { createInitialState, SPAWN_POINT, type GameState } from './core/state'
+import { createCombat, resolveTurn, type CombatState } from './core/combat'
+import { WOLF } from './content/enemies'
+import type { CombatAction } from './data/combat'
 import { canCraft, craftRecipe } from './core/crafting'
 import { addItems, weightOf } from './core/inventory'
 import { describeRestore, isReady, markGathered, minutesUntilReady } from './core/gathering'
@@ -22,6 +25,7 @@ import { openCraftScreen } from './ui/craftScreen'
 import { openTradeScreen } from './ui/tradeScreen'
 import { openStoryScreen } from './ui/storyScreen'
 import { openJournalScreen } from './ui/journalScreen'
+import { openCombatScreen } from './ui/combatScreen'
 import { audio } from './audio/engine'
 import { ambience } from './audio/ambience'
 import { playCoin, playCraft, playKnock, playRustle, playStep } from './audio/sfx'
@@ -92,6 +96,7 @@ let stepDistance = 0
 let storyOpen = false
 let audioGreeted = false
 let lastFireDistance = -1
+let combat: CombatState | null = null
 
 const pressed = new Set<string>()
 
@@ -140,7 +145,10 @@ function updateHud(): void {
         value: stack.count,
       })),
     ],
-    statuses: [{ label: 'Груз', value: weight, max: inventory.capacityKg }],
+    statuses: [
+      { label: 'Здоровье', value: state.player.health.current, max: state.player.health.max },
+      { label: 'Груз', value: weight, max: inventory.capacityKg },
+    ],
   })
 }
 
@@ -172,6 +180,63 @@ function persist(): void {
     statusNote = `Автосохранение не удалось: ${result.reason}`
     updateHud()
   }
+}
+
+const PLAYER_MIN_DAMAGE = 3
+const PLAYER_MAX_DAMAGE = 6
+
+function playerCombatStats(): { maxHp: number; minDamage: number; maxDamage: number } {
+  return {
+    maxHp: state.player.health.max,
+    minDamage: PLAYER_MIN_DAMAGE,
+    maxDamage: PLAYER_MAX_DAMAGE,
+  }
+}
+
+function startAmbush(): void {
+  if (combat) return
+
+  combat = createCombat(WOLF, state.player.health.current, playerCombatStats())
+  ambience.setDucked(true)
+
+  openCombatScreen({
+    getState: () => combat,
+    onAction: (action: CombatAction) => {
+      if (!combat) return
+      resolveTurn(combat, action, playerCombatStats())
+      state.player.health.current = Math.max(0, combat.playerHp)
+    },
+    onFinish: () => finishCombat(),
+  })
+}
+
+function finishCombat(): void {
+  const result = combat
+  combat = null
+  ambience.setDucked(storyOpen)
+
+  if (result) {
+    if (result.outcome === 'victory') {
+      for (const loot of result.enemy.loot ?? []) {
+        if (loot.chance !== undefined && Math.random() > loot.chance) continue
+        const def = itemDef(loot.itemId)
+        if (def) addItems(state.player.inventory, def, loot.count, 1, ITEM_BY_ID)
+      }
+
+      state.player.health.current = Math.max(1, result.playerHp)
+      addJournal('Волк на тропе у хвороста. Я остался стоять, он — нет.')
+    }
+
+    if (result.outcome === 'defeat') {
+      state.player.health.current = 10
+      state.player.position = { ...SPAWN_POINT }
+      camera.centerOn(state.player.position.x, state.player.position.y)
+      addJournal('Меня оттащили к костру. Кто-то видел и не стал дожидаться.')
+    }
+  }
+
+  persist()
+  updateHud()
 }
 
 /** Запись в дневник-хронику (9.4), без повторов. */
@@ -628,6 +693,12 @@ function finishGathering(): void {
   )
 
   persist()
+
+  // Первая засада — ручная сцена, а не случайность (M1.7).
+  if (state.flags['ambush.first'] !== true && node.kind === 'branch') {
+    state.flags['ambush.first'] = true
+    startAmbush()
+  }
 }
 
 function updateHover(event: PointerEvent): void {
@@ -903,6 +974,7 @@ if (import.meta.env.DEV) {
       },
       fireLevel: () => ambience.getFireLevel(),
       fireDistance: () => lastFireDistance,
+      ambush: () => startAmbush(),
       get ambience() {
         return ambience
       },

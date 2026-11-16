@@ -70,6 +70,12 @@ const migrations: Record<number, Migration> = {
     version: 6,
     story: null,
   }),
+  // 6 → 7: здоровье героя (3.5.3, 8.1).
+  6: (data) => ({
+    ...data,
+    version: 7,
+    player: { ...asRecord(data['player']), health: { current: 30, max: 30 } },
+  }),
 }
 
 export class MigrationError extends Error {}
