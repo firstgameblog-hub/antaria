@@ -34,8 +34,64 @@ function roundRectPath(
   ctx.closePath()
 }
 
-export function drawTrader(
+/** Жительница деревни: платок, простое платье. */
+export function drawVillager(
   ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  facing: Facing,
+  time: number,
+): void {
+  const sway = Math.sin(time / 1100 + 1) * 0.8
+  const headY = y - 25 + sway
+
+  ctx.fillStyle = 'rgba(58, 47, 36, 0.2)'
+  ctx.beginPath()
+  ctx.ellipse(x, y, 8, 3.2, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Подол
+  ctx.fillStyle = '#8f6b6b'
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.4
+  roundRectPath(ctx, x - 8, headY + 9, 16, 15, 4)
+  ctx.fill()
+  ctx.stroke()
+
+  // Фартук
+  ctx.fillStyle = '#c9b8a2'
+  roundRectPath(ctx, x - 4, headY + 13, 8, 10, 2)
+  ctx.fill()
+
+  // Голова
+  ctx.fillStyle = SKIN
+  ctx.beginPath()
+  ctx.arc(x, headY + 3, 5.6, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Платок
+  ctx.fillStyle = '#a8503f'
+  ctx.beginPath()
+  ctx.arc(x, headY + 2.4, 5.8, Math.PI * 0.95, Math.PI * 2.05)
+  ctx.fill()
+
+  ctx.beginPath()
+  ctx.moveTo(x - 5.6, headY + 3)
+  ctx.quadraticCurveTo(x, headY + 9, x + 5.6, headY + 3)
+  ctx.fill()
+
+  if (facing !== 'up') {
+    ctx.fillStyle = INK
+    const shift = facing === 'left' ? -1.2 : facing === 'right' ? 1.2 : 0
+    ctx.beginPath()
+    ctx.arc(x - 1.5 + shift, headY + 4.4, 0.7, 0, Math.PI * 2)
+    ctx.arc(x + 1.5 + shift, headY + 4.4, 0.7, 0, Math.PI * 2)
+    ctx.fill()
+  }
+}
+
+export function drawTrader(  ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   facing: Facing,

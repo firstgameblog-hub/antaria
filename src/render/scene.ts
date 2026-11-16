@@ -8,7 +8,7 @@ import type { NodeKind } from '../data/gathering'
 import type { Facing, Point, Rect } from '../core/movement'
 import { drawBuilding } from './buildings'
 import { drawGatheringNode, drawTracks } from './nodes'
-import { drawTrader } from './npc'
+import { drawTrader, drawVillager } from './npc'
 import { PALETTE } from './palette'
 import { drawPlayer } from './player'
 
@@ -525,6 +525,12 @@ export interface SceneNpc {
   x: number
   y: number
   facing: Facing
+  kind: 'trader' | 'villager'
+}
+
+export interface SceneDrip {
+  x: number
+  y: number
 }
 
 export interface SceneSpot {
@@ -543,6 +549,7 @@ export interface SceneOptions {
   nodes: readonly SceneNode[]
   npcs: readonly SceneNpc[]
   spots: readonly SceneSpot[]
+  drips: readonly SceneDrip[]
   hoveredLabel: { x: number; y: number; label: string } | null
   gatherProgress: { x: number; y: number; value: number } | null
 }
@@ -590,6 +597,32 @@ function intersects(first: Rect, second: Rect): boolean {
     first.y < second.y + second.h &&
     first.y + first.h > second.y
   )
+}
+
+/** Лужа под протекающей крышей: видно беду, без всяких значков. */
+function drawDrip(ctx: CanvasRenderingContext2D, drip: SceneDrip, time: number): void {
+  const ripple = (time / 1300) % 1
+  const fall = (time / 900) % 1
+
+  ctx.save()
+
+  ctx.fillStyle = 'rgba(96, 116, 126, 0.32)'
+  ctx.beginPath()
+  ctx.ellipse(drip.x, drip.y, 16, 6, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.strokeStyle = `rgba(126, 148, 158, ${0.4 * (1 - ripple)})`
+  ctx.lineWidth = 1.2
+  ctx.beginPath()
+  ctx.ellipse(drip.x, drip.y, 6 + ripple * 11, 2.2 + ripple * 4, 0, 0, Math.PI * 2)
+  ctx.stroke()
+
+  ctx.fillStyle = 'rgba(152, 182, 192, 0.6)'
+  ctx.beginPath()
+  ctx.ellipse(drip.x, drip.y - 28 + fall * 28, 1.3, 2.4, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.restore()
 }
 
 function drawMoveTarget(ctx: CanvasRenderingContext2D, point: Point, time: number): void {  const pulse = 0.6 + Math.sin(time / 260) * 0.2
@@ -655,6 +688,10 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
   drawGroundProps(ctx)
   drawPalisade(ctx)
 
+  for (const drip of options.drips) {
+    drawDrip(ctx, drip, options.time)
+  }
+
   // Поля — плоская земля: рисуются всегда под всем, иначе герой «проваливается» под них
   for (const building of START_VILLAGE) {
     if (building.kind === 'field') {
@@ -709,7 +746,11 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
       baseY: npc.y,
       bounds: { x: npc.x - 10, y: npc.y - 32, w: 20, h: 32 },
       draw: () => {
-        drawTrader(ctx, npc.x, npc.y, npc.facing, options.time)
+        if (npc.kind === 'villager') {
+          drawVillager(ctx, npc.x, npc.y, npc.facing, options.time)
+        } else {
+          drawTrader(ctx, npc.x, npc.y, npc.facing, options.time)
+        }
       },
     })
   }

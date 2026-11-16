@@ -4,10 +4,12 @@ import { createCombat, resolveTurn, type CombatState } from './core/combat'
 import { WOLF, DEER } from './content/enemies'
 import type { CombatAction, EnemyDef } from './data/combat'
 import { HUNT_SPOTS, type HuntSpot } from './content/hunting'
+import { ROOF_THREAD, threadById, type ThreadDef } from './content/threads'
+import { openRequestScreen, closeRequestScreen } from './ui/requestScreen'
 import { canCraft, craftRecipe } from './core/crafting'
-import { addItems, weightOf } from './core/inventory'
+import { addItems, countOf, removeItems, weightOf } from './core/inventory'
 import { describeRestore, isReady, markGathered, minutesUntilReady } from './core/gathering'
-import { distance, facingOf, findFreeSpot, movePlayer, stepToward, type Point } from './core/movement'
+import { distance, facingOf, findFreeSpot, movePlayer, stepToward, type Facing, type Point } from './core/movement'
 import { AUTO_SLOT, readBackup, readSlot, writeSlot } from './core/storage'
 import { ACTION_MINUTES, absoluteMinutes, addMinutes, nextMorning } from './core/time'
 import type { GatheringNodeDef, NodeKind } from './data/gathering'
@@ -514,11 +516,13 @@ function frame(time: number): void {
   }
 
   if (pendingNpcId !== null) {
-    const npcDistance = distance(state.player.position, { x: TRADER.x, y: TRADER.y })
-    if (npcDistance <= INTERACT_RANGE + 12) {
+    const npc = activeNpcs().find((candidate) => candidate.id === pendingNpcId)
+    if (!npc) {
+      pendingNpcId = null
+    } else if (distance(state.player.position, { x: npc.x, y: npc.y }) <= INTERACT_RANGE + 12) {
       pendingNpcId = null
       moveTarget = null
-      openTrade()
+      openNpc(npc)
     }
   }
 
@@ -564,7 +568,10 @@ function frame(time: number): void {
             : `${hoveredSpotDef.label} · ${describeRestore(minutesUntilReady(state.world.nodes, hoveredSpotDef.id, now))}`,
         }
       : hoveredNpcId !== null
-        ? { x: TRADER.x, y: TRADER.y, label: `${TRADER.name} · ${TRADER.title}` }
+        ? (() => {
+            const npc = activeNpcs().find((candidate) => candidate.id === hoveredNpcId)
+            return npc ? { x: npc.x, y: npc.y, label: npc.label } : null
+          })()
         : null
 
   const activeGather = gathering
@@ -594,8 +601,16 @@ function frame(time: number): void {
     hoveredId,
     moveTarget,
     nodes: sceneNodes,
-    npcs: [{ id: TRADER.id, x: TRADER.x, y: TRADER.y, facing: TRADER.facing }],
+    npcs: activeNpcs().map((npc) => ({
+      id: npc.id,
+      x: npc.x,
+      y: npc.y,
+      facing: npc.facing,
+      kind: npc.kind,
+    })),
     spots: sceneSpots,
+    drips:
+      state.flags[`${ROOF_THREAD.id}.done`] === true ? [] : [{ x: ROOF_THREAD.drip.x, y: ROOF_THREAD.drip.y }],
     hoveredLabel,
     gatherProgress,
     player: {
@@ -622,8 +637,91 @@ function buildingAt(worldX: number, worldY: number): string | null {
   return null
 }
 
-function npcAt(worldX: number, worldY: number): string | null {
-  return Math.hypot(worldX - TRADER.x, worldY - (TRADER.y - 14)) <= 26 ? TRADER.id : null
+function npcAt(worldX: number, worldY: number): ActiveNpc | null {
+  let closest: ActiveNpc | null = null
+  let closestDistance = 26
+
+  for (const npc of activeNpcs()) {
+    const d = Math.hypot(worldX - npc.x, worldY - (npc.y - 14))
+    if (d <= closestDistance) {
+      closest = npc
+      closestDistance = d
+    }
+  }
+
+  return closest
+}
+
+interface ActiveNpc {
+  id: string
+  x: number
+  y: number
+  facing: Facing
+  kind: 'trader' | 'villager'
+  label: string
+}
+
+function activeNpcs(): ActiveNpc[] {
+  const list: ActiveNpc[] = [
+    {
+      id: TRADER.id,
+      x: TRADER.x,
+      y: TRADER.y,
+      facing: TRADER.facing,
+      kind: 'trader',
+      label: `${TRADER.name} · ${TRADER.title}`,
+    },
+  ]
+
+  if (state.flags[`${ROOF_THREAD.id}.done`] !== true) {
+    list.push({
+      id: ROOF_THREAD.id,
+      x: ROOF_THREAD.x,
+      y: ROOF_THREAD.y,
+      facing: 'left',
+      kind: 'villager',
+      label: `${ROOF_THREAD.npcName} · ${ROOF_THREAD.short}`,
+    })
+  }
+
+  return list
+}
+
+function openNpc(npc: ActiveNpc): void {
+  if (npc.kind === 'trader') {
+    openTrade()
+    return
+  }
+
+  const thread = threadById(npc.id)
+  if (thread) openThread(thread)
+}
+
+/** Открытая нить: не квест, а разговор о беде. */
+function openThread(thread: ThreadDef): void {
+  openRequestScreen({
+    title: thread.title,
+    text: thread.text,
+    requirement: thread.requirement,
+    getInventory: () => state.player.inventory,
+    onDeliver: () => {
+      if (countOf(state.player.inventory, thread.requirement.itemId) < thread.requirement.count) {
+        return 'Не хватает'
+      }
+
+      removeItems(state.player.inventory, thread.requirement.itemId, thread.requirement.count)
+      state.player.money += thread.rewardMoney
+      state.flags[`${thread.id}.done`] = true
+      addJournal(thread.journalDone)
+
+      flash(`${thread.npcName} благодарит. +${thread.rewardMoney} монет.`)
+      closeRequestScreen()
+      persist()
+      updateHud()
+      return ''
+    },
+    onClose: () => undefined,
+  })
 }
 
 function spotAt(worldX: number, worldY: number): HuntSpot | null {
@@ -772,7 +870,7 @@ function updateHover(event: PointerEvent): void {
   const spot = npc === null ? spotAt(world.x, world.y) : null
   const node = npc === null && spot === null ? nodeAt(world.x, world.y) : null
 
-  hoveredNpcId = npc
+  hoveredNpcId = npc?.id ?? null
   hoveredSpotId = spot?.id ?? null
   hoveredNodeId = node?.id ?? null
   hoveredId = npc === null && spot === null && node === null ? buildingAt(world.x, world.y) : null
@@ -886,13 +984,13 @@ function endPointer(event: PointerEvent): void {
     }
 
     if (npc !== null) {
-      const npcDistance = distance(state.player.position, { x: TRADER.x, y: TRADER.y })
+      const npcDistance = distance(state.player.position, { x: npc.x, y: npc.y })
       if (npcDistance <= INTERACT_RANGE + 12) {
-        openTrade()
+        openNpc(npc)
       } else {
-        pendingNpcId = npc
+        pendingNpcId = npc.id
         pendingNodeId = null
-        moveTarget = { x: TRADER.x, y: TRADER.y + 18 }
+        moveTarget = { x: npc.x, y: npc.y + 18 }
         followPaused = false
       }
       return

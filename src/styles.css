@@ -641,6 +641,59 @@ body {
   opacity: 0.35;
 }
 
+/* ---------- Просьба ---------- */
+
+.request {
+  width: min(34rem, 100%);
+}
+
+.request__body {
+  padding: 1.1rem 1.6rem 0.4rem;
+}
+
+.request__text {
+  margin: 0 0 1rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.request__need {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.request__have {
+  opacity: 0.6;
+}
+
+.request__foot {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.6rem 0.4rem;
+}
+
+.request__foot button {
+  padding: 0.45rem 1rem;
+  font-family: var(--font-text);
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid rgba(43, 33, 24, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.request__foot button:hover:not(:disabled) {
+  background: rgba(138, 90, 43, 0.1);
+  border-color: var(--accent);
+}
+
+.request__foot button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 /* ---------- Ремесло ---------- */
 
 .recipes {
