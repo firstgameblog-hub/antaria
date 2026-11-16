@@ -22,6 +22,9 @@ import { openCraftScreen } from './ui/craftScreen'
 import { openTradeScreen } from './ui/tradeScreen'
 import { openStoryScreen } from './ui/storyScreen'
 import { openJournalScreen } from './ui/journalScreen'
+import { audio } from './audio/engine'
+import { ambience } from './audio/ambience'
+import { playCoin, playCraft, playKnock, playRustle, playStep } from './audio/sfx'
 import { stageLabel } from './ui/labels'
 import { START_VILLAGE } from './content/scene'
 
@@ -56,6 +59,7 @@ const hud = createHud({
   onSaves: () => openSaves(),
   onCraft: () => openCraft(),
   onJournal: () => openJournal(),
+  onSound: () => toggleSound(),
 })
 app.append(hud.element)
 
@@ -74,6 +78,8 @@ let moveTarget: Point | null = null
 let followPaused = false
 let previousFrameTime = 0
 let gathering: { nodeId: string; elapsed: number; duration: number } | null = null
+let gatherSoundTimer = 0
+let stepDistance = 0
 let storyOpen = false
 
 const pressed = new Set<string>()
@@ -177,12 +183,28 @@ function openJournal(): void {
   openJournalScreen({ getEntries: () => state.journal })
 }
 
+/** Первое действие игрока включает звук: раньше браузер не разрешает. */
+function ensureAudio(): void {
+  if (!audio.ensure()) return
+  ambience.start()
+  // Если игрок ещё в сцене — окружение должно остаться приглушённым.
+  ambience.setDucked(storyOpen)
+  hud.setSoundEnabled(audio.isEnabled())
+}
+
+function toggleSound(): void {
+  ensureAudio()
+  audio.setEnabled(!audio.isEnabled())
+  hud.setSoundEnabled(audio.isEnabled())
+}
+
 function startStory(sceneId: string, startBeat = 0): void {
   const scene = sceneById(sceneId)
   if (!scene) return
 
   state.story = { sceneId, beat: startBeat }
   storyOpen = true
+  ambience.setDucked(true)
   recordJournal(scene, startBeat)
 
   openStoryScreen({
@@ -200,6 +222,7 @@ function startStory(sceneId: string, startBeat = 0): void {
     onFinish: () => {
       storyOpen = false
       state.story = null
+      ambience.setDucked(false)
 
       if (sceneId === 'prologue') {
         state.flags['prologue.done'] = true
@@ -232,6 +255,7 @@ function openCraft(): void {
         )
       }
 
+      playCraft()
       persist()
       updateHud()
       return result.message
@@ -313,6 +337,13 @@ function updateMovement(dt: number): boolean {
     state.player.facing,
   )
   state.player.position = next
+
+  stepDistance += Math.hypot(next.x - position.x, next.y - position.y)
+  if (stepDistance >= 26) {
+    stepDistance = 0
+    playStep()
+  }
+
   followPaused = false
   return true
 }
@@ -338,6 +369,15 @@ function frame(time: number): void {
 
   if (gathering !== null) {
     gathering.elapsed += dt
+
+    gatherSoundTimer -= dt
+    if (gatherSoundTimer <= 0) {
+      gatherSoundTimer = 0.35 + Math.random() * 0.2
+      const node = GATHERING_NODES.find((candidate) => candidate.id === gathering?.nodeId)
+      if (node && (node.kind === 'stone' || node.kind === 'branch')) playKnock()
+      else playRustle()
+    }
+
     if (gathering.elapsed >= gathering.duration) finishGathering()
   }
 
@@ -456,6 +496,7 @@ function openTrade(): void {
       const result = buy(state, offer, ITEM_BY_ID)
       if (!result.ok) return result.reason
 
+      playCoin()
       persist()
       updateHud()
       return result.message
@@ -469,6 +510,7 @@ function openTrade(): void {
         addJournal('Корней взял у меня первый товар и отсчитал монету. Здесь это ещё что-то значит.')
       }
 
+      playCoin()
       persist()
       updateHud()
       return result.message
@@ -482,6 +524,7 @@ function openTrade(): void {
         addJournal('Впервые выполнил чью-то просьбу. Не за награду — потому что обещал.')
       }
 
+      playCoin()
       persist()
       updateHud()
       return result.message
@@ -518,6 +561,7 @@ function startGathering(node: GatheringNodeDef): void {
   }
 
   gathering = { nodeId: node.id, elapsed: 0, duration: GATHER_SECONDS[node.kind] }
+  gatherSoundTimer = 0
   moveTarget = null
   pendingNodeId = null
 }
@@ -743,6 +787,10 @@ globalThis.addEventListener('blur', () => pressed.clear())
 globalThis.addEventListener('resize', resize)
 globalThis.addEventListener('orientationchange', resize)
 
+// Звук можно включить только после действия игрока.
+globalThis.addEventListener('pointerdown', ensureAudio)
+globalThis.addEventListener('keydown', ensureAudio)
+
 // Автосохранение при уходе со страницы (3.1.4).
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') persist()
@@ -818,6 +866,9 @@ if (import.meta.env.DEV) {
       },
       get camera() {
         return camera
+      },
+      get audio() {
+        return audio
       },
       save: () => {
         persist()

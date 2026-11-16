@@ -36,11 +36,13 @@ export interface HudHandlers {
   onSaves: () => void
   onCraft: () => void
   onJournal: () => void
+  onSound: () => void
 }
 
 export interface Hud {
   element: HTMLElement
   update: (data: HudData) => void
+  setSoundEnabled: (enabled: boolean) => void
 }
 
 function renderResources(container: HTMLElement, resources: readonly HudResource[]): void {
@@ -89,8 +91,11 @@ export function createHud(handlers: HudHandlers): Hud {
   element.innerHTML = `
     <header class="hud hud--top">
       <span class="hud__date" data-ref="date"></span>
-      <span class="hud__weather" data-ref="weather" hidden></span>
-      <span class="hud__stage" data-ref="stage"></span>
+      <div class="hud__meta">
+        <span class="hud__weather" data-ref="weather" hidden></span>
+        <span class="hud__stage" data-ref="stage"></span>
+        <button class="hud__sound" data-action="sound" aria-label="Звук" aria-pressed="true">♪</button>
+      </div>
     </header>
     <div class="hud hud--bottom">
       <div class="hud__row" data-ref="resources" hidden></div>
@@ -125,8 +130,18 @@ export function createHud(handlers: HudHandlers): Hud {
     handlers.onJournal()
   })
 
+  const soundButton = element.querySelector<HTMLButtonElement>('[data-action="sound"]')
+  soundButton?.addEventListener('click', () => {
+    handlers.onSound()
+  })
+
   return {
     element,
+    setSoundEnabled(enabled: boolean) {
+      if (!soundButton) return
+      soundButton.classList.toggle('hud__sound--off', !enabled)
+      soundButton.setAttribute('aria-pressed', String(enabled))
+    },
     update(data: HudData) {
       if (dateEl) dateEl.textContent = formatDateTime(data.clock)
 
