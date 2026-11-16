@@ -40,7 +40,6 @@ function crackle(buses: AudioBuses, destination: GainNode): void {
 class Ambience {
   private started = false
   private fireTimer: number | null = null
-  private ducked = false
 
   start(): void {
     const buses = audio.get()
@@ -90,8 +89,6 @@ class Ambience {
 
   /** Приглушить окружение, пока игрок читает сцену (4.4.5). */
   setDucked(ducked: boolean): void {
-    this.ducked = ducked
-
     const buses = audio.get()
     if (!buses) return
 
