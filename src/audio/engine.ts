@@ -20,7 +20,7 @@ class AudioEngine {
   private buses: AudioBuses | null = null
   private master: GainNode | null = null
   private enabled = true
-  private readonly volume = 0.8
+  private readonly volume = 2
 
   /** Создаёт или возобновляет звук. Возвращает шины, если всё получилось. */
   ensure(): AudioBuses | null {
@@ -36,9 +36,20 @@ class AudioEngine {
     if (!AudioCtor) return null
 
     const ctx = new AudioCtor()
+    void ctx.resume()
+
+    // Компрессор бережёт слух и не даёт клиппить, когда звуки накладываются.
+    const compressor = ctx.createDynamicsCompressor()
+    compressor.threshold.value = -12
+    compressor.knee.value = 20
+    compressor.ratio.value = 6
+    compressor.attack.value = 0.003
+    compressor.release.value = 0.25
+    compressor.connect(ctx.destination)
+
     const master = ctx.createGain()
     master.gain.value = this.enabled ? this.volume : 0
-    master.connect(ctx.destination)
+    master.connect(compressor)
     this.master = master
 
     const makeBus = (level: number): GainNode => {
@@ -56,8 +67,8 @@ class AudioEngine {
 
     this.buses = {
       ctx,
-      sfx: makeBus(0.9),
-      ambience: makeBus(0.5),
+      sfx: makeBus(1),
+      ambience: makeBus(0.8),
       music: makeBus(0.5),
       noise,
     }
@@ -67,6 +78,11 @@ class AudioEngine {
 
   get(): AudioBuses | null {
     return this.buses
+  }
+
+  /** Мастер-шина: нужна для проверки уровня сигнала. */
+  getMaster(): GainNode | null {
+    return this.master
   }
 
   setEnabled(enabled: boolean): void {

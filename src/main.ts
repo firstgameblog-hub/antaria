@@ -81,6 +81,7 @@ let gathering: { nodeId: string; elapsed: number; duration: number } | null = nu
 let gatherSoundTimer = 0
 let stepDistance = 0
 let storyOpen = false
+let audioGreeted = false
 
 const pressed = new Set<string>()
 
@@ -190,12 +191,21 @@ function ensureAudio(): void {
   // Если игрок ещё в сцене — окружение должно остаться приглушённым.
   ambience.setDucked(storyOpen)
   hud.setSoundEnabled(audio.isEnabled())
+
+  // Один тихий звук при первом включении: так слышно, что звук вообще есть.
+  if (!audioGreeted && audio.isEnabled()) {
+    audioGreeted = true
+    playRustle()
+  }
 }
 
 function toggleSound(): void {
   ensureAudio()
-  audio.setEnabled(!audio.isEnabled())
-  hud.setSoundEnabled(audio.isEnabled())
+  const next = !audio.isEnabled()
+  audio.setEnabled(next)
+  hud.setSoundEnabled(next)
+  // Подтверждение: включаешь звук — сразу слышишь, что он есть.
+  if (next) playCoin()
 }
 
 function startStory(sceneId: string, startBeat = 0): void {
@@ -869,6 +879,10 @@ if (import.meta.env.DEV) {
       },
       get audio() {
         return audio
+      },
+      playTestSound: () => {
+        ensureAudio()
+        playCoin()
       },
       save: () => {
         persist()

@@ -90,7 +90,7 @@ export function playStep(): void {
     duration: 0.08,
     frequency: 380 + Math.random() * 120,
     q: 0.8,
-    gain: 0.05,
+    gain: 0.4,
   })
 }
 
@@ -98,29 +98,29 @@ export function playStep(): void {
 export function playRustle(): void {
   const buses = audio.get()
   if (!buses) return
-  noiseBurst(buses, { duration: 0.16, frequency: 2400, q: 0.9, gain: 0.045 })
+  noiseBurst(buses, { duration: 0.16, frequency: 2400, q: 0.9, gain: 0.35 })
 }
 
 /** Удар по камню или дереву. */
 export function playKnock(): void {
   const buses = audio.get()
   if (!buses) return
-  noiseBurst(buses, { duration: 0.1, frequency: 900, q: 1.4, gain: 0.07 })
-  tone(buses, { frequency: 120, duration: 0.14, gain: 0.05, type: 'triangle', slideTo: 70 })
+  noiseBurst(buses, { duration: 0.1, frequency: 900, q: 1.4, gain: 0.5 })
+  tone(buses, { frequency: 120, duration: 0.14, gain: 0.35, type: 'triangle', slideTo: 70 })
 }
 
 /** Монеты. */
 export function playCoin(): void {
   const buses = audio.get()
   if (!buses) return
-  tone(buses, { frequency: 1180, duration: 0.09, gain: 0.05, type: 'triangle' })
-  tone(buses, { frequency: 1620, duration: 0.11, gain: 0.04, type: 'triangle', delay: 0.05 })
+  tone(buses, { frequency: 1180, duration: 0.09, gain: 0.4, type: 'triangle' })
+  tone(buses, { frequency: 1620, duration: 0.11, gain: 0.28, type: 'triangle', delay: 0.05 })
 }
 
 /** Готовое изделие: короткий деревянный стук. */
 export function playCraft(): void {
   const buses = audio.get()
   if (!buses) return
-  noiseBurst(buses, { duration: 0.09, frequency: 700, q: 2, gain: 0.06 })
-  tone(buses, { frequency: 520, duration: 0.12, gain: 0.04, type: 'triangle', delay: 0.04 })
+  noiseBurst(buses, { duration: 0.09, frequency: 700, q: 2, gain: 0.4 })
+  tone(buses, { frequency: 520, duration: 0.12, gain: 0.28, type: 'triangle', delay: 0.04 })
 }

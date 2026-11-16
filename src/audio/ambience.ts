@@ -24,7 +24,7 @@ function crackle(buses: AudioBuses, destination: GainNode): void {
   const duration = 0.03 + Math.random() * 0.05
 
   gain.gain.setValueAtTime(0.0001, now)
-  gain.gain.linearRampToValueAtTime(0.015 + Math.random() * 0.045, now + 0.005)
+  gain.gain.linearRampToValueAtTime(0.12 + Math.random() * 0.18, now + 0.005)
   gain.gain.exponentialRampToValueAtTime(0.0001, now + duration)
 
   source.connect(filter).connect(gain).connect(destination)
@@ -62,7 +62,7 @@ class Ambience {
     filter.frequency.value = 420
 
     const gain = ctx.createGain()
-    gain.gain.value = 0.05
+    gain.gain.value = 0.22
 
     source.connect(filter).connect(gain).connect(ambience)
     source.start()
@@ -71,7 +71,7 @@ class Ambience {
     const lfo = ctx.createOscillator()
     lfo.frequency.value = 0.07
     const lfoGain = ctx.createGain()
-    lfoGain.gain.value = 0.028
+    lfoGain.gain.value = 0.09
     lfo.connect(lfoGain).connect(gain.gain)
     lfo.start()
   }
@@ -95,7 +95,7 @@ class Ambience {
     const now = buses.ctx.currentTime
     buses.ambience.gain.cancelScheduledValues(now)
     buses.ambience.gain.setValueAtTime(buses.ambience.gain.value, now)
-    buses.ambience.gain.linearRampToValueAtTime(ducked ? 0.12 : 0.5, now + 0.5)
+    buses.ambience.gain.linearRampToValueAtTime(ducked ? 0.2 : 0.8, now + 0.5)
   }
 
   stop(): void {
