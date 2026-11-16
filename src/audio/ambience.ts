@@ -14,17 +14,21 @@ function crackle(buses: AudioBuses, destination: GainNode): void {
   source.buffer = noise
   source.loop = true
 
+  // Огонь трещит высоко и коротко: низкие частоты превращают треск в стук.
   const filter = ctx.createBiquadFilter()
   filter.type = 'bandpass'
-  filter.frequency.value = 900 + Math.random() * 1800
-  filter.Q.value = 1.5
+  filter.frequency.value = 2800 + Math.random() * 3200
+  filter.Q.value = 0.7 + Math.random() * 0.8
 
   const gain = ctx.createGain()
   const now = ctx.currentTime
-  const duration = 0.03 + Math.random() * 0.05
+  const duration = 0.008 + Math.random() * 0.022
+
+  // Большинство щелчков тихие, редкие — громче: так огонь звучит живым.
+  const level = 0.03 + Math.random() ** 3 * 0.14
 
   gain.gain.setValueAtTime(0.0001, now)
-  gain.gain.linearRampToValueAtTime(0.12 + Math.random() * 0.18, now + 0.005)
+  gain.gain.linearRampToValueAtTime(level, now + 0.002)
   gain.gain.exponentialRampToValueAtTime(0.0001, now + duration)
 
   source.connect(filter).connect(gain).connect(destination)
@@ -47,7 +51,34 @@ class Ambience {
     this.started = true
 
     this.startWind(buses)
+    this.startFireBody(buses)
     this.scheduleFire()
+  }
+
+  /** Низкое гудение пламени: даёт телу огня то, чего не даёт треск. */
+  private startFireBody(buses: AudioBuses): void {
+    const { ctx, noise, ambience } = buses
+
+    const source = ctx.createBufferSource()
+    source.buffer = noise
+    source.loop = true
+
+    const filter = ctx.createBiquadFilter()
+    filter.type = 'lowpass'
+    filter.frequency.value = 220
+
+    const gain = ctx.createGain()
+    gain.gain.value = 0.16
+
+    source.connect(filter).connect(gain).connect(ambience)
+    source.start()
+
+    const lfo = ctx.createOscillator()
+    lfo.frequency.value = 0.35
+    const lfoGain = ctx.createGain()
+    lfoGain.gain.value = 0.05
+    lfo.connect(lfoGain).connect(gain.gain)
+    lfo.start()
   }
 
   private startWind(buses: AudioBuses): void {
@@ -77,7 +108,7 @@ class Ambience {
   }
 
   private scheduleFire(): void {
-    const delay = 160 + Math.random() * 520
+    const delay = 120 + Math.random() * 620
 
     this.fireTimer = globalThis.setTimeout(() => {
       const current = audio.get()
