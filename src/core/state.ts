@@ -10,7 +10,7 @@ import type { NodeReadyAt } from './gathering'
 import type { Facing, Point } from './movement'
 
 /** Версия формата сохранения. Поднимается при несовместимом изменении структуры. */
-export const SAVE_VERSION = 4
+export const SAVE_VERSION = 5
 
 export interface ClockState {
   /** Год от начала игры. */
@@ -27,6 +27,8 @@ export interface PlayerState {
   /** Положение на сцене в мировых пикселях. */
   position: Point
   facing: Facing
+  /** Монеты (6.6). */
+  money: number
   inventory: Inventory
   equipment: Equipment
 }
@@ -68,6 +70,12 @@ export interface GameState {
 export interface WorldState {
   /** id узла → абсолютные игровые минуты, когда он снова готов. */
   nodes: NodeReadyAt
+  trader: TraderState
+}
+
+export interface TraderState {
+  /** Доверие 0..100: сглаживает цены в обе стороны. */
+  trust: number
 }
 
 /** Сколько килограммов герой уносит на себе. */
@@ -87,6 +95,7 @@ export function createInitialState(now: number = Date.now()): GameState {
       name: '',
       position: { ...SPAWN_POINT },
       facing: 'down',
+      money: 15,
       inventory: createInventory(PLAYER_CAPACITY_KG),
       equipment: createEquipment(),
     },
@@ -95,7 +104,7 @@ export function createInitialState(now: number = Date.now()): GameState {
       population: 20,
       storage: createInventory(VILLAGE_STORAGE_KG),
     },
-    world: { nodes: {} },
+    world: { nodes: {}, trader: { trust: 0 } },
     flags: {},
     journal: [],
     playtimeMs: 0,

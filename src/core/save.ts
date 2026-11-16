@@ -169,6 +169,7 @@ export function normalizeSave(data: SaveRecord): GameState {
       name: asString(player['name']),
       position: normalizePosition(player['position']),
       facing: normalizeFacing(player['facing']),
+      money: asInt(player['money'], 0, 0, 1_000_000_000),
       inventory: normalizeInventory(player['inventory'], PLAYER_CAPACITY_KG),
       equipment: normalizeEquipment(player['equipment']),
     },
@@ -177,7 +178,12 @@ export function normalizeSave(data: SaveRecord): GameState {
       population: asInt(village['population'], 20, 0, 1_000_000),
       storage: normalizeInventory(village['storage'], VILLAGE_STORAGE_KG),
     },
-    world: { nodes: normalizeNodes(asRecord(data['world'])['nodes']) },
+    world: {
+      nodes: normalizeNodes(asRecord(data['world'])['nodes']),
+      trader: {
+        trust: asInt(asRecord(asRecord(data['world'])['trader'])['trust'], 0, 0, 100),
+      },
+    },
     flags: normalizeFlags(data['flags']),
     journal: normalizeJournal(data['journal']),
     playtimeMs: asInt(data['playtimeMs'], 0, 0, Number.MAX_SAFE_INTEGER),

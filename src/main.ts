@@ -10,11 +10,14 @@ import type { GatheringNodeDef, NodeKind } from './data/gathering'
 import { GATHERING_NODES } from './content/gathering'
 import { ITEM_BY_ID, itemDef, itemName } from './content/items'
 import { recipeById } from './content/recipes'
+import { TRADER } from './content/trader'
+import { buy, completeOrder, sell } from './core/trade'
 import { Camera } from './render/camera'
 import { OBSTACLES, PLAYER_RADIUS, TILE, VILLAGE_WALKABLE, WORLD, drawVillage } from './render/scene'
 import { createHud } from './ui/hud'
 import { openSaveScreen } from './ui/saveScreen'
 import { openCraftScreen } from './ui/craftScreen'
+import { openTradeScreen } from './ui/tradeScreen'
 import { stageLabel } from './ui/labels'
 import { START_VILLAGE } from './content/scene'
 
@@ -58,7 +61,9 @@ let actionNote = ''
 let showGrid = true
 let hoveredId: string | null = null
 let hoveredNodeId: string | null = null
+let hoveredNpcId: string | null = null
 let pendingNodeId: string | null = null
+let pendingNpcId: string | null = null
 let pixelRatio = 1
 let moveTarget: Point | null = null
 let followPaused = false
@@ -101,10 +106,13 @@ function updateHud(): void {
     stage: stageLabel(state.village.stageId),
     population: state.village.population,
     notes: [statusNote, actionNote, nightNote],
-    resources: inventory.stacks.map((stack) => ({
-      label: itemName(stack.id),
-      value: stack.count,
-    })),
+    resources: [
+      { label: 'Монеты', value: state.player.money },
+      ...inventory.stacks.map((stack) => ({
+        label: itemName(stack.id),
+        value: stack.count,
+      })),
+    ],
     statuses: [{ label: 'Груз', value: weight, max: inventory.capacityKg }],
   })
 }
@@ -197,6 +205,7 @@ function updateMovement(dt: number): boolean {
     if (gathering !== null) gathering = null
     moveTarget = null
     pendingNodeId = null
+    pendingNpcId = null
     const length = Math.hypot(axisX, axisY)
     delta = {
       x: (axisX / length) * PLAYER_SPEED * dt,
@@ -249,6 +258,15 @@ function frame(time: number): void {
     }
   }
 
+  if (pendingNpcId !== null) {
+    const npcDistance = distance(state.player.position, { x: TRADER.x, y: TRADER.y })
+    if (npcDistance <= INTERACT_RANGE + 12) {
+      pendingNpcId = null
+      moveTarget = null
+      openTrade()
+    }
+  }
+
   if (!followPaused && dt > 0) {
     camera.focusOn(state.player.position.x, state.player.position.y, dt)
   }
@@ -269,9 +287,12 @@ function frame(time: number): void {
     hoveredNodeId === null
       ? undefined
       : GATHERING_NODES.find((node) => node.id === hoveredNodeId)
-  const hoveredNode = hoveredDef
+
+  const hoveredLabel = hoveredDef
     ? { x: hoveredDef.x, y: hoveredDef.y, label: nodeLabel(hoveredDef, now) }
-    : null
+    : hoveredNpcId !== null
+      ? { x: TRADER.x, y: TRADER.y, label: `${TRADER.name} · ${TRADER.title}` }
+      : null
 
   const activeGather = gathering
   const gatherNode = activeGather
@@ -300,7 +321,8 @@ function frame(time: number): void {
     hoveredId,
     moveTarget,
     nodes: sceneNodes,
-    hoveredNode,
+    npcs: [{ id: TRADER.id, x: TRADER.x, y: TRADER.y, facing: TRADER.facing }],
+    hoveredLabel,
     gatherProgress,
     player: {
       x: state.player.position.x,
@@ -326,8 +348,44 @@ function buildingAt(worldX: number, worldY: number): string | null {
   return null
 }
 
-function nodeAt(worldX: number, worldY: number): GatheringNodeDef | null {
-  let closest: GatheringNodeDef | null = null
+function npcAt(worldX: number, worldY: number): string | null {
+  return Math.hypot(worldX - TRADER.x, worldY - (TRADER.y - 14)) <= 26 ? TRADER.id : null
+}
+
+function openTrade(): void {
+  openTradeScreen({
+    getState: () => state,
+    onBuy: (itemId) => {
+      const offer = TRADER.sells.find((candidate) => candidate.itemId === itemId)
+      if (!offer) return 'Такого товара нет'
+
+      const result = buy(state, offer, ITEM_BY_ID)
+      if (!result.ok) return result.reason
+
+      persist()
+      updateHud()
+      return result.message
+    },
+    onSell: (itemId) => {
+      const result = sell(state, itemId, 1, ITEM_BY_ID)
+      if (!result.ok) return result.reason
+
+      persist()
+      updateHud()
+      return result.message
+    },
+    onOrder: () => {
+      const result = completeOrder(state, TRADER.order, ITEM_BY_ID)
+      if (!result.ok) return result.reason
+
+      persist()
+      updateHud()
+      return result.message
+    },
+  })
+}
+
+function nodeAt(worldX: number, worldY: number): GatheringNodeDef | null {  let closest: GatheringNodeDef | null = null
   let closestDistance = NODE_HOVER_RADIUS
 
   for (const node of GATHERING_NODES) {
@@ -404,10 +462,14 @@ function updateHover(event: PointerEvent): void {
   const rect = canvas.getBoundingClientRect()
   const world = camera.toWorld(event.clientX - rect.left, event.clientY - rect.top)
 
-  const node = nodeAt(world.x, world.y)
+  const npc = npcAt(world.x, world.y)
+  const node = npc === null ? nodeAt(world.x, world.y) : null
+
+  hoveredNpcId = npc
   hoveredNodeId = node?.id ?? null
-  hoveredId = node === null ? buildingAt(world.x, world.y) : null
-  canvas.style.cursor = node !== null || hoveredId !== null ? 'pointer' : 'default'
+  hoveredId = npc === null && node === null ? buildingAt(world.x, world.y) : null
+
+  canvas.style.cursor = npc !== null || node !== null || hoveredId !== null ? 'pointer' : 'default'
 }
 
 // Указатель: короткий тап — идти, перетаскивание — сдвиг, два пальца — масштаб (4.2.2, 5.2).
@@ -496,9 +558,23 @@ function endPointer(event: PointerEvent): void {
   if (wasOnlyPointer && pointerStart && !pointerDragged) {
     const rect = canvas.getBoundingClientRect()
     const world = camera.toWorld(event.clientX - rect.left, event.clientY - rect.top)
-    const node = nodeAt(world.x, world.y)
+    const npc = npcAt(world.x, world.y)
+    const node = npc === null ? nodeAt(world.x, world.y) : null
 
     gathering = null
+
+    if (npc !== null) {
+      const npcDistance = distance(state.player.position, { x: TRADER.x, y: TRADER.y })
+      if (npcDistance <= INTERACT_RANGE + 12) {
+        openTrade()
+      } else {
+        pendingNpcId = npc
+        pendingNodeId = null
+        moveTarget = { x: TRADER.x, y: TRADER.y + 18 }
+        followPaused = false
+      }
+      return
+    }
 
     if (node) {
       const now = absoluteMinutes(state.clock)

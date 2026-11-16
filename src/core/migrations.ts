@@ -54,6 +54,16 @@ const migrations: Record<number, Migration> = {
     version: 4,
     world: { nodes: {} },
   }),
+  // 4 → 5: монеты и торговец с доверием (6.4).
+  4: (data) => ({
+    ...data,
+    version: 5,
+    player: { ...asRecord(data['player']), money: 15 },
+    world: {
+      ...asRecord(data['world']),
+      trader: { trust: 0 },
+    },
+  }),
 }
 
 export class MigrationError extends Error {}

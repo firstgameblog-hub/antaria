@@ -8,6 +8,7 @@ import type { NodeKind } from '../data/gathering'
 import type { Facing, Point, Rect } from '../core/movement'
 import { drawBuilding } from './buildings'
 import { drawGatheringNode } from './nodes'
+import { drawTrader } from './npc'
 import { PALETTE } from './palette'
 import { drawPlayer } from './player'
 
@@ -519,6 +520,13 @@ export interface SceneNode {
   ready: boolean
 }
 
+export interface SceneNpc {
+  id: string
+  x: number
+  y: number
+  facing: Facing
+}
+
 export interface SceneOptions {
   time: number
   showGrid: boolean
@@ -526,7 +534,8 @@ export interface SceneOptions {
   player: ScenePlayer | null
   moveTarget: Point | null
   nodes: readonly SceneNode[]
-  hoveredNode: { x: number; y: number; label: string } | null
+  npcs: readonly SceneNpc[]
+  hoveredLabel: { x: number; y: number; label: string } | null
   gatherProgress: { x: number; y: number; value: number } | null
 }
 
@@ -687,6 +696,16 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
     })
   }
 
+  for (const npc of options.npcs) {
+    drawables.push({
+      baseY: npc.y,
+      bounds: { x: npc.x - 10, y: npc.y - 32, w: 20, h: 32 },
+      draw: () => {
+        drawTrader(ctx, npc.x, npc.y, npc.facing, options.time)
+      },
+    })
+  }
+
   const player = options.player
   const playerBounds: Rect | null = player
     ? { x: player.x - 8, y: player.y - 32, w: 16, h: 32 }
@@ -724,18 +743,18 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
     if (hovered) drawHover(ctx, hovered)
   }
 
-  const hoveredNode = options.hoveredNode
-  if (hoveredNode) {
+  const hoveredLabel = options.hoveredLabel
+  if (hoveredLabel) {
     ctx.save()
     ctx.strokeStyle = 'rgba(138, 90, 43, 0.85)'
     ctx.lineWidth = 2
     ctx.setLineDash([5, 4])
     ctx.beginPath()
-    ctx.ellipse(hoveredNode.x, hoveredNode.y, 18, 8, 0, 0, Math.PI * 2)
+    ctx.ellipse(hoveredLabel.x, hoveredLabel.y, 18, 8, 0, 0, Math.PI * 2)
     ctx.stroke()
     ctx.restore()
 
-    drawLabel(ctx, hoveredNode.label, hoveredNode.x, hoveredNode.y - 38)
+    drawLabel(ctx, hoveredLabel.label, hoveredLabel.x, hoveredLabel.y - 38)
   }
 
   if (options.gatherProgress) drawGatherProgress(ctx, options.gatherProgress)
