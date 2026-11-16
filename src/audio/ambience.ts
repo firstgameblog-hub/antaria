@@ -120,23 +120,49 @@ class Ambience {
     source.buffer = noise
     source.loop = true
 
-    const filter = ctx.createBiquadFilter()
-    filter.type = 'lowpass'
-    filter.frequency.value = 420
+    // Два слоя: низкий гул и «воздух». Вместе они читаются как ветер,
+    // по отдельности — как шум.
+    const low = ctx.createBiquadFilter()
+    low.type = 'lowpass'
+    low.frequency.value = 380
 
-    const gain = ctx.createGain()
-    gain.gain.value = 0.22
+    const air = ctx.createBiquadFilter()
+    air.type = 'bandpass'
+    air.frequency.value = 1100
+    air.Q.value = 0.7
 
-    source.connect(filter).connect(gain).connect(ambience)
+    const lowGain = ctx.createGain()
+    lowGain.gain.value = 0.1
+
+    const airGain = ctx.createGain()
+    airGain.gain.value = 0.032
+
+    source.connect(low).connect(lowGain).connect(ambience)
+    source.connect(air).connect(airGain).connect(ambience)
     source.start()
 
-    // Медленное «дыхание» ветра.
-    const lfo = ctx.createOscillator()
-    lfo.frequency.value = 0.07
-    const lfoGain = ctx.createGain()
-    lfoGain.gain.value = 0.09
-    lfo.connect(lfoGain).connect(gain.gain)
-    lfo.start()
+    // Порывы: медленное дыхание, чтобы шум не был ровным.
+    const gust = ctx.createOscillator()
+    gust.frequency.value = 0.07
+    const gustDepth = ctx.createGain()
+    gustDepth.gain.value = 0.05
+    gust.connect(gustDepth).connect(lowGain.gain)
+    gust.start()
+
+    const gustAir = ctx.createOscillator()
+    gustAir.frequency.value = 0.11
+    const gustAirDepth = ctx.createGain()
+    gustAirDepth.gain.value = 0.018
+    gustAir.connect(gustAirDepth).connect(airGain.gain)
+    gustAir.start()
+
+    // Тон ветра медленно уплывает — иначе слышен ровный фильтр.
+    const drift = ctx.createOscillator()
+    drift.frequency.value = 0.045
+    const driftDepth = ctx.createGain()
+    driftDepth.gain.value = 90
+    drift.connect(driftDepth).connect(low.frequency)
+    drift.start()
   }
 
   private scheduleFire(): void {
