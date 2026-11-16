@@ -287,7 +287,27 @@ function recordJournal(scene: StoryScene, beat: number): void {
 }
 
 function openJournal(): void {
-  openJournalScreen({ getEntries: () => state.journal })
+  openJournalScreen({
+    getEntries: () => state.journal,
+    getRequests: () => openRequests(),
+  })
+}
+
+/** Открытые просьбы: видно, о чём люди просят прямо сейчас. */
+function openRequests(): string[] {
+  const requests: string[] = []
+
+  if (state.flags[`${ROOF_THREAD.id}.done`] !== true) {
+    requests.push(
+      `Марта просит ${ROOF_THREAD.requirement.count} ветки — подпереть протекающую крышу.`,
+    )
+  }
+
+  if (state.flags['trader.order.done'] !== true) {
+    requests.push(`Корней просит ${TRADER.order.count} веток за ${TRADER.order.reward} монет.`)
+  }
+
+  return requests
 }
 
 /** Первое действие игрока включает звук: раньше браузер не разрешает. */
@@ -344,8 +364,18 @@ function startStory(sceneId: string, startBeat = 0): void {
         state.flags['prologue.done'] = true
       }
 
+      if (sceneId === 'morning') {
+        state.flags['chapter1.morning.done'] = true
+        flash('Марта ждёт веток. Все просьбы — в «Хронике» внизу.', 6000)
+      }
+
       persist()
       updateHud()
+
+      // Сразу после пролога — первое утро: старик объясняет, что делать.
+      if (sceneId === 'prologue' && state.flags['chapter1.morning.done'] !== true) {
+        startStory('morning')
+      }
     },
   })
 }
@@ -572,6 +602,9 @@ function frame(time: number): void {
     ready: isReady(state.world.nodes, spot.id, now),
   }))
 
+  // Подсветка того, что рядом можно тронуть: без значков, но заметно и на телефоне.
+  const nearby = buildNearby()
+
   const hoveredLabel = hoveredDef
     ? { x: hoveredDef.x, y: hoveredDef.y, label: nodeLabel(hoveredDef, now) }
     : hoveredSpotDef
@@ -624,6 +657,7 @@ function frame(time: number): void {
       kind: npc.kind,
     })),
     spots: sceneSpots,
+    nearby,
     drips:
       state.flags[`${ROOF_THREAD.id}.done`] === true ? [] : [{ x: ROOF_THREAD.drip.x, y: ROOF_THREAD.drip.y }],
     hoveredLabel,
@@ -639,8 +673,28 @@ function frame(time: number): void {
   requestAnimationFrame(frame)
 }
 
-function buildingAt(worldX: number, worldY: number): string | null {
-  for (const building of START_VILLAGE) {
+/** Точки рядом с героем, которые можно тронуть. */
+function buildNearby(): Point[] {
+  const limit = 80
+  const player = state.player.position
+  const points: Point[] = []
+
+  for (const node of GATHERING_NODES) {
+    if (distance(player, { x: node.x, y: node.y }) <= limit) points.push({ x: node.x, y: node.y })
+  }
+
+  for (const spot of HUNT_SPOTS) {
+    if (distance(player, { x: spot.x, y: spot.y }) <= limit) points.push({ x: spot.x, y: spot.y })
+  }
+
+  for (const npc of activeNpcs()) {
+    if (distance(player, { x: npc.x, y: npc.y }) <= limit) points.push({ x: npc.x, y: npc.y })
+  }
+
+  return points
+}
+
+function buildingAt(worldX: number, worldY: number): string | null {  for (const building of START_VILLAGE) {
     const x = building.x * TILE
     const y = building.y * TILE
     const w = building.w * TILE

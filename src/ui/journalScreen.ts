@@ -11,6 +11,7 @@ import { escapeHtml } from './html'
 
 export interface JournalScreenOptions {
   getEntries: () => JournalEntry[]
+  getRequests: () => string[]
 }
 
 interface JournalChapter {
@@ -59,6 +60,7 @@ function render(): void {
   if (!overlay || !options) return
 
   const chapters = groupByDate(options.getEntries())
+  const requests = options.getRequests()
 
   overlay.innerHTML = `
     <div class="screen journal" role="dialog" aria-modal="true" aria-label="Хроника">
@@ -66,6 +68,16 @@ function render(): void {
         <h2 class="screen__title">Хроника</h2>
         <button class="screen__close" data-action="close" aria-label="Закрыть">×</button>
       </header>
+      ${
+        requests.length > 0
+          ? `<section class="journal__requests">
+               <h3 class="journal__requests-title">О чём просят</h3>
+               <ul class="journal__requests-list">
+                 ${requests.map((request) => `<li>${escapeHtml(request)}</li>`).join('')}
+               </ul>
+             </section>`
+          : ''
+      }
       <div class="journal__body">
         ${
           chapters.length === 0

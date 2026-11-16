@@ -80,7 +80,35 @@ export const PROLOGUE: StoryScene = {
   ],
 }
 
-export const SCENES: readonly StoryScene[] = [PROLOGUE]
+export const MORNING: StoryScene = {
+  id: 'morning',
+  title: 'Утро',
+  beats: [
+    {
+      id: 'wake',
+      text: '— Вставай, сынок. Солнце уже высоко, а ты лежишь, будто тебя конём приложили.',
+    },
+    {
+      id: 'father',
+      text: 'Старик смотрит на тебя и ждёт. Он не спрашивает, помнишь ли ты: он говорит так, как говорят с тем, кто ещё не проснулся.',
+    },
+    {
+      id: 'village',
+      text: '— Двадцать нас осталось. Двадцать и один костёр. К зиме либо встанем на ноги, либо разойдёмся кто куда.',
+    },
+    {
+      id: 'task',
+      text: '— Марта ночью воду из дома вычерпывала. Крыша совсем прохудилась. Принеси ей веток, сколько найдёшь, — она подопрёт.',
+    },
+    {
+      id: 'trader',
+      text: '— И к Корнею загляни. Он с утра там, товар разложил. Может, чем разживёмся.',
+      journal: 'Отец сказал: нас двадцать. Зима близко.',
+    },
+  ],
+}
+
+export const SCENES: readonly StoryScene[] = [PROLOGUE, MORNING]
 
 export function sceneById(id: string): StoryScene | undefined {
   return SCENES.find((scene) => scene.id === id)

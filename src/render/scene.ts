@@ -550,6 +550,7 @@ export interface SceneOptions {
   npcs: readonly SceneNpc[]
   spots: readonly SceneSpot[]
   drips: readonly SceneDrip[]
+  nearby: readonly Point[]
   hoveredLabel: { x: number; y: number; label: string } | null
   gatherProgress: { x: number; y: number; value: number } | null
 }
@@ -625,6 +626,30 @@ function drawDrip(ctx: CanvasRenderingContext2D, drip: SceneDrip, time: number):
   ctx.restore()
 }
 
+/** Мягкое свечение у того, что можно тронуть: подсказка без значков. */
+function drawNearby(ctx: CanvasRenderingContext2D, point: Point, time: number): void {
+  const pulse = 0.55 + Math.sin(time / 420) * 0.2
+  const centerY = point.y - 6
+
+  const glow = ctx.createRadialGradient(point.x, centerY, 2, point.x, centerY, 30)
+  glow.addColorStop(0, `rgba(255, 238, 200, ${0.3 * pulse})`)
+  glow.addColorStop(0.6, `rgba(255, 238, 200, ${0.1 * pulse})`)
+  glow.addColorStop(1, 'rgba(255, 238, 200, 0)')
+
+  ctx.save()
+  ctx.fillStyle = glow
+  ctx.beginPath()
+  ctx.arc(point.x, centerY, 30, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.strokeStyle = `rgba(196, 140, 70, ${0.5 * pulse})`
+  ctx.lineWidth = 1.2
+  ctx.beginPath()
+  ctx.ellipse(point.x, point.y, 16, 6.5, 0, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.restore()
+}
+
 function drawMoveTarget(ctx: CanvasRenderingContext2D, point: Point, time: number): void {  const pulse = 0.6 + Math.sin(time / 260) * 0.2
   ctx.save()
   ctx.strokeStyle = `rgba(138, 90, 43, ${0.55 * pulse + 0.2})`
@@ -690,6 +715,10 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
 
   for (const drip of options.drips) {
     drawDrip(ctx, drip, options.time)
+  }
+
+  for (const point of options.nearby) {
+    drawNearby(ctx, point, options.time)
   }
 
   // Поля — плоская земля: рисуются всегда под всем, иначе герой «проваливается» под них
