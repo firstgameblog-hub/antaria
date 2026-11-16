@@ -709,6 +709,15 @@ body {
   line-height: 1.6;
 }
 
+.village__daily {
+  margin: 0 0 1rem;
+  padding: 0.55rem 0.8rem;
+  background: rgba(138, 90, 43, 0.08);
+  border-left: 2px solid var(--accent);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
 .village__list {
   margin: 0;
   padding: 0;

@@ -17,6 +17,7 @@ export interface VillageScreenOptions {
   getStageName: () => string
   getNextStageName: () => string | null
   getRequirements: () => readonly VillageRequirement[]
+  getDailyNeed: () => string
   onDeposit: () => string
   onCeremony: () => void
   onClose: () => void
@@ -48,6 +49,7 @@ function render(): void {
       </header>
 
       <div class="village__body">
+        <p class="village__daily">${escapeHtml(options.getDailyNeed())}</p>
         ${
           nextStageName
             ? `<p class="village__next">Следующая стадия — <strong>${escapeHtml(nextStageName)}</strong>. Для неё нужно сдать на склад:</p>

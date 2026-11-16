@@ -16,7 +16,16 @@ import { addItems, countOf, removeItems, transfer, weightOf } from './core/inven
 import { describeRestore, isReady, markGathered, minutesUntilReady } from './core/gathering'
 import { distance, facingOf, findFreeSpot, movePlayer, stepToward, type Facing, type Point } from './core/movement'
 import { AUTO_SLOT, readBackup, readSlot, writeSlot } from './core/storage'
-import { ACTION_MINUTES, absoluteMinutes, addMinutes, nextMorning } from './core/time'
+import {
+  ACTION_MINUTES,
+  DAYS_PER_YEAR,
+  MINUTES_PER_DAY,
+  absoluteMinutes,
+  addMinutes,
+  nextMorning,
+  seasonOf,
+} from './core/time'
+import { applyDailyUpkeep, dailyNeeds } from './core/upkeep'
 import type { GatheringNodeDef, NodeKind } from './data/gathering'
 import { GATHERING_NODES } from './content/gathering'
 import { ITEM_BY_ID, itemDef, itemName } from './content/items'
@@ -183,10 +192,46 @@ function flash(text: string, ms = 3500): void {
   updateHud()
 }
 
+/** Двигает время и закрывает прошедшие ночи: деревня ест и жжёт дрова. */
+function advanceTime(minutes: number): void {
+  if (minutes <= 0) return
+
+  const before = absoluteMinutes(state.clock)
+  state.clock = addMinutes(state.clock, minutes).clock
+  const after = absoluteMinutes(state.clock)
+
+  const firstNight = Math.floor(before / MINUTES_PER_DAY)
+  const lastNight = Math.floor(after / MINUTES_PER_DAY)
+
+  for (let night = firstNight; night < lastNight; night += 1) {
+    processNight(night)
+  }
+}
+
+function processNight(absoluteDayIndex: number): void {
+  const dayOfYear = (absoluteDayIndex % DAYS_PER_YEAR) + 1
+  const season = seasonOf(dayOfYear)
+  const result = applyDailyUpkeep(state.village.storage, state.village.population, season)
+
+  if (result.lost > 0) {
+    state.village.population = Math.max(1, state.village.population - result.lost)
+    addJournal(
+      result.winter
+        ? 'Зимняя ночь была голодной. Несколько человек ушли, не дождавшись утра.'
+        : 'Ночью не хватило еды. Кто-то собрал узел и ушёл.',
+    )
+    flash(`Деревня потеряла людей: −${result.lost}. Не хватило еды или дров.`, 6000)
+  }
+}
+
 /** Ночь (3.2.6). Время идёт вперёд, утром — сводка. Следы в деревне появятся с 7.16. */
 function sleep(): void {
+  const before = absoluteMinutes(state.clock)
   const step = nextMorning(state.clock)
-  state.clock = step.clock
+  const after = absoluteMinutes(step.clock)
+
+  advanceTime(after - before)
+
   nightNote = {
     text:
       step.daysPassed > 1
@@ -232,7 +277,7 @@ function beginCombat(enemy: EnemyDef, options: { playerFirst?: boolean } = {}): 
       state.player.health.current = Math.max(0, combat.playerHp)
 
       // Бой тоже занимает время: ход — пять минут.
-      state.clock = addMinutes(state.clock, ACTION_MINUTES.fight).clock
+      advanceTime(ACTION_MINUTES.fight)
       updateHud()
     },
     onFinish: () => finishCombat(),
@@ -333,6 +378,12 @@ function openVillage(): void {
         have: countOf(state.village.storage, requirement.itemId),
         need: requirement.count,
       })),
+    getDailyNeed: () => {
+      const season = seasonOf(state.clock.day)
+      const needs = dailyNeeds(state.village.population, season)
+      const winterNote = needs.winter ? ' Зима: расход двойной.' : ''
+      return `В день деревня съедает ${needs.food} еды и сжигает ${needs.fuel} дров.${winterNote}`
+    },
     onDeposit: () => {
       if (!next) return 'Дальше некуда'
 
@@ -495,6 +546,7 @@ function openCraft(): void {
       }
 
       playCraft()
+      advanceTime(recipe.minutes)
       persist()
       updateHud()
       return result.message
@@ -938,7 +990,7 @@ function openBuild(structure: StructureDef): void {
       }
 
       state.world.buildings.push(structure.id)
-      state.clock = addMinutes(state.clock, structure.minutes).clock
+      advanceTime(structure.minutes)
       addJournal(structure.journal)
       refreshObstacles()
       persist()
@@ -1071,7 +1123,7 @@ function finishGathering(): void {
   }
 
   markGathered(state.world.nodes, node.id, now, node.restoreMinutes)
-  state.clock = addMinutes(state.clock, ACTION_MINUTES.gather).clock
+  advanceTime(ACTION_MINUTES.gather)
 
   flash(
     added < node.count

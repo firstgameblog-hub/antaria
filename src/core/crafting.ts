@@ -8,7 +8,6 @@
 import type { Recipe } from '../data/crafting'
 import type { ItemDef } from '../data/items'
 import { addItems, countOf, freeSpaceKg, removeItems, type Inventory } from './inventory'
-import { addMinutes } from './time'
 import type { GameState } from './state'
 
 export type Defs = ReadonlyMap<string, ItemDef>
@@ -66,8 +65,6 @@ export function craftRecipe(state: GameState, recipe: Recipe, defs: Defs): Craft
     }
     return { ok: false, reason: 'Не хватает места в грузе' }
   }
-
-  state.clock = addMinutes(state.clock, recipe.minutes).clock
 
   return { ok: true, message: `Готово: ${outputDef.name} ×${added}` }
 }
