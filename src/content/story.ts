@@ -110,6 +110,33 @@ export const MORNING: StoryScene = {
 
 export const SCENES: readonly StoryScene[] = [PROLOGUE, MORNING]
 
+/** Переход со стадии «Последний очаг» на «Первый дым» (M2.4). */
+export const FIRST_SMOKE: StoryScene = {
+  id: 'first_smoke',
+  title: 'Первый дым',
+  beats: [
+    {
+      id: 'call',
+      text: 'Ты не спрашиваешь, пора ли. Ты просто говоришь: «Хватит». И удивляешься, как быстро все соглашаются.',
+    },
+    {
+      id: 'work',
+      text: 'Доски идут на стропила, брёвна — на новый частокол. Старик сам берётся за топор, хотя руки у него уже не те. Марта носит воду.',
+    },
+    {
+      id: 'smoke',
+      text: 'К вечеру над деревней стоит дым — ровный, густой. Такой бывает в доме, где не боятся зимы.',
+      journal: 'Первый дым. Двадцать пять душ, новый частокол и зима, которую можно пережить.',
+    },
+    {
+      id: 'stranger',
+      text: 'У ворот стоит кто-то незнакомый. Не входит, не уходит. Просто смотрит на дым и считает трубы.',
+    },
+  ],
+}
+
+export const ALL_SCENES: readonly StoryScene[] = [PROLOGUE, MORNING, FIRST_SMOKE]
+
 export function sceneById(id: string): StoryScene | undefined {
-  return SCENES.find((scene) => scene.id === id)
+  return ALL_SCENES.find((scene) => scene.id === id)
 }

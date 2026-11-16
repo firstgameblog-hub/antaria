@@ -6,8 +6,10 @@ import type { CombatAction, EnemyDef } from './data/combat'
 import { HUNT_SPOTS, type HuntSpot } from './content/hunting'
 import { ROOF_THREAD, threadById, type ThreadDef } from './content/threads'
 import { openRequestScreen, closeRequestScreen } from './ui/requestScreen'
+import { openVillageScreen, closeVillageScreen } from './ui/villageScreen'
+import { nextStage, stageById } from './content/stages'
 import { canCraft, craftRecipe } from './core/crafting'
-import { addItems, countOf, removeItems, weightOf } from './core/inventory'
+import { addItems, countOf, removeItems, transfer, weightOf } from './core/inventory'
 import { describeRestore, isReady, markGathered, minutesUntilReady } from './core/gathering'
 import { distance, facingOf, findFreeSpot, movePlayer, stepToward, type Facing, type Point } from './core/movement'
 import { AUTO_SLOT, readBackup, readSlot, writeSlot } from './core/storage'
@@ -77,6 +79,7 @@ const hud = createHud({
   onCraft: () => openCraft(),
   onJournal: () => openJournal(),
   onSound: () => toggleSound(),
+  onVillage: () => openVillage(),
 })
 app.append(hud.element)
 
@@ -298,8 +301,71 @@ function openJournal(): void {
   })
 }
 
-/** Открытые просьбы: видно, о чём люди просят прямо сейчас. */
-function openRequests(): string[] {
+function openVillage(): void {
+  const current = stageById(state.village.stageId)
+  if (!current) return
+
+  const next = nextStage(state.village.stageId)
+
+  openVillageScreen({
+    getStageName: () => stageById(state.village.stageId)?.name ?? state.village.stageId,
+    getNextStageName: () => nextStage(state.village.stageId)?.name ?? null,
+    getRequirements: () =>
+      (nextStage(state.village.stageId)?.requirements ?? []).map((requirement) => ({
+        label: itemName(requirement.itemId),
+        have: countOf(state.village.storage, requirement.itemId),
+        need: requirement.count,
+      })),
+    onDeposit: () => {
+      if (!next) return 'Дальше некуда'
+
+      let moved = 0
+
+      for (const requirement of next.requirements) {
+        const have = countOf(state.village.storage, requirement.itemId)
+        const missing = requirement.count - have
+        if (missing <= 0) continue
+
+        moved += transfer(
+          state.player.inventory,
+          state.village.storage,
+          requirement.itemId,
+          missing,
+          ITEM_BY_ID,
+        )
+      }
+
+      if (moved === 0) return 'Сдавать нечего.'
+
+      persist()
+      updateHud()
+      return `Сдано на склад: ${moved}`
+    },
+    onCeremony: () => startCeremony(),
+    onClose: () => undefined,
+  })
+}
+
+function startCeremony(): void {
+  const current = stageById(state.village.stageId)
+  const next = nextStage(state.village.stageId)
+  if (!current || !next || current.ceremonyScene === '') return
+
+  closeVillageScreen()
+
+  startStory(current.ceremonyScene, 0, () => {
+    state.village.stageId = next.id
+    state.village.population = next.population
+
+    if (next.journalOnEnter !== '') addJournal(next.journalOnEnter)
+
+    persist()
+    updateHud()
+    flash(`Деревня стала: ${next.name}`, 6000)
+  })
+}
+
+/** Открытые просьбы: видно, о чём люди просят прямо сейчас. */function openRequests(): string[] {
   const requests: string[] = []
 
   if (state.flags[`${ROOF_THREAD.id}.done`] !== true) {
@@ -342,7 +408,7 @@ function toggleSound(): void {
   if (next) playCoin()
 }
 
-function startStory(sceneId: string, startBeat = 0): void {
+function startStory(sceneId: string, startBeat = 0, onComplete?: () => void): void {
   const scene = sceneById(sceneId)
   if (!scene) return
 
@@ -384,6 +450,8 @@ function startStory(sceneId: string, startBeat = 0): void {
       if (sceneId === 'prologue' && state.flags['chapter1.morning.done'] !== true) {
         startStory('morning')
       }
+
+      onComplete?.()
     },
   })
 }
@@ -666,6 +734,7 @@ function frame(time: number): void {
     })),
     spots: sceneSpots,
     nearby,
+    stageId: state.village.stageId,
     drips:
       state.flags[`${ROOF_THREAD.id}.done`] === true ? [] : [{ x: ROOF_THREAD.drip.x, y: ROOF_THREAD.drip.y }],
     hoveredLabel,

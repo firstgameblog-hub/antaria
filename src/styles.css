@@ -670,6 +670,74 @@ body {
   opacity: 0.35;
 }
 
+/* ---------- Деревня ---------- */
+
+.village {
+  width: min(34rem, 100%);
+}
+
+.village__body {
+  padding: 1.1rem 1.6rem 0.6rem;
+}
+
+.village__next {
+  margin: 0 0 0.8rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.village__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.village__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid rgba(43, 33, 24, 0.1);
+  font-size: 0.95rem;
+}
+
+.village__row--done {
+  color: #4f6b3a;
+}
+
+.village__count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.village__foot {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.9rem 1.6rem 0.2rem;
+}
+
+.village__foot button {
+  padding: 0.45rem 1rem;
+  font-family: var(--font-text);
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid rgba(43, 33, 24, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.village__foot button:hover:not(:disabled) {
+  background: rgba(138, 90, 43, 0.1);
+  border-color: var(--accent);
+}
+
+.village__foot button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 /* ---------- Просьба ---------- */
 
 .request {

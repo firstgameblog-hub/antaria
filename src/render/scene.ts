@@ -298,9 +298,9 @@ function drawSouthRoad(ctx: CanvasRenderingContext2D): void {
 }
 
 /** Сгнивший частокол: плотные колья с проломами и покосившимися кольями. */
-function drawPalisade(ctx: CanvasRenderingContext2D): void {
-  const random = mulberry32(4242)
-  const step = 11
+function drawPalisade(ctx: CanvasRenderingContext2D, solid: boolean): void {
+  const random = mulberry32(solid ? 9091 : 4242)
+  const step = solid ? 9 : 11
 
   const post = (x: number, y: number, verticalWall: boolean): void => {
     const scale = 0.85 + random() * 0.5
@@ -343,13 +343,13 @@ function drawPalisade(ctx: CanvasRenderingContext2D): void {
   ctx.stroke()
 
   for (let x = left; x <= right; x += step) {
-    if (random() > 0.1) post(x, top + 2, false)
+    if (random() > (solid ? 0.03 : 0.1)) post(x, top + 2, false)
     const inGate = Math.abs(x - WORLD.w / 2) < 58
-    if (!inGate && random() > 0.18) post(x, bottom, false)
+    if (!inGate && random() > (solid ? 0.05 : 0.18)) post(x, bottom, false)
   }
   for (let y = top; y <= bottom; y += step) {
-    if (random() > 0.16) post(left, y, true)
-    if (random() > 0.16) post(right, y, true)
+    if (random() > (solid ? 0.04 : 0.16)) post(left, y, true)
+    if (random() > (solid ? 0.04 : 0.16)) post(right, y, true)
   }
 }
 
@@ -551,6 +551,7 @@ export interface SceneOptions {
   spots: readonly SceneSpot[]
   drips: readonly SceneDrip[]
   nearby: readonly Point[]
+  stageId: string
   hoveredLabel: { x: number; y: number; label: string } | null
   gatherProgress: { x: number; y: number; value: number } | null
 }
@@ -711,7 +712,7 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
   }
 
   drawGroundProps(ctx)
-  drawPalisade(ctx)
+  drawPalisade(ctx, options.stageId !== 'stage_dying')
 
   for (const drip of options.drips) {
     drawDrip(ctx, drip, options.time)
