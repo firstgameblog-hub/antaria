@@ -54,6 +54,7 @@ const GATHER_SECONDS: Record<NodeKind, number> = {
   berry: 1.6,
   branch: 1.8,
   stone: 2.6,
+  log: 3.2,
 }
 
 const root = document.querySelector<HTMLDivElement>('#app')
@@ -209,6 +210,10 @@ function beginCombat(enemy: EnemyDef, options: { playerFirst?: boolean } = {}): 
       if (!combat) return
       resolveTurn(combat, action, playerCombatStats())
       state.player.health.current = Math.max(0, combat.playerHp)
+
+      // Бой тоже занимает время: ход — пять минут.
+      state.clock = addMinutes(state.clock, ACTION_MINUTES.fight).clock
+      updateHud()
     },
     onFinish: () => finishCombat(),
   })
@@ -298,13 +303,16 @@ function openRequests(): string[] {
   const requests: string[] = []
 
   if (state.flags[`${ROOF_THREAD.id}.done`] !== true) {
-    requests.push(
-      `Марта просит ${ROOF_THREAD.requirement.count} ветки — подпереть протекающую крышу.`,
-    )
+    const list = ROOF_THREAD.requirements
+      .map((requirement) => `${itemName(requirement.itemId)} — ${requirement.count} шт.`)
+      .join(', ')
+    requests.push(`Марта просит: ${list}`)
   }
 
   if (state.flags['trader.order.done'] !== true) {
-    requests.push(`Корней просит ${TRADER.order.count} веток за ${TRADER.order.reward} монет.`)
+    requests.push(
+      `Корней просит ${TRADER.order.count} × ${itemName(TRADER.order.itemId)} за ${TRADER.order.reward} монет.`,
+    )
   }
 
   return requests
@@ -771,14 +779,18 @@ function openThread(thread: ThreadDef): void {
   openRequestScreen({
     title: thread.title,
     text: thread.text,
-    requirement: thread.requirement,
+    requirements: thread.requirements,
     getInventory: () => state.player.inventory,
     onDeliver: () => {
-      if (countOf(state.player.inventory, thread.requirement.itemId) < thread.requirement.count) {
-        return 'Не хватает'
+      const missing = thread.requirements.some(
+        (requirement) => countOf(state.player.inventory, requirement.itemId) < requirement.count,
+      )
+      if (missing) return 'Не хватает'
+
+      for (const requirement of thread.requirements) {
+        removeItems(state.player.inventory, requirement.itemId, requirement.count)
       }
 
-      removeItems(state.player.inventory, thread.requirement.itemId, thread.requirement.count)
       state.player.money += thread.rewardMoney
       state.flags[`${thread.id}.done`] = true
       addJournal(thread.journalDone)

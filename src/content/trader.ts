@@ -36,5 +36,5 @@ export const TRADER: TraderDef = {
     { itemId: 'knife', price: 20 },
   ],
   buys: ['branch', 'log', 'herb', 'berry', 'hide', 'meat', 'plank', 'rope', 'stone'],
-  order: { itemId: 'branch', count: 5, reward: 12 },
+  order: { itemId: 'rope', count: 2, reward: 12 },
 }

@@ -25,9 +25,9 @@ export const WOLF: EnemyDef = {
 export const DEER: EnemyDef = {
   id: 'roe_deer',
   name: 'Косуля',
-  maxHp: 10,
-  minDamage: 1,
-  maxDamage: 2,
+  maxHp: 14,
+  minDamage: 2,
+  maxDamage: 3,
   initiative: 0,
   intro: 'Следы выводят на поляну. Косуля вскидывает голову — ты успеваешь ударить первым.',
   escapesWhenHurt: true,

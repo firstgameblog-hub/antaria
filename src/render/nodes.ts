@@ -106,8 +106,47 @@ function drawBranch(ctx: CanvasRenderingContext2D, x: number, y: number, ready: 
   ctx.lineCap = 'butt'
 }
 
-function drawStone(ctx: CanvasRenderingContext2D, x: number, y: number, ready: boolean): void {
-  drawShadow(ctx, x, y, 13, 4.5)
+function drawLogPile(ctx: CanvasRenderingContext2D, x: number, y: number, ready: boolean): void {
+  drawShadow(ctx, x, y, 15, 5)
+
+  if (!ready) {
+    ctx.strokeStyle = '#9d8f7a'
+    ctx.lineWidth = 2.4
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(x - 6, y - 1)
+    ctx.lineTo(x + 5, y - 2)
+    ctx.stroke()
+    ctx.lineCap = 'butt'
+    return
+  }
+
+  ctx.lineCap = 'round'
+  ctx.strokeStyle = '#7c5836'
+  ctx.lineWidth = 8
+  ctx.beginPath()
+  ctx.moveTo(x - 14, y - 3)
+  ctx.lineTo(x + 6, y - 6)
+  ctx.stroke()
+
+  ctx.strokeStyle = '#8a5f38'
+  ctx.lineWidth = 7
+  ctx.beginPath()
+  ctx.moveTo(x - 8, y + 3)
+  ctx.lineTo(x + 13, y)
+  ctx.stroke()
+  ctx.lineCap = 'butt'
+
+  ctx.fillStyle = '#d8b87a'
+  ctx.strokeStyle = '#3a2f24'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.ellipse(x + 6, y - 6, 2, 3.6, 0.2, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+}
+
+function drawStone(ctx: CanvasRenderingContext2D, x: number, y: number, ready: boolean): void {  drawShadow(ctx, x, y, 13, 4.5)
 
   ctx.fillStyle = ready ? '#9a958a' : '#b3ada2'
   ctx.strokeStyle = INK
@@ -151,6 +190,9 @@ export function drawGatheringNode(
       break
     case 'stone':
       drawStone(ctx, x, y, ready)
+      break
+    case 'log':
+      drawLogPile(ctx, x, y, ready)
       break
   }
 }

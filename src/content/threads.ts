@@ -5,6 +5,11 @@
  * беды, и видно, что ему нужно. Ни маркеров, ни «!» над головой.
  */
 
+export interface ThreadRequirement {
+  itemId: string
+  count: number
+}
+
 export interface ThreadDef {
   id: string
   npcName: string
@@ -17,7 +22,7 @@ export interface ThreadDef {
   drip: { x: number; y: number }
   title: string
   text: string
-  requirement: { itemId: string; count: number }
+  requirements: readonly ThreadRequirement[]
   rewardMoney: number
   journalDone: string
 }
@@ -30,8 +35,11 @@ export const ROOF_THREAD: ThreadDef = {
   y: 545,
   drip: { x: 300, y: 520 },
   title: 'Прохудившаяся крыша',
-  text: 'Марта стоит под стрехой и смотрит, как капает. Внутри спят дети, и одеяла уже не спасают. Нужны четыре крепких ветки — подпереть стропила, пока не рухнуло.',
-  requirement: { itemId: 'branch', count: 4 },
+  text: 'Марта стоит под стрехой и смотрит, как капает. Внутри спят дети, и одеяла уже не спасают. Подпереть стропила ветками мало — нужны две доски, а без крепких веток их не подвязать.',
+  requirements: [
+    { itemId: 'branch', count: 4 },
+    { itemId: 'plank', count: 2 },
+  ],
   rewardMoney: 8,
   journalDone: 'Марта закрыла крышу. Ночью я слышал, как в её доме впервые за неделю смеются.',
 }

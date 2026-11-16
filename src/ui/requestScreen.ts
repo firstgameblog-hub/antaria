@@ -11,7 +11,7 @@ import { escapeHtml } from './html'
 export interface RequestScreenOptions {
   title: string
   text: string
-  requirement: { itemId: string; count: number }
+  requirements: readonly { itemId: string; count: number }[]
   getInventory: () => Inventory
   /** Вернуть сообщение об итоге; пустая строка — закрыть. */
   onDeliver: () => string
@@ -32,8 +32,16 @@ function render(): void {
   if (!overlay || !options) return
 
   const inventory = options.getInventory()
-  const have = countOf(inventory, options.requirement.itemId)
-  const enough = have >= options.requirement.count
+  const rows = options.requirements.map((requirement) => {
+    const have = countOf(inventory, requirement.itemId)
+    const enough = have >= requirement.count
+    return {
+      label: `${requirement.count} × ${itemName(requirement.itemId)}`,
+      have,
+      enough,
+    }
+  })
+  const canDeliver = rows.every((row) => row.enough)
 
   overlay.innerHTML = `
     <div class="screen request" role="dialog" aria-modal="true" aria-label="Просьба">
@@ -45,13 +53,17 @@ function render(): void {
       <div class="request__body">
         <p class="request__text">${escapeHtml(options.text)}</p>
         <p class="request__need">
-          Нужно: ${options.requirement.count} × ${escapeHtml(itemName(options.requirement.itemId))}
-          <span class="request__have">(у тебя ${have})</span>
+          ${rows
+            .map(
+              (row) =>
+                `<span class="${row.enough ? 'request__ok' : 'request__lack'}">${escapeHtml(row.label)} (у тебя ${row.have})</span>`,
+            )
+            .join(' · ')}
         </p>
       </div>
 
       <footer class="request__foot">
-        <button data-request="deliver" ${enough ? '' : 'disabled'}>Помочь</button>
+        <button data-request="deliver" ${canDeliver ? '' : 'disabled'}>Помочь</button>
         <button data-request="later">Позже</button>
       </footer>
 
