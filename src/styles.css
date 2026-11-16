@@ -335,6 +335,81 @@ body {
   border-top: 1px solid rgba(43, 33, 24, 0.15);
 }
 
+/* ---------- Сцена (книга) ---------- */
+
+.story-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  background:
+    radial-gradient(circle at 50% 35%, #2a231b 0%, #17130f 100%);
+  cursor: pointer;
+  overflow-y: auto;
+}
+
+.story {
+  width: min(38rem, 100%);
+  color: #e8ddc9;
+  text-align: left;
+}
+
+.story__chapter {
+  margin-bottom: 1.6rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.45;
+}
+
+.story__text {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+  line-height: 1.75;
+  letter-spacing: 0.01em;
+  white-space: pre-line;
+}
+
+.story__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1.8rem;
+  cursor: default;
+}
+
+.story__choice {
+  padding: 0.8rem 1rem;
+  font-family: var(--font-text);
+  font-size: 1rem;
+  line-height: 1.5;
+  text-align: left;
+  color: #e8ddc9;
+  background: rgba(232, 221, 201, 0.06);
+  border: 1px solid rgba(232, 221, 201, 0.25);
+  border-radius: 2px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.story__choice:hover {
+  background: rgba(232, 221, 201, 0.14);
+  border-color: rgba(232, 221, 201, 0.55);
+}
+
+.story__hint {
+  margin-top: 2rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  opacity: 0.35;
+}
+
 /* ---------- Ремесло ---------- */
 
 .recipes {

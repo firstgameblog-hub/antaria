@@ -11,6 +11,8 @@ import { GATHERING_NODES } from './content/gathering'
 import { ITEM_BY_ID, itemDef, itemName } from './content/items'
 import { recipeById } from './content/recipes'
 import { TRADER } from './content/trader'
+import { sceneById } from './content/story'
+import type { StoryScene } from './data/story'
 import { buy, completeOrder, sell } from './core/trade'
 import { Camera } from './render/camera'
 import { OBSTACLES, PLAYER_RADIUS, TILE, VILLAGE_WALKABLE, WORLD, drawVillage } from './render/scene'
@@ -18,6 +20,7 @@ import { createHud } from './ui/hud'
 import { openSaveScreen } from './ui/saveScreen'
 import { openCraftScreen } from './ui/craftScreen'
 import { openTradeScreen } from './ui/tradeScreen'
+import { openStoryScreen } from './ui/storyScreen'
 import { stageLabel } from './ui/labels'
 import { START_VILLAGE } from './content/scene'
 
@@ -69,6 +72,7 @@ let moveTarget: Point | null = null
 let followPaused = false
 let previousFrameTime = 0
 let gathering: { nodeId: string; elapsed: number; duration: number } | null = null
+let storyOpen = false
 
 const pressed = new Set<string>()
 
@@ -149,6 +153,49 @@ function persist(): void {
     statusNote = `Автосохранение не удалось: ${result.reason}`
     updateHud()
   }
+}
+
+/** Запись в дневник-хронику (9.4), без повторов. */
+function recordJournal(scene: StoryScene, beat: number): void {
+  const text = scene.beats[beat]?.journal
+  if (!text) return
+  if (state.journal.some((entry) => entry.text === text)) return
+
+  state.journal.push({ year: state.clock.year, day: state.clock.day, text })
+}
+
+function startStory(sceneId: string, startBeat = 0): void {
+  const scene = sceneById(sceneId)
+  if (!scene) return
+
+  state.story = { sceneId, beat: startBeat }
+  storyOpen = true
+  recordJournal(scene, startBeat)
+
+  openStoryScreen({
+    scene,
+    startBeat,
+    onBeat: (beat) => {
+      if (state.story) state.story.beat = beat
+      recordJournal(scene, beat)
+      persist()
+    },
+    onChoice: (_beat, choice) => {
+      state.flags[choice.flag] = choice.value
+      persist()
+    },
+    onFinish: () => {
+      storyOpen = false
+      state.story = null
+
+      if (sceneId === 'prologue') {
+        state.flags['prologue.done'] = true
+      }
+
+      persist()
+      updateHud()
+    },
+  })
 }
 
 function openCraft(): void {
@@ -641,6 +688,8 @@ canvas.addEventListener('pointerleave', () => {
 })
 
 globalThis.addEventListener('keydown', (event) => {
+  if (storyOpen) return
+
   const key = event.key.toLowerCase()
 
   if (key === 'g' || key === 'п') {
@@ -678,6 +727,13 @@ resize()
 camera.centerOn(state.player.position.x, state.player.position.y)
 updateHud()
 requestAnimationFrame(frame)
+
+// Пролог показывается один раз, на новой игре. Если сцена не закончена — продолжаем с неё.
+if (state.story) {
+  startStory(state.story.sceneId, state.story.beat)
+} else if (state.flags['prologue.done'] !== true) {
+  startStory('prologue')
+}
 
 // Отладочный доступ к состоянию. Живёт только в dev-режиме.
 if (import.meta.env.DEV) {

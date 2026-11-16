@@ -10,7 +10,7 @@ import type { NodeReadyAt } from './gathering'
 import type { Facing, Point } from './movement'
 
 /** Версия формата сохранения. Поднимается при несовместимом изменении структуры. */
-export const SAVE_VERSION = 5
+export const SAVE_VERSION = 6
 
 export interface ClockState {
   /** Год от начала игры. */
@@ -52,6 +52,12 @@ export interface JournalEntry {
   text: string
 }
 
+/** Где остановилась сюжетная сцена: переживёт перезагрузку страницы. */
+export interface StoryProgress {
+  sceneId: string
+  beat: number
+}
+
 export interface GameState {
   version: number
   clock: ClockState
@@ -60,6 +66,8 @@ export interface GameState {
   world: WorldState
   flags: Flags
   journal: JournalEntry[]
+  /** Текущая сцена, если она не закончена. */
+  story: StoryProgress | null
   /** Наигранное время в миллисекундах. */
   playtimeMs: number
   /** Когда сохранение было записано (Unix ms). */
@@ -107,6 +115,7 @@ export function createInitialState(now: number = Date.now()): GameState {
     world: { nodes: {}, trader: { trust: 0 } },
     flags: {},
     journal: [],
+    story: null,
     playtimeMs: 0,
     savedAt: now,
   }

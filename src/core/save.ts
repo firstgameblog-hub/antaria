@@ -20,6 +20,7 @@ import {
   type Flags,
   type GameState,
   type JournalEntry,
+  type StoryProgress,
 } from './state'
 
 export class SaveError extends Error {}
@@ -148,6 +149,18 @@ function normalizeEquipment(value: unknown): Equipment {  const source = asRecor
   }
 }
 
+function normalizeStory(value: unknown): StoryProgress | null {
+  if (!isRecord(value)) return null
+
+  const sceneId = asString(value['sceneId']).trim()
+  if (sceneId === '') return null
+
+  return {
+    sceneId,
+    beat: asInt(value['beat'], 0, 0, 10_000),
+  }
+}
+
 function normalizeClock(value: unknown): ClockState {
   const clock = asRecord(value)
   return {
@@ -186,6 +199,7 @@ export function normalizeSave(data: SaveRecord): GameState {
     },
     flags: normalizeFlags(data['flags']),
     journal: normalizeJournal(data['journal']),
+    story: normalizeStory(data['story']),
     playtimeMs: asInt(data['playtimeMs'], 0, 0, Number.MAX_SAFE_INTEGER),
     savedAt: asInt(data['savedAt'], Date.now(), 0, Number.MAX_SAFE_INTEGER),
   }

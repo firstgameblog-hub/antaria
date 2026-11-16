@@ -64,6 +64,12 @@ const migrations: Record<number, Migration> = {
       trader: { trust: 0 },
     },
   }),
+  // 5 → 6: сюжетные сцены (9.2).
+  5: (data) => ({
+    ...data,
+    version: 6,
+    story: null,
+  }),
 }
 
 export class MigrationError extends Error {}
