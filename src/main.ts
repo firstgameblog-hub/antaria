@@ -56,8 +56,8 @@ app.append(hud.element)
 
 let state: GameState
 let statusNote = ''
-let nightNote = ''
-let actionNote = ''
+let actionNote: { text: string; until: number } | null = null
+let nightNote: { text: string; until: number } | null = null
 let showGrid = true
 let hoveredId: string | null = null
 let hoveredNodeId: string | null = null
@@ -105,7 +105,11 @@ function updateHud(): void {
     clock: state.clock,
     stage: stageLabel(state.village.stageId),
     population: state.village.population,
-    notes: [statusNote, actionNote, nightNote],
+    notes: [
+      statusNote,
+      actionNote?.text ?? '',
+      nightNote?.text ?? '',
+    ],
     resources: [
       { label: 'Монеты', value: state.player.money },
       ...inventory.stacks.map((stack) => ({
@@ -117,14 +121,23 @@ function updateHud(): void {
   })
 }
 
+/** Короткое сообщение о действии: висит пару секунд и убирается само. */
+function flash(text: string, ms = 3500): void {
+  actionNote = { text, until: performance.now() + ms }
+  updateHud()
+}
+
 /** Ночь (3.2.6). Время идёт вперёд, утром — сводка. Следы в деревне появятся с 7.16. */
 function sleep(): void {
   const step = nextMorning(state.clock)
   state.clock = step.clock
-  nightNote =
-    step.daysPassed > 1
-      ? `Ты проспал мимо ${step.daysPassed} ночей. В деревне пока тихо.`
-      : 'Ночь прошла. В деревне пока тихо.'
+  nightNote = {
+    text:
+      step.daysPassed > 1
+        ? `Ты проспал мимо ${step.daysPassed} ночей. В деревне пока тихо.`
+        : 'Ночь прошла. В деревне пока тихо.',
+    until: performance.now() + 4500,
+  }
   persist()
   updateHud()
 }
@@ -165,7 +178,8 @@ function openSaves(): void {  openSaveScreen({
       state = loaded
       ensureFreePosition()
       statusNote = ''
-      nightNote = ''
+      actionNote = null
+      nightNote = null
       moveTarget = null
       camera.centerOn(state.player.position.x, state.player.position.y)
       persist()
@@ -239,6 +253,19 @@ function updateMovement(dt: number): boolean {
 function frame(time: number): void {
   const dt = previousFrameTime === 0 ? 0 : Math.min((time - previousFrameTime) / 1000, 0.05)
   previousFrameTime = time
+
+  const wallNow = performance.now()
+  let notesChanged = false
+
+  if (actionNote && wallNow >= actionNote.until) {
+    actionNote = null
+    notesChanged = true
+  }
+  if (nightNote && wallNow >= nightNote.until) {
+    nightNote = null
+    notesChanged = true
+  }
+  if (notesChanged) updateHud()
 
   const walking = updateMovement(dt)
 
@@ -409,8 +436,7 @@ function startGathering(node: GatheringNodeDef): void {
   const now = absoluteMinutes(state.clock)
 
   if (!isReady(state.world.nodes, node.id, now)) {
-    actionNote = `${node.name}: ${describeRestore(minutesUntilReady(state.world.nodes, node.id, now))}.`
-    updateHud()
+    flash(`${node.name}: ${describeRestore(minutesUntilReady(state.world.nodes, node.id, now))}.`)
     return
   }
 
@@ -433,29 +459,27 @@ function finishGathering(): void {
   const now = absoluteMinutes(state.clock)
 
   if (!isReady(state.world.nodes, node.id, now)) {
-    actionNote = `${node.name}: ${describeRestore(minutesUntilReady(state.world.nodes, node.id, now))}.`
-    updateHud()
+    flash(`${node.name}: ${describeRestore(minutesUntilReady(state.world.nodes, node.id, now))}.`)
     return
   }
 
   const added = addItems(state.player.inventory, def, node.count, 1, ITEM_BY_ID)
 
   if (added === 0) {
-    actionNote = 'Не влезло: груз переполнен.'
-    updateHud()
+    flash('Не влезло: груз переполнен.')
     return
   }
 
   markGathered(state.world.nodes, node.id, now, node.restoreMinutes)
   state.clock = addMinutes(state.clock, ACTION_MINUTES.gather).clock
 
-  actionNote =
+  flash(
     added < node.count
       ? `Собрано: ${def.name} ×${added} из ${node.count} — больше не влезло.`
-      : `Собрано: ${def.name} ×${added}`
+      : `Собрано: ${def.name} ×${added}`,
+  )
 
   persist()
-  updateHud()
 }
 
 function updateHover(event: PointerEvent): void {
@@ -580,8 +604,7 @@ function endPointer(event: PointerEvent): void {
       const now = absoluteMinutes(state.clock)
 
       if (!isReady(state.world.nodes, node.id, now)) {
-        actionNote = `${node.name}: ${describeRestore(minutesUntilReady(state.world.nodes, node.id, now))}.`
-        updateHud()
+        flash(`${node.name}: ${describeRestore(minutesUntilReady(state.world.nodes, node.id, now))}.`)
       } else if (distance(state.player.position, { x: node.x, y: node.y }) <= INTERACT_RANGE) {
         startGathering(node)
       } else {
@@ -681,14 +704,14 @@ if (import.meta.env.DEV) {
 
         if (added === count) {
           statusNote = ''
+          flash(`Дано: ${def.name} ×${added}`)
         } else if (added === 0) {
-          statusNote = 'Не влезло: груз переполнен.'
+          flash('Не влезло: груз переполнен.')
         } else {
-          statusNote = `Влезло только ${added} из ${count}: груз почти полон.`
+          flash(`Влезло только ${added} из ${count}: груз почти полон.`)
         }
 
         persist()
-        updateHud()
       },
     })
 
