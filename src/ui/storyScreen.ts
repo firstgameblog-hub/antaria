@@ -6,6 +6,7 @@
  */
 
 import type { StoryChoice, StoryScene } from '../data/story'
+import { drawIllustration } from './illustrations'
 import { escapeHtml } from './html'
 
 export interface StoryScreenOptions {
@@ -91,10 +92,12 @@ function render(): void {
   const beat = options.scene.beats[beatIndex]
   const text = extraText ?? beat?.text ?? ''
   const choices = extraText === null ? (beat?.choices ?? []) : []
+  const art = extraText === null ? beat?.art : undefined
 
   overlay.innerHTML = `
     <div class="story">
       <div class="story__chapter">${escapeHtml(options.scene.title)}</div>
+      ${art !== undefined ? '<canvas class="story__art" aria-hidden="true"></canvas>' : ''}
       <p class="story__text">${escapeHtml(text)}</p>
       ${
         choices.length > 0
@@ -110,6 +113,25 @@ function render(): void {
       }
     </div>
   `
+
+  if (art !== undefined) {
+    const canvas = overlay.querySelector<HTMLCanvasElement>('canvas.story__art')
+    if (canvas) {
+      const ratio = Math.min(2, globalThis.devicePixelRatio || 1)
+      const width = Math.max(320, Math.min(680, Math.round(canvas.clientWidth || 640)))
+      const height = Math.round((width * 9) / 16)
+
+      canvas.width = Math.round(width * ratio)
+      canvas.height = Math.round(height * ratio)
+      canvas.style.height = `${height}px`
+
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
+        drawIllustration(ctx, art, width, height)
+      }
+    }
+  }
 
   overlay.querySelectorAll<HTMLButtonElement>('button[data-choice]').forEach((button) => {
     button.addEventListener('click', (event) => {
