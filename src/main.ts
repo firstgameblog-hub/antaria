@@ -34,6 +34,7 @@ import { GATHERING_NODES } from './content/gathering'
 import { ITEM_BY_ID, itemDef, itemName } from './content/items'
 import { recipeById } from './content/recipes'
 import { TRADER } from './content/trader'
+import { CARAVAN } from './content/caravan'
 import { sceneById } from './content/story'
 import type { StoryScene } from './data/story'
 import { buy, completeOrder, sell } from './core/trade'
@@ -1226,10 +1227,26 @@ function activeNpcs(): ActiveNpc[] {
     })
   }
 
+  if (isCaravanDay()) {
+    list.push({
+      id: CARAVAN.id,
+      x: CARAVAN.x,
+      y: CARAVAN.y,
+      facing: 'up',
+      kind: 'trader',
+      label: `${CARAVAN.name} · ${CARAVAN.title}`,
+    })
+  }
+
   return list
 }
 
 function openNpc(npc: ActiveNpc): void {
+  if (npc.id === CARAVAN.id) {
+    openCaravan()
+    return
+  }
+
   if (npc.kind === 'trader') {
     openTrade()
     return
@@ -1378,6 +1395,12 @@ function startBoss(spotId: string): void {
 
 function openTrade(): void {
   openTradeScreen({
+    trader: { ...TRADER, generosity: 0 },
+    orderText:
+      state.flags['trader.order.done'] === true
+        ? ''
+        : `Просьба Корнея. Нужно ${TRADER.order.count} × ${itemName(TRADER.order.itemId)} — заплатит ${TRADER.order.reward} монет.`,
+    orderReady: countOf(state.player.inventory, TRADER.order.itemId) >= TRADER.order.count,
     getState: () => state,
     onBuy: (itemId) => {
       if (!daylightOk()) return 'Стемнело. Корней уже свернул товар.'
@@ -1429,7 +1452,48 @@ function openTrade(): void {
   })
 }
 
-function nodeAt(worldX: number, worldY: number): GatheringNodeDef | null {  let closest: GatheringNodeDef | null = null
+function openCaravan(): void {
+  openTradeScreen({
+    trader: CARAVAN,
+    getState: () => state,
+    onBuy: (itemId) => {
+      if (!daylightOk()) return 'Караван уже собирается в путь.'
+
+      const offer = CARAVAN.sells.find((candidate) => candidate.itemId === itemId)
+      if (!offer) return 'Такого товара нет'
+
+      const result = buy(state, offer, ITEM_BY_ID, CARAVAN.generosity)
+      if (!result.ok) return result.reason
+
+      dayStats.traded += 1
+      playCoin()
+      persist()
+      updateHud()
+      return result.message
+    },
+    onSell: (itemId) => {
+      if (!daylightOk()) return 'Караван уже собирается в путь.'
+
+      const result = sell(state, itemId, 1, ITEM_BY_ID, CARAVAN.generosity)
+      if (!result.ok) return result.reason
+
+      dayStats.traded += 1
+      playCoin()
+      persist()
+      updateHud()
+      return result.message
+    },
+  })
+}
+
+/** Караван стоит у ворот раз в пять дней, пока светло. */
+function isCaravanDay(): boolean {
+  const day = Math.floor(absoluteMinutes(state.clock) / MINUTES_PER_DAY)
+  return day % 5 === 0 && isWorkingHours(state.clock)
+}
+
+function nodeAt(worldX: number, worldY: number): GatheringNodeDef | null {
+  let closest: GatheringNodeDef | null = null
   let closestDistance = NODE_HOVER_RADIUS
 
   for (const node of GATHERING_NODES) {

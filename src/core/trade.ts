@@ -21,19 +21,27 @@ export function trustDiscount(trust: number): number {
   return Math.min(0.2, Math.max(0, trust) / 500)
 }
 
-export function buyPrice(offer: TradeOffer, trust: number): number {
-  return Math.max(1, Math.round(offer.price * BUY_MARKUP * (1 - trustDiscount(trust))))
+export function buyPrice(offer: TradeOffer, trust: number, generosity = 0): number {
+  return Math.max(1, Math.round(offer.price * BUY_MARKUP * (1 - trustDiscount(trust)) * (1 - generosity)))
 }
 
-export function sellPrice(def: ItemDef, trust: number): number {
-  return Math.max(1, Math.floor(def.price * SELL_RATE * (1 + trustDiscount(trust) * 0.5)))
+export function sellPrice(def: ItemDef, trust: number, generosity = 0): number {
+  return Math.max(
+    1,
+    Math.floor(def.price * SELL_RATE * (1 + trustDiscount(trust) * 0.5) * (1 + generosity)),
+  )
 }
 
-export function buy(state: GameState, offer: TradeOffer, defs: Defs): TradeResult {
+export function buy(
+  state: GameState,
+  offer: TradeOffer,
+  defs: Defs,
+  generosity = 0,
+): TradeResult {
   const def = defs.get(offer.itemId)
   if (!def) return { ok: false, reason: 'Такого товара нет' }
 
-  const price = buyPrice(offer, state.world.trader.trust)
+  const price = buyPrice(offer, state.world.trader.trust, generosity)
   if (state.player.money < price) return { ok: false, reason: 'Не хватает монет' }
 
   const added = addItems(state.player.inventory, def, 1, 1, defs)
@@ -45,14 +53,20 @@ export function buy(state: GameState, offer: TradeOffer, defs: Defs): TradeResul
   return { ok: true, message: `Куплено: ${def.name} за ${price}` }
 }
 
-export function sell(state: GameState, itemId: string, count: number, defs: Defs): TradeResult {
+export function sell(
+  state: GameState,
+  itemId: string,
+  count: number,
+  defs: Defs,
+  generosity = 0,
+): TradeResult {
   const def = defs.get(itemId)
   if (!def) return { ok: false, reason: 'Такого товара нет' }
 
   const have = countOf(state.player.inventory, itemId)
   if (have < count) return { ok: false, reason: 'Нечего продавать' }
 
-  const price = sellPrice(def, state.world.trader.trust) * count
+  const price = sellPrice(def, state.world.trader.trust, generosity) * count
 
   removeItems(state.player.inventory, itemId, count)
   state.player.money += price

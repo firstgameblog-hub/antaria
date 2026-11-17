@@ -5,18 +5,31 @@
  * Все расчёты — в ядре, окно только показывает цены и передаёт намерение.
  */
 
-import { countOf, type Inventory } from '../core/inventory'
+import { type Inventory } from '../core/inventory'
 import { buyPrice, sellPrice } from '../core/trade'
 import type { GameState } from '../core/state'
 import { ITEM_BY_ID, itemName } from '../content/items'
-import { TRADER } from '../content/trader'
+import type { TradeOffer } from '../data/trade'
 import { escapeHtml } from './html'
 
+export interface TraderView {
+  name: string
+  title: string
+  sells: readonly TradeOffer[]
+  buys: readonly string[]
+  generosity: number
+}
+
 export interface TradeScreenOptions {
+  trader: TraderView
   getState: () => GameState
   onBuy: (itemId: string) => string
   onSell: (itemId: string) => string
-  onOrder: () => string
+  /** Просьба торговца; у каравана её нет. */
+  onOrder?: () => string
+  /** Текст просьбы; пусто — блока нет. */
+  orderText?: string
+  orderReady?: boolean
 }
 
 let overlay: HTMLDivElement | null = null
@@ -44,29 +57,21 @@ export function closeTradeScreen(): void {
   options = null
 }
 
-function renderOrder(state: GameState): string {
-  if (state.flags['trader.order.done'] === true) return ''
-
-  const order = TRADER.order
-  const have = countOf(state.player.inventory, order.itemId)
-  const ready = have >= order.count
+function renderOrder(): string {
+  if (!options?.orderText || !options.onOrder) return ''
 
   return `
     <div class="trade__order">
-      <div>
-        <strong>Просьба Корнея.</strong>
-        Нужно ${order.count} × ${escapeHtml(itemName(order.itemId))} — заплатит ${order.reward} монет.
-        <span class="trade__note">У тебя ${have}.</span>
-      </div>
-      <button data-action="order" ${ready ? '' : 'disabled'}>Отдать</button>
+      <div>${options.orderText}</div>
+      <button data-action="order" ${options.orderReady ? '' : 'disabled'}>Отдать</button>
     </div>
   `
 }
 
-function renderBuy(state: GameState): string {
-  return TRADER.sells
+function renderBuy(state: GameState, trader: TraderView): string {
+  return trader.sells
     .map((offer) => {
-      const price = buyPrice(offer, state.world.trader.trust)
+      const price = buyPrice(offer, state.world.trader.trust, trader.generosity)
       const affordable = state.player.money >= price
 
       return `
@@ -82,14 +87,14 @@ function renderBuy(state: GameState): string {
     .join('')
 }
 
-function renderSell(state: GameState): string {
+function renderSell(state: GameState, trader: TraderView): string {
   const inventory: Inventory = state.player.inventory
   const rows = inventory.stacks
-    .filter((stack) => TRADER.buys.includes(stack.id))
+    .filter((stack) => trader.buys.includes(stack.id))
     .map((stack) => {
       const def = ITEM_BY_ID.get(stack.id)
       if (!def) return ''
-      const price = sellPrice(def, state.world.trader.trust)
+      const price = sellPrice(def, state.world.trader.trust, trader.generosity)
 
       return `
         <li class="trade-row">
@@ -110,25 +115,26 @@ function render(): void {
   if (!overlay || !options) return
 
   const state = options.getState()
+  const trader = options.trader
 
   overlay.innerHTML = `
     <div class="screen" role="dialog" aria-modal="true" aria-label="Торговля">
       <header class="screen__head">
-        <h2 class="screen__title">${escapeHtml(TRADER.name)}, ${escapeHtml(TRADER.title)}</h2>
+        <h2 class="screen__title">${escapeHtml(trader.name)}, ${escapeHtml(trader.title)}</h2>
         <span class="trade__money">${state.player.money} монет</span>
         <button class="screen__close" data-action="close" aria-label="Закрыть">×</button>
       </header>
 
-      ${renderOrder(state)}
+      ${renderOrder()}
 
       <div class="trade__columns">
         <section class="trade__column">
           <h3 class="trade__heading">Купить</h3>
-          <ul class="trade__list">${renderBuy(state)}</ul>
+          <ul class="trade__list">${renderBuy(state, trader)}</ul>
         </section>
         <section class="trade__column">
           <h3 class="trade__heading">Продать</h3>
-          <ul class="trade__list">${renderSell(state)}</ul>
+          <ul class="trade__list">${renderSell(state, trader)}</ul>
         </section>
       </div>
 
@@ -139,7 +145,7 @@ function render(): void {
   overlay.querySelector('[data-action="close"]')?.addEventListener('click', closeTradeScreen)
 
   overlay.querySelector('[data-action="order"]')?.addEventListener('click', () => {
-    if (!options) return
+    if (!options?.onOrder) return
     status = options.onOrder()
     render()
   })
