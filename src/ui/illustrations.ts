@@ -216,78 +216,123 @@ const CAPSULE: Draw = (ctx, w, h) => {
 const REASON: Draw = (ctx, w, h) => {
   backdrop(ctx, w, h, '#1b2029', '#0b0d11')
 
-  // Корпус капсулы крупным планом: край и стекло.
-  ctx.fillStyle = '#1b222c'
-  ctx.fillRect(0, h * 0.52, w, h * 0.48)
-  ctx.strokeStyle = 'rgba(190, 220, 230, 0.25)'
-  ctx.lineWidth = 3
+  // Пол.
+  ctx.fillStyle = '#10141a'
+  ctx.fillRect(0, h * 0.78, w, h * 0.22)
+  ctx.strokeStyle = 'rgba(160, 180, 200, 0.1)'
+  ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.moveTo(0, h * 0.52)
-  ctx.lineTo(w, h * 0.52)
+  ctx.moveTo(0, h * 0.78)
+  ctx.lineTo(w, h * 0.78)
   ctx.stroke()
 
-  // Холодный отсвет стекла слева.
-  ctx.globalAlpha = 0.1
-  ctx.fillStyle = '#a8d8e8'
+  const cx = w * 0.46
+  const cw = w * 0.3
+  const top = h * 0.18
+  const bottom = h * 0.78
+
+  // Тень.
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)'
   ctx.beginPath()
-  ctx.moveTo(0, 0)
-  ctx.lineTo(w * 0.34, 0)
-  ctx.lineTo(w * 0.1, h * 0.52)
-  ctx.lineTo(0, h * 0.52)
+  ctx.ellipse(cx, bottom + h * 0.02, cw * 0.75, h * 0.03, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Корпус капсулы.
+  ctx.fillStyle = '#242b35'
+  ctx.strokeStyle = '#0a0c10'
+  ctx.lineWidth = 5
+  ctx.beginPath()
+  ctx.moveTo(cx - cw / 2, bottom)
+  ctx.lineTo(cx - cw / 2, top + h * 0.06)
+  ctx.quadraticCurveTo(cx - cw / 2, top, cx - cw / 2 + cw * 0.16, top)
+  ctx.lineTo(cx + cw / 2 - cw * 0.16, top)
+  ctx.quadraticCurveTo(cx + cw / 2, top, cx + cw / 2, top + h * 0.06)
+  ctx.lineTo(cx + cw / 2, bottom)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Открытая ниша: тёмная глубина и подсветка по краю.
+  const innerX = cx - cw * 0.34
+  const innerW = cw * 0.68
+  const innerTop = top + h * 0.07
+  const innerBottom = bottom - h * 0.06
+
+  const depth = ctx.createLinearGradient(0, innerTop, 0, innerBottom)
+  depth.addColorStop(0, '#0b1317')
+  depth.addColorStop(0.55, '#122126')
+  depth.addColorStop(1, '#0a1013')
+  ctx.fillStyle = depth
+  ctx.fillRect(innerX, innerTop, innerW, innerBottom - innerTop)
+
+  // Ложе внутри: подушки-сегменты.
+  ctx.strokeStyle = 'rgba(120, 180, 180, 0.18)'
+  ctx.lineWidth = 2
+  for (let i = 1; i <= 4; i += 1) {
+    const ly = innerTop + ((innerBottom - innerTop) * i) / 5
+    ctx.beginPath()
+    ctx.moveTo(innerX + 4, ly)
+    ctx.lineTo(innerX + innerW - 4, ly)
+    ctx.stroke()
+  }
+
+  // Зелёный свет изнутри.
+  const glow = ctx.createRadialGradient(cx, (innerTop + innerBottom) / 2, 6, cx, (innerTop + innerBottom) / 2, cw * 0.75)
+  glow.addColorStop(0, 'rgba(120, 220, 190, 0.28)')
+  glow.addColorStop(1, 'rgba(120, 220, 190, 0)')
+  ctx.fillStyle = glow
+  ctx.fillRect(innerX - 8, innerTop - 8, innerW + 16, innerBottom - innerTop + 16)
+
+  // Кромка, в которую упиралась крышка.
+  ctx.strokeStyle = 'rgba(190, 220, 220, 0.35)'
+  ctx.lineWidth = 2
+  ctx.strokeRect(innerX, innerTop, innerW, innerBottom - innerTop)
+
+  // Крышка откинута назад: высокая панель за капсулой.
+  ctx.save()
+  ctx.translate(cx + cw * 0.42, top - h * 0.06)
+  ctx.rotate(0.16)
+
+  ctx.fillStyle = '#1c232c'
+  ctx.strokeStyle = '#0a0c10'
+  ctx.lineWidth = 4
+  ctx.beginPath()
+  ctx.roundRect(0, 0, cw * 0.72, (bottom - top) * 1.04, 10)
+  ctx.fill()
+  ctx.stroke()
+
+  // Стекло крышки с бликом.
+  const glass = ctx.createLinearGradient(0, 0, cw * 0.7, (bottom - top) * 1.04)
+  glass.addColorStop(0, 'rgba(150, 195, 205, 0.18)')
+  glass.addColorStop(1, 'rgba(90, 130, 145, 0.1)')
+  ctx.fillStyle = glass
+  ctx.beginPath()
+  ctx.roundRect(cw * 0.07, h * 0.03, cw * 0.58, (bottom - top) * 0.98, 8)
+  ctx.fill()
+
+  ctx.strokeStyle = 'rgba(210, 230, 235, 0.35)'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(cw * 0.14, h * 0.05)
+  ctx.lineTo(cw * 0.1, (bottom - top) * 0.9)
+  ctx.stroke()
+
+  ctx.restore()
+
+  // Свет из открытой капсулы на пол.
+  ctx.globalAlpha = 0.12
+  ctx.fillStyle = '#a8e0d8'
+  ctx.beginPath()
+  ctx.moveTo(innerX, innerBottom)
+  ctx.lineTo(innerX + innerW, innerBottom)
+  ctx.lineTo(cx + cw * 0.9, h)
+  ctx.lineTo(cx - cw * 0.9, h)
   ctx.closePath()
   ctx.fill()
   ctx.globalAlpha = 1
 
-  // Рука: ладонь на краю, пальцы свисают внутрь.
-  const skin = '#c9a07c'
-  const skinDark = '#a67f5e'
-  const skinEdge = '#463022'
-
-  ctx.fillStyle = skin
-  ctx.strokeStyle = skinEdge
-  ctx.lineWidth = 3
-
-  // Ладонь.
-  ctx.beginPath()
-  ctx.moveTo(w * 0.2, h * 1.02)
-  ctx.lineTo(w * 0.24, h * 0.56)
-  ctx.quadraticCurveTo(w * 0.36, h * 0.48, w * 0.5, h * 0.54)
-  ctx.lineTo(w * 0.54, h * 1.02)
-  ctx.closePath()
-  ctx.fill()
-  ctx.stroke()
-
-  // Пальцы, свисающие за край.
-  for (let i = 0; i < 4; i += 1) {
-    const fx = w * (0.28 + i * 0.062)
-    const fw = w * 0.048
-    ctx.fillStyle = i % 2 === 0 ? skin : skinDark
-    ctx.beginPath()
-    ctx.roundRect(fx, h * 0.52, fw, h * (0.2 + (i % 2) * 0.02), fw * 0.45)
-    ctx.fill()
-    ctx.stroke()
-
-    // Складка на сгибе.
-    ctx.strokeStyle = 'rgba(70, 48, 34, 0.5)'
-    ctx.lineWidth = 1.5
-    ctx.beginPath()
-    ctx.moveTo(fx + fw * 0.15, h * 0.58)
-    ctx.lineTo(fx + fw * 0.85, h * 0.58)
-    ctx.stroke()
-    ctx.strokeStyle = skinEdge
-    ctx.lineWidth = 3
-  }
-
-  // Рукав.
-  ctx.fillStyle = '#3a414c'
-  ctx.strokeStyle = '#1b2029'
-  ctx.lineWidth = 3
-  ctx.beginPath()
-  ctx.roundRect(w * 0.22, h * 0.86, w * 0.34, h * 0.16, 4)
-  ctx.fill()
-  ctx.stroke()
-
-  vignette(ctx, w, h, 0.7)
+  vignette(ctx, w, h, 0.68)
+  dust(ctx, w, h, 26)
 }
 
 const LID: Draw = (ctx, w, h) => {
