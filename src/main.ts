@@ -9,7 +9,7 @@ import { HUNT_SPOTS, type HuntSpot } from './content/hunting'
 import { THREADS, threadById, type ThreadDef } from './content/threads'
 import { openRequestScreen, closeRequestScreen } from './ui/requestScreen'
 import { openVillageScreen, closeVillageScreen } from './ui/villageScreen'
-import { nextStage, stageById } from './content/stages'
+import { nextStage, stageById, STAGES } from './content/stages'
 import { STRUCTURES, structureById } from './content/buildings'
 import type { StructureDef } from './data/buildings'
 import { openBuildScreen, closeBuildScreen } from './ui/buildScreen'
@@ -369,7 +369,7 @@ function playerCombatStats(): { maxHp: number; minDamage: number; maxDamage: num
 
 function beginCombat(
   enemy: EnemyDef,
-  options: { playerFirst?: boolean } = {},
+  options: { playerFirst?: boolean; enemyHpPenalty?: number; extraLog?: string[] } = {},
   context: 'wild' | 'raid' | 'boss' = 'wild',
 ): void {
   if (combat) return
@@ -377,6 +377,11 @@ function beginCombat(
   combatContext = context
   dayStats.fought += 1
   combat = createCombat(enemy, state.player.health.current, playerCombatStats(), options)
+
+  if (options.enemyHpPenalty !== undefined) {
+    combat.enemyHp = Math.max(1, combat.enemyHp - options.enemyHpPenalty)
+  }
+  if (options.extraLog) combat.log.push(...options.extraLog)
   ambience.setDucked(true)
 
   openCombatScreen({
@@ -492,7 +497,7 @@ function finishCombat(): void {
         state.flags['raid.done'] = true
         flash('Налёт отбит. Деревня стоит.', 6000)
       } else if (result.outcome === 'defeat') {
-        const stolen = loseSupplies(0.4)
+        const stolen = loseSupplies(hasStoneWall() ? 0.3 : 0.4)
         const broken = damageBuilding()
         state.village.population = Math.max(1, state.village.population - 3)
         state.flags['raid.done'] = true
@@ -501,7 +506,7 @@ function finishCombat(): void {
         )
         flash(`Налёт: −${stolen} припасов, −3 человека${broken ? `, разбит ${broken.toLowerCase()}` : ''}.`, 7000)
       } else {
-        const stolen = loseSupplies(0.25)
+        const stolen = loseSupplies(hasStoneWall() ? 0.2 : 0.4)
         const broken = damageBuilding()
         state.village.population = Math.max(1, state.village.population - 1)
         state.flags['raid.done'] = true
@@ -529,6 +534,13 @@ function finishCombat(): void {
     raidResolved = false
     afterRaidScene()
   }
+}
+
+/** Есть ли каменная стена: с неё налётчикам труднее. */
+function hasStoneWall(): boolean {
+  const current = STAGES.findIndex((stage) => stage.id === state.village.stageId)
+  const walled = STAGES.findIndex((stage) => stage.id === 'stage_stone_belt')
+  return walled >= 0 && current >= walled
 }
 
 /** Одна из построек страдает от налёта. Возвращает имя, если что-то сломали. */
@@ -567,8 +579,21 @@ function startRaid(): void {
     text: 'Ночью у ворот факелы. Пятеро, может, шестеро. Один стоит впереди и не прячет лица — значит, не боится, что его запомнят.',
     payCost: 20,
     canPay: state.player.money >= 20,
-    onFight: () => beginCombat(BANDIT_LEADER, {}, 'raid'),
-    onPay: () => {
+    onFight: () => {
+      const towerReady =
+        state.world.buildings.includes('tower') && !state.world.damaged.includes('tower')
+
+      beginCombat(
+        BANDIT_LEADER,
+        towerReady
+          ? {
+              enemyHpPenalty: 6,
+              extraLog: ['Стража заметила их на дороге: первый удар был внезапным.'],
+            }
+          : {},
+        'raid',
+      )
+    },    onPay: () => {
       state.player.money -= 20
       state.flags['raid.done'] = true
       addJournal('Откупился от налётчиков. Двадцать монет ушли в чужие руки.')
@@ -578,7 +603,7 @@ function startRaid(): void {
       afterRaidScene()
     },
     onHide: () => {
-      const stolen = loseSupplies(0.4)
+      const stolen = loseSupplies(hasStoneWall() ? 0.2 : 0.4)
       state.village.population = Math.max(1, state.village.population - 1)
       state.flags['raid.done'] = true
       addJournal(`Спрятались за частоколом. Унесли ${stolen} припасов и одного человека.`)
@@ -1410,6 +1435,13 @@ function openBuild(structure: StructureDef): void {
       updateHud()
       flash(`Построено: ${structure.name}`, 5000)
       closeBuildScreen()
+
+      // Башня поставлена — с дороги видно, кто идёт.
+      if (structure.id === 'tower' && state.flags['chapter.soldiers'] !== true) {
+        state.flags['chapter.soldiers'] = true
+        startStory('soldiers')
+      }
+
       return ''
     },
     onClose: () => undefined,

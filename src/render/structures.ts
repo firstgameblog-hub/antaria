@@ -240,6 +240,66 @@ function drawStall(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.fill()
 }
 
+/** Сторожевая башня: каменное основание, деревянный верх, флаг. */
+function drawTower(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+  shadow(ctx, x, y, w, h)
+
+  const cx = x + w / 2
+  const baseTop = y + h * 0.42
+
+  ctx.fillStyle = PALETTE.stone
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 2
+  roundRect(ctx, x + w * 0.22, baseTop, w * 0.56, h * 0.5, 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Кладка
+  ctx.strokeStyle = 'rgba(58, 47, 36, 0.25)'
+  ctx.lineWidth = 1
+  for (let row = 1; row < 4; row += 1) {
+    const lineY = baseTop + (h * 0.5 * row) / 4
+    ctx.beginPath()
+    ctx.moveTo(x + w * 0.24, lineY)
+    ctx.lineTo(x + w * 0.76, lineY)
+    ctx.stroke()
+  }
+
+  // Верхняя площадка
+  ctx.fillStyle = PALETTE.wood
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.8
+  roundRect(ctx, x + w * 0.12, y + h * 0.26, w * 0.76, h * 0.18, 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Крыша
+  ctx.fillStyle = PALETTE.roofWood
+  ctx.beginPath()
+  ctx.moveTo(x + w * 0.05, y + h * 0.28)
+  ctx.lineTo(cx, y + h * 0.04)
+  ctx.lineTo(x + w * 0.95, y + h * 0.28)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Флаг
+  ctx.strokeStyle = '#6b4f31'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.moveTo(cx, y + h * 0.04)
+  ctx.lineTo(cx, y - h * 0.12)
+  ctx.stroke()
+
+  ctx.fillStyle = '#a8503f'
+  ctx.beginPath()
+  ctx.moveTo(cx, y - h * 0.12)
+  ctx.lineTo(cx + w * 0.22, y - h * 0.06)
+  ctx.lineTo(cx, y)
+  ctx.closePath()
+  ctx.fill()
+}
+
 export function drawStructure(
   ctx: CanvasRenderingContext2D,
   kind: StructureKind,
@@ -261,6 +321,9 @@ export function drawStructure(
       break
     case 'stall':
       drawStall(ctx, x, y, w, h)
+      break
+    case 'tower':
+      drawTower(ctx, x, y, w, h)
       break
   }
 }

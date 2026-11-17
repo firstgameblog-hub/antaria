@@ -352,6 +352,25 @@ export const ONDREY_AFTER: StoryScene = {
   ],
 }
 
+/** Глава седьмая: солдаты соседнего города. */
+export const SOLDIERS: StoryScene = {
+  id: 'soldiers',
+  title: 'С дороги',
+  beats: [
+    { id: 'see', text: 'С башни видно: по дороге идут не телеги. Пешие, ровным шагом, с железом.' },
+    { id: 'camp', text: 'Они не входят в ворота. Встают лагерем в поле и ждут. Костров не разводят.' },
+    {
+      id: 'ask',
+      text: 'К вечеру приходит один — без оружия. Говорит, что город прислал спросить, кто мы такие и почему у нас стена.',
+    },
+    {
+      id: 'answer',
+      text: 'Ты отвечаешь, что это наша земля. Он записывает. Уходя, говорит: «Пока — наша».',
+      journal: 'С дороги пришли солдаты соседнего города. Спросили, кто мы. Ответ им не понравился.',
+    },
+  ],
+}
+
 export const ALL_SCENES: readonly StoryScene[] = [
   PROLOGUE,
   MORNING,
@@ -366,6 +385,7 @@ export const ALL_SCENES: readonly StoryScene[] = [
   MARTA_AFTER,
   AGAFYA_AFTER,
   ONDREY_AFTER,
+  SOLDIERS,
 ]
 
 export function sceneById(id: string): StoryScene | undefined {

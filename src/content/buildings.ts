@@ -73,6 +73,23 @@ export const STRUCTURES: readonly StructureDef[] = [
     minutes: 45,
     journal: 'Поставили навес для торговли. Корней повесил на столб свою старую вывеску.',
   },
+  {
+    id: 'tower',
+    name: 'Сторожевая башня',
+    kind: 'tower',
+    x: 30,
+    y: 6,
+    w: 2,
+    h: 2,
+    description: 'С неё видно дорогу на два дня вперёд. Если налётчики идут — их заметят заранее.',
+    cost: [
+      { itemId: 'stone', count: 12 },
+      { itemId: 'plank', count: 4 },
+      { itemId: 'log', count: 6 },
+    ],
+    minutes: 90,
+    journal: 'Поставили сторожевую башню. Теперь на дороге есть глаза.',
+  },
 ]
 
 export function structureById(id: string): StructureDef | undefined {

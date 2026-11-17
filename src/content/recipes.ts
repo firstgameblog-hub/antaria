@@ -91,6 +91,17 @@ export const RECIPES: readonly Recipe[] = [
     minutes: 60,
     station: 'campfire',
   },
+  {
+    id: 'steel',
+    name: 'Сталь',
+    inputs: [
+      { itemId: 'ore', count: 2 },
+      { itemId: 'branch', count: 1 },
+    ],
+    output: { itemId: 'steel', count: 1 },
+    minutes: 90,
+    station: 'forge',
+  },
 ]
 
 export function recipeById(id: string): Recipe | undefined {
