@@ -1,7 +1,7 @@
 import './styles.css'
 import { createInitialState, SPAWN_POINT, type GameState } from './core/state'
 import { createCombat, resolveTurn, type CombatState } from './core/combat'
-import { WOLF, DEER, BANDIT_LEADER, ENEMIES, WILD_ENCOUNTERS, CITY_SOLDIER, SIEGE_CAPTAIN } from './content/enemies'
+import { WOLF, DEER, BANDIT_LEADER, ENEMIES, WILD_ENCOUNTERS, CITY_SOLDIER, SIEGE_CAPTAIN, NORTHERN_WARLORD } from './content/enemies'
 import { BOSS_SPOTS } from './content/bosses'
 import { openRaidScreen } from './ui/raidScreen'
 import type { CombatAction, EnemyDef } from './data/combat'
@@ -276,9 +276,20 @@ function processNight(absoluteDayIndex: number): void {
   }
 
   // Осада приходит в Белый город: одна ночь, три волны.
-  if (state.flags['siege.done'] !== true && siegeWave() === 0) {
+  if (state.flags['siege.done'] !== true && siegeWave() === 0 && !siegeIsFinale()) {
     const siegeDue = state.flags['siege.due_day']
     if (typeof siegeDue === 'number' && absoluteDayIndex >= siegeDue) siegePending = true
+  }
+
+  // Последняя осада приходит в Стольный град.
+  if (state.flags['finale.done'] !== true && !siegeIsFinale()) {
+    const finaleDue = state.flags['finale.due_day']
+    if (typeof finaleDue === 'number' && absoluteDayIndex >= finaleDue) {
+      state.flags['siege.kind'] = 'finale'
+      state.flags['siege.done'] = false
+      state.flags['siege.wave'] = 0
+      siegePending = true
+    }
   }
 }
 
@@ -954,11 +965,31 @@ const SIEGE_WAVE_TEXT: Record<number, string> = {
   3: 'К вечеру приезжает воевода. Он не торопится слезать с коня. За ним ведут тех, кто остался от первых двух волн.',
 }
 
+const FINALE_WAVE_TEXT: Record<number, string> = {
+  1: 'Их больше, чем было под Белым городом. Первыми идут наёмные копья — те, кому платят за шаг вперёд. Они не ждут приказа.',
+  2: 'К полудню приезжает воевода, но не тот. Этот даже не смотрит на наши стены — он смотрит на людей за ними.',
+  3: 'Ближе к вечеру из-за спин выходит человек в простом плаще. Воевода Севера. Он идёт пешком, и его люди расходятся, чтобы дать ему дорогу.',
+}
+
 const SIEGE_PAY = 60
 
 function siegeWave(): number {
   const value = state.flags['siege.wave']
   return typeof value === 'number' ? value : 0
+}
+
+function siegeIsFinale(): boolean {
+  return state.flags['siege.kind'] === 'finale'
+}
+
+function siegeText(wave: number): string {
+  return (siegeIsFinale() ? FINALE_WAVE_TEXT[wave] : SIEGE_WAVE_TEXT[wave]) ?? ''
+}
+
+function siegeEnemy(wave: number): EnemyDef {
+  if (wave >= 3) return siegeIsFinale() ? NORTHERN_WARLORD : SIEGE_CAPTAIN
+  if (wave === 2 && siegeIsFinale()) return SIEGE_CAPTAIN
+  return CITY_SOLDIER
 }
 
 function nextSiegeWave(): void {
@@ -971,17 +1002,18 @@ function openSiegeWave(): void {
 
   const wave = siegeWave() + 1
   state.flags['siege.wave'] = wave
+  const finale = siegeIsFinale()
 
   openRaidScreen({
-    title: `Осада. Волна ${wave} из 3`,
-    text: SIEGE_WAVE_TEXT[wave] ?? '',
+    title: `${finale ? 'Последняя осада' : 'Осада'}. Волна ${wave} из 3`,
+    text: siegeText(wave),
     payCost: SIEGE_PAY,
     canPay: state.player.money >= SIEGE_PAY,
     fightLabel: 'Выйти за ворота',
     payLabel: `Послать дары (${SIEGE_PAY} монет)`,
     hideLabel: 'Держать стены',
     onFight: () => {
-      beginCombat(wave >= 3 ? SIEGE_CAPTAIN : CITY_SOLDIER, {}, 'siege')
+      beginCombat(siegeEnemy(wave), {}, 'siege')
     },
     onPay: () => {
       state.player.money -= SIEGE_PAY
@@ -1010,12 +1042,26 @@ function openSiegeWave(): void {
 }
 
 function finishSiege(): void {
+  const finale = siegeIsFinale()
+
   state.flags['siege.done'] = true
   state.flags['siege.wave'] = 3
 
   const steel = itemDef('steel')
-  if (steel) addItems(state.player.inventory, steel, 2, 1, ITEM_BY_ID)
-  state.player.money += 80
+  if (steel) addItems(state.player.inventory, steel, finale ? 4 : 2, 1, ITEM_BY_ID)
+  state.player.money += finale ? 200 : 80
+
+  if (finale) {
+    state.flags['finale.done'] = true
+    addJournal(
+      'Последняя осада кончилась. Воевода Севера ушёл сам — не потому, что не смог, а потому что увидел стену и людей на ней.',
+    )
+    flash('Последняя осада выдержана: +200 монет, +4 стали.', 8000)
+    persist()
+    updateHud()
+    startStory('finale')
+    return
+  }
 
   addJournal(
     'Осада кончилась. Город не взял нас и ушёл. На стене остались зарубки — считать их не стали.',
@@ -1199,10 +1245,23 @@ function startCeremony(): void {
 
     // Белый город: через две ночи приходит осада.
     if (next.id === 'stage_white_city') {
+      state.flags['siege.kind'] = 'city'
       state.flags['siege.due_day'] =
         Math.floor(absoluteMinutes(state.clock) / MINUTES_PER_DAY) + 2
       state.flags['siege.wave'] = 0
       state.flags['siege.done'] = false
+    }
+
+    // Стольный град: через две ночи приходит последняя осада.
+    if (next.id === 'stage_capital') {
+      state.flags['finale.due_day'] =
+        Math.floor(absoluteMinutes(state.clock) / MINUTES_PER_DAY) + 2
+    }
+
+    // Если до Столицы дошли раньше срока — последняя осада всё равно придёт.
+    if (next.id === 'stage_antaria' && typeof state.flags['finale.due_day'] !== 'number') {
+      state.flags['finale.due_day'] =
+        Math.floor(absoluteMinutes(state.clock) / MINUTES_PER_DAY) + 2
     }
   })
 }

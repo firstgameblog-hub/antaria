@@ -147,6 +147,24 @@ export const SIEGE_CAPTAIN: EnemyDef = {
   ],
 }
 
+/** Воевода Севера: последняя волна последней осады. */
+export const NORTHERN_WARLORD: EnemyDef = {
+  id: 'northern_warlord',
+  name: 'Воевода Севера',
+  maxHp: 55,
+  minDamage: 6,
+  maxDamage: 8,
+  initiative: 1,
+  intro: 'Он приходит пешком, впереди своих. Коня отдал кому-то из младших — говорит, что с коня не видно, кого убиваешь.',
+  weakness: 'Он дышит тяжело: старая рана в боку открылась ещё на подходе.',
+  weakMultiplier: 1.9,
+  enrages: true,
+  loot: [
+    { itemId: 'steel', count: 3 },
+    { itemId: 'hide', count: 2 },
+  ],
+}
+
 export const ENEMIES: readonly EnemyDef[] = [
   WOLF,
   DEER,
@@ -156,4 +174,5 @@ export const ENEMIES: readonly EnemyDef[] = [
   ATAMAN,
   CITY_SOLDIER,
   SIEGE_CAPTAIN,
+  NORTHERN_WARLORD,
 ]
