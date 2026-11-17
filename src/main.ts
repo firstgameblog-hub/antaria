@@ -58,7 +58,7 @@ import { openSaveScreen } from './ui/saveScreen'
 import { openCraftScreen } from './ui/craftScreen'
 import { openTradeScreen } from './ui/tradeScreen'
 import { openStoryScreen } from './ui/storyScreen'
-import { openThought } from './ui/thought'
+import { openThought, isThoughtOpen } from './ui/thought'
 import { openJournalScreen } from './ui/journalScreen'
 import { openCombatScreen } from './ui/combatScreen'
 import { audio } from './audio/engine'
@@ -435,6 +435,25 @@ function persist(): void {
     statusNote = `Автосохранение не удалось: ${result.reason}`
     updateHud()
   }
+}
+
+/**
+ * Мысли героя после открытия деревни. Показываются один раз — и после главы
+ * «Утро», и при загрузке старого сохранения, где глава уже пройдена.
+ */
+function showIntroThought(): void {
+  if (state.flags['thought.intro.shown'] === true) return
+  if (state.flags['chapter1.morning.done'] !== true) return
+  if (storyOpen || combat !== null || isThoughtOpen()) return
+
+  state.flags['thought.intro.shown'] = true
+  persist()
+
+  openThought({
+    text: 'Как странно…\nКажется, я нахожусь в теле сына этого старика.\nНо раз я в игре — значит, надо изучать её.\n\nЧто там старик сказал… Помочь Марте и найти Корнея… Кажется, так.',
+    size: 'medium',
+    onClose: () => persist(),
+  })
 }
 
 const PLAYER_MIN_DAMAGE = 3
@@ -1447,16 +1466,7 @@ function openStoryScene(
       if (sceneId === 'morning') {
         state.flags['chapter1.morning.done'] = true
         flash('Марта ждёт веток. Все просьбы — в «Хронике» внизу.', 6000)
-
-        // Первый раз на ногах: герой ещё ничего не понимает и говорит это себе.
-        if (state.flags['thought.intro'] !== true) {
-          state.flags['thought.intro'] = true
-          openThought({
-            text: 'Как странно…\nКажется, я нахожусь в теле сына этого старика.\nНо раз я в игре — значит, надо изучать её.\n\nЧто там старик сказал… Помочь Марте и найти Корнея… Кажется, так.',
-            size: 'medium',
-            onClose: () => persist(),
-          })
-        }
+        showIntroThought()
       }
 
       // Главы внутри стадий отмечаются, чтобы не приходить дважды.
@@ -1477,6 +1487,7 @@ function openStoryScene(
       }
 
       onComplete?.()
+      showIntroThought()
     },
   })
 }
@@ -2908,6 +2919,11 @@ if (state.story) {
   startStory(state.story.sceneId, state.story.beat)
 } else if (state.flags['prologue.done'] !== true) {
   startStory('prologue')
+}
+
+// Старое сохранение: глава «Утро» давно пройдена, а мыслей героя ещё не было.
+if (!state.story) {
+  globalThis.setTimeout(() => showIntroThought(), 700)
 }
 
 // Отладочный доступ к состоянию. Живёт только в dev-режиме.
