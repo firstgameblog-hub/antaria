@@ -96,7 +96,16 @@ function render(): void {
   const beat = options.scene.beats[beatIndex]
   const text = extraText ?? beat?.text ?? ''
   const choices = extraText === null ? (beat?.choices ?? []) : []
-  const art = extraText === null ? (beat?.art ?? options.scene.art) : extraArt
+
+  // Картинка: своя у абзаца, иначе из сцены. null у абзаца — намеренно без картинки.
+  let art: string | undefined
+  if (extraText !== null) {
+    art = extraArt
+  } else if (beat !== undefined && beat.art !== undefined) {
+    art = beat.art === null ? undefined : beat.art
+  } else {
+    art = options.scene.art
+  }
 
   overlay.innerHTML = `
     <div class="story">

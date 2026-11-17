@@ -22,8 +22,8 @@ export interface StoryChoice {
 export interface StoryBeat {
   id: string
   text: string
-  /** Иллюстрация к абзацу: id картинки из ui/illustrations. */
-  art?: string
+  /** Иллюстрация к абзацу: id картинки из ui/illustrations. null — без картинки. */
+  art?: string | null
   choices?: readonly StoryChoice[]
   /** Запись в дневник-хронику (9.4), когда бит показан. */
   journal?: string
