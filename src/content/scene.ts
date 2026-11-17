@@ -19,7 +19,7 @@ export interface PlacedBuilding {
   label: string
 }
 
-export const SCENE_TILES = { w: 40, h: 32 } as const
+export const SCENE_TILES = { w: 40, h: 48 } as const
 
 export const START_VILLAGE: readonly PlacedBuilding[] = [
   { id: 'hut', kind: 'headman_hut', x: 17, y: 5, w: 5, h: 4, label: 'Лачуга главы' },

@@ -102,6 +102,40 @@ export const RECIPES: readonly Recipe[] = [
     minutes: 90,
     station: 'forge',
   },
+  {
+    id: 'steel_knife',
+    name: 'Стальной нож',
+    inputs: [
+      { itemId: 'steel', count: 2 },
+      { itemId: 'branch', count: 1 },
+    ],
+    output: { itemId: 'steel_knife', count: 1 },
+    minutes: 60,
+    station: 'forge',
+  },
+  {
+    id: 'steel_axe',
+    name: 'Стальной топор',
+    inputs: [
+      { itemId: 'steel', count: 3 },
+      { itemId: 'plank', count: 1 },
+    ],
+    output: { itemId: 'steel_axe', count: 1 },
+    minutes: 90,
+    station: 'forge',
+  },
+  {
+    id: 'steel_pickaxe',
+    name: 'Стальная кирка',
+    inputs: [
+      { itemId: 'steel', count: 3 },
+      { itemId: 'branch', count: 2 },
+      { itemId: 'plank', count: 1 },
+    ],
+    output: { itemId: 'steel_pickaxe', count: 1 },
+    minutes: 120,
+    station: 'forge',
+  },
 ]
 
 export function recipeById(id: string): Recipe | undefined {

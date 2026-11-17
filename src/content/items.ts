@@ -199,6 +199,36 @@ export const ITEMS: readonly ItemDef[] = [
     price: 24,
     tags: ['metal', 'steel'],
   },
+  {
+    id: 'steel_pickaxe',
+    name: 'Стальная кирка',
+    category: 'tool',
+    stack: 1,
+    weight: 3,
+    price: 90,
+    slot: 'tool',
+    tags: ['tool', 'ore'],
+  },
+  {
+    id: 'steel_axe',
+    name: 'Стальной топор',
+    category: 'tool',
+    stack: 1,
+    weight: 2.6,
+    price: 85,
+    slot: 'tool',
+    tags: ['tool', 'wood'],
+  },
+  {
+    id: 'steel_knife',
+    name: 'Стальной нож',
+    category: 'tool',
+    stack: 1,
+    weight: 0.6,
+    price: 60,
+    slot: 'tool',
+    tags: ['tool', 'hide'],
+  },
 ]
 
 export const ITEM_BY_ID: ReadonlyMap<string, ItemDef> = new Map(

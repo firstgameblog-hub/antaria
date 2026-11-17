@@ -26,8 +26,8 @@ export const WORLD = {
 export const VILLAGE_BOUNDS = {
   x: 52,
   y: 60,
-  w: WORLD.w - 104,
-  h: WORLD.h - 120,
+  w: 1176,
+  h: 904,
 } as const
 
 /** Радиус героя для столкновений. */
@@ -40,6 +40,38 @@ export const VILLAGE_WALKABLE: Rect = {
   w: VILLAGE_BOUNDS.w - 52,
   h: VILLAGE_BOUNDS.h - 66,
 }
+
+/** Куда герой может зайти, когда ворота открыты: вся сцена, кроме самого края. */
+export const WORLD_WALKABLE: Rect = {
+  x: 16,
+  y: 16,
+  w: WORLD.w - 32,
+  h: WORLD.h - 32,
+}
+
+/** Частокол как препятствие: не пройти сквозь, кроме ворот на юге. */
+export const FENCE_RECTS: readonly Rect[] = (() => {
+  const left = VILLAGE_BOUNDS.x
+  const right = left + VILLAGE_BOUNDS.w
+  const top = VILLAGE_BOUNDS.y
+  const bottom = top + VILLAGE_BOUNDS.h
+  const gate = WORLD.w / 2
+  const halfGate = 58
+  const thickness = 12
+
+  return [
+    { x: left - 4, y: top - thickness / 2, w: VILLAGE_BOUNDS.w + 8, h: thickness },
+    { x: left - thickness / 2, y: top, w: thickness, h: VILLAGE_BOUNDS.h },
+    { x: right - thickness / 2, y: top, w: thickness, h: VILLAGE_BOUNDS.h },
+    { x: left, y: bottom - thickness / 2, w: gate - halfGate - left, h: thickness },
+    {
+      x: gate + halfGate,
+      y: bottom - thickness / 2,
+      w: right - (gate + halfGate),
+      h: thickness,
+    },
+  ]
+})()
 
 /** Постройки и поля, сквозь которые не пройти. Поле обнесено изгородью — заходить туда нечего. */
 export const OBSTACLES: readonly Rect[] = [
@@ -113,7 +145,7 @@ const TREES: readonly Tree[] = (() => {
     y > VILLAGE_BOUNDS.y - 40 &&
     y < VILLAGE_BOUNDS.y + VILLAGE_BOUNDS.h + 40
 
-  for (let i = 0; i < 220 && trees.length < 26; i += 1) {
+  for (let i = 0; i < 900 && trees.length < 90; i += 1) {
     const x = random() * WORLD.w
     const y = random() * WORLD.h
     if (isInsideVillage(x, y)) continue
@@ -543,7 +575,7 @@ export interface SceneSpot {
   kind: 'tracks' | 'lair'
 }
 
-export function buildObstacles(built: readonly string[]): Rect[] {
+export function buildObstacles(built: readonly string[], gateOpen = false): Rect[] {
   const extra = STRUCTURES.filter((structure) => built.includes(structure.id)).map((structure) => ({
     x: structure.x * TILE,
     y: structure.y * TILE,
@@ -551,7 +583,7 @@ export function buildObstacles(built: readonly string[]): Rect[] {
     h: structure.h * TILE,
   }))
 
-  return [...OBSTACLES, ...extra]
+  return [...OBSTACLES, ...extra, ...(gateOpen ? FENCE_RECTS : [])]
 }
 
 export interface SceneOptions {
@@ -567,6 +599,8 @@ export interface SceneOptions {
   nearby: readonly Point[]
   stageId: string
   buildings: readonly string[]
+  /** Ворота открыты: за частоколом больше не темнее, чем внутри. */
+  gateOpen: boolean
   hoveredLabel: { x: number; y: number; label: string } | null
   gatherProgress: { x: number; y: number; value: number } | null
 }
@@ -719,7 +753,7 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
   if (options.showGrid) drawGrid(ctx)
   drawPaths(ctx)
   drawSouthRoad(ctx)
-  drawOutsideShade(ctx)
+  if (!options.gateOpen) drawOutsideShade(ctx)
 
   // Деревья за частоколом — до построек, они дальше от зрителя
   for (const tree of TREES) {

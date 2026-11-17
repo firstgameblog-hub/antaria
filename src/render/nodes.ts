@@ -205,6 +205,31 @@ function drawOre(ctx: CanvasRenderingContext2D, x: number, y: number, ready: boo
   }
 }
 
+/** Глина: тёмный откос с пластами. */
+function drawClay(ctx: CanvasRenderingContext2D, x: number, y: number, ready: boolean): void {
+  drawShadow(ctx, x, y, 15, 5)
+
+  ctx.fillStyle = ready ? '#a0765a' : '#b0a08e'
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.2
+  ctx.beginPath()
+  ctx.ellipse(x, y, 12, 6.5, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  if (!ready) return
+
+  ctx.strokeStyle = 'rgba(78, 54, 40, 0.4)'
+  ctx.lineWidth = 1.1
+  for (let row = -1; row <= 1; row += 1) {
+    ctx.beginPath()
+    ctx.moveTo(x - 9, y + row * 3)
+    ctx.lineTo(x + 2, y + row * 3 - 1)
+    ctx.stroke()
+  }
+}
+
+/** Глина, которой пока нет в узлах: используется только для отрисовки. */
 export function drawGatheringNode(
   ctx: CanvasRenderingContext2D,
   kind: NodeKind,
@@ -230,6 +255,9 @@ export function drawGatheringNode(
       break
     case 'ore':
       drawOre(ctx, x, y, ready)
+      break
+    case 'clay':
+      drawClay(ctx, x, y, ready)
       break
   }
 }

@@ -44,8 +44,10 @@ import {
   OBSTACLES,
   PLAYER_RADIUS,
   TILE,
+  VILLAGE_BOUNDS,
   VILLAGE_WALKABLE,
   WORLD,
+  WORLD_WALKABLE,
   buildObstacles,
   drawVillage,
 } from './render/scene'
@@ -83,6 +85,7 @@ const GATHER_SECONDS: Record<NodeKind, number> = {
   stone: 2.6,
   log: 3.2,
   ore: 3.6,
+  clay: 2.4,
 }
 
 const root = document.querySelector<HTMLDivElement>('#app')
@@ -97,7 +100,7 @@ const ctxRaw = canvas.getContext('2d')
 if (!ctxRaw) throw new Error('Браузер не умеет рисовать на Canvas')
 const ctx: CanvasRenderingContext2D = ctxRaw
 
-const camera = new Camera(WORLD)
+const camera = new Camera(WORLD, VILLAGE_BOUNDS)
 
 const hud = createHud({
   onSleep: () => sleep(),
@@ -150,7 +153,7 @@ function daylightOk(): boolean {
 let obstacles: ReturnType<typeof buildObstacles> = buildObstacles([])
 
 function refreshObstacles(): void {
-  obstacles = buildObstacles(state.world.buildings)
+  obstacles = buildObstacles(state.world.buildings, gateOpen())
 }
 
 const pressed = new Set<string>()
@@ -171,10 +174,20 @@ function loadState(): GameState {
   return createInitialState()
 }
 
+/** Ворота открыты: с «Первого дыма» можно выйти за частокол. */
+function gateOpen(): boolean {
+  return state.flags['gate.open'] === true
+}
+
+/** Где можно ходить: внутри частокола или, с открытыми воротами, по всей сцене. */
+function walkableBounds(): { x: number; y: number; w: number; h: number } {
+  return gateOpen() ? WORLD_WALKABLE : VILLAGE_WALKABLE
+}
+
 /** Страховка: герой не должен оказаться внутри постройки или за частоколом. */
 function ensureFreePosition(): void {
   const position = state.player.position
-  const free = findFreeSpot(position, PLAYER_RADIUS, OBSTACLES, VILLAGE_WALKABLE, position)
+  const free = findFreeSpot(position, PLAYER_RADIUS, OBSTACLES, walkableBounds(), position)
   if (free.x !== position.x || free.y !== position.y) {
     state.player.position = free
   }
@@ -1219,6 +1232,15 @@ function startCeremony(): void {
     // Через три ночи после подъёма деревни приходят за добычей.
     if (next.id === 'stage_first_smoke') {
       state.flags['raid.due_day'] = Math.floor(absoluteMinutes(state.clock) / MINUTES_PER_DAY) + 3
+
+      // Ворота открываются: за частоколом появляются дорога, лес и обрыв.
+      if (state.flags['gate.open'] !== true) {
+        state.flags['gate.open'] = true
+        refreshObstacles()
+        addJournal(
+          'Ворота открыли. За частоколом всё то же поле, но теперь по нему можно идти: к реке, к лесу, по дороге на юг.',
+        )
+      }
     }
 
     persist()
@@ -1507,7 +1529,7 @@ function updateMovement(dt: number): boolean {
 
   if (delta.x === 0 && delta.y === 0) return false
 
-  const next = movePlayer(position, delta, PLAYER_RADIUS, obstacles, VILLAGE_WALKABLE)
+  const next = movePlayer(position, delta, PLAYER_RADIUS, obstacles, walkableBounds())
 
   if (next.x === position.x && next.y === position.y) {
     // Упёрлись в стену — цель больше не имеет смысла.
@@ -1607,7 +1629,7 @@ function frame(time: number): void {
   const height = canvas.height / pixelRatio
 
   const now = absoluteMinutes(state.clock)
-  const sceneNodes = GATHERING_NODES.map((node) => ({
+  const sceneNodes = availableNodes().map((node) => ({
     id: node.id,
     kind: node.kind,
     x: node.x,
@@ -1699,6 +1721,7 @@ function frame(time: number): void {
     spots: sceneSpots,
     nearby,
     stageId: state.village.stageId,
+    gateOpen: gateOpen(),
     buildings: state.world.buildings,
     drips: THREADS.filter(
       (thread) =>
@@ -1723,11 +1746,11 @@ function buildNearby(): Point[] {
   const player = state.player.position
   const points: Point[] = []
 
-  for (const node of GATHERING_NODES) {
+  for (const node of availableNodes()) {
     if (distance(player, { x: node.x, y: node.y }) <= limit) points.push({ x: node.x, y: node.y })
   }
 
-  for (const spot of HUNT_SPOTS) {
+  for (const spot of availableHuntSpots()) {
     if (distance(player, { x: spot.x, y: spot.y }) <= limit) points.push({ x: spot.x, y: spot.y })
   }
 
@@ -2022,8 +2045,27 @@ interface SpotHit {
   kind: 'tracks' | 'lair'
 }
 
+function stageAtLeast(id: string): boolean {
+  const current = STAGES.findIndex((stage) => stage.id === state.village.stageId)
+  const target = STAGES.findIndex((stage) => stage.id === id)
+  return target >= 0 && current >= target
+}
+
+/** Узлы, которые уже видны: окрестности открываются по стадиям. */
+function availableNodes(): readonly GatheringNodeDef[] {
+  return GATHERING_NODES.filter(
+    (node) => node.requiresStage === undefined || stageAtLeast(node.requiresStage),
+  )
+}
+
+function availableHuntSpots(): readonly HuntSpot[] {
+  return HUNT_SPOTS.filter(
+    (spot) => spot.requiresStage === undefined || stageAtLeast(spot.requiresStage),
+  )
+}
+
 function activeSpots(): SpotHit[] {
-  const list: SpotHit[] = HUNT_SPOTS.map((spot) => ({
+  const list: SpotHit[] = availableHuntSpots().map((spot) => ({
     id: spot.id,
     x: spot.x,
     y: spot.y,
@@ -2215,7 +2257,7 @@ function nodeAt(worldX: number, worldY: number): GatheringNodeDef | null {
   let closest: GatheringNodeDef | null = null
   let closestDistance = NODE_HOVER_RADIUS
 
-  for (const node of GATHERING_NODES) {
+  for (const node of availableNodes()) {
     const distanceToNode = Math.hypot(worldX - node.x, worldY - node.y)
     if (distanceToNode <= closestDistance) {
       closest = node
@@ -2554,6 +2596,12 @@ globalThis.addEventListener('pagehide', () => {
 })
 
 state = loadState()
+
+// Старые сохранения: если деревня уже поднялась, ворота давно открыты.
+if (state.flags['gate.open'] !== true && state.village.stageId !== 'stage_dying') {
+  state.flags['gate.open'] = true
+}
+
 ensureFreePosition()
 refreshObstacles()
 resize()
@@ -2633,6 +2681,20 @@ if (import.meta.env.DEV) {
       fireLevel: () => ambience.getFireLevel(),
       fireDistance: () => lastFireDistance,
       obstacleCount: () => obstacles.length,
+      gate: () => gateOpen(),
+      bounds: () => walkableBounds(),
+      refreshWorld: () => {
+        refreshObstacles()
+        return obstacles.length
+      },
+      nodes: () =>
+        availableNodes().map((node) => ({
+          id: node.id,
+          x: node.x,
+          y: node.y,
+          kind: node.kind,
+          requiresStage: node.requiresStage ?? null,
+        })),
       ambush: () => startAmbush(),
       hasScene: (id: string) => Boolean(sceneById(id)),
       npcs: () => activeNpcs().map((npc) => ({ id: npc.id, x: npc.x, y: npc.y })),

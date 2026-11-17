@@ -22,12 +22,14 @@ export class Camera {
   private viewWidth = 0
   private viewHeight = 0
   private world: WorldRect
+  private focus: WorldRect
   private userZoom = false
 
-  constructor(world: WorldRect) {
+  constructor(world: WorldRect, focus?: WorldRect) {
     this.world = world
-    this.x = world.x + world.w / 2
-    this.y = world.y + world.h / 2
+    this.focus = focus ?? world
+    this.x = this.focus.x + this.focus.w / 2
+    this.y = this.focus.y + this.focus.h / 2
   }
 
   resize(viewWidth: number, viewHeight: number): void {
@@ -37,9 +39,9 @@ export class Camera {
     this.clamp()
   }
 
-  /** Масштаб, при котором сцена целиком помещается в окно. */
+  /** Масштаб, при котором место деревни целиком помещается в окно. */
   fitZoom(): number {
-    const zoom = Math.min(this.viewWidth / this.world.w, this.viewHeight / this.world.h)
+    const zoom = Math.min(this.viewWidth / this.focus.w, this.viewHeight / this.focus.h)
     return Math.min(Math.max(zoom * 0.94, this.minZoom), this.maxZoom)
   }
 

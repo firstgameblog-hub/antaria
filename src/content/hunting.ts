@@ -11,6 +11,8 @@ export interface HuntSpot {
   y: number
   label: string
   restoreMinutes: number
+  /** Стадия, с которой место появляется. */
+  requiresStage?: string
 }
 
 export const HUNT_SPOTS: readonly HuntSpot[] = [
@@ -20,6 +22,7 @@ export const HUNT_SPOTS: readonly HuntSpot[] = [
     y: 1130,
     label: 'Свежие следы',
     restoreMinutes: 1440,
+    requiresStage: 'stage_first_smoke',
   },
   {
     id: 'tracks_east',
@@ -27,5 +30,21 @@ export const HUNT_SPOTS: readonly HuntSpot[] = [
     y: 720,
     label: 'Свежие следы',
     restoreMinutes: 1440,
+  },
+  {
+    id: 'tracks_west',
+    x: 300,
+    y: 1050,
+    label: 'Волчья тропа',
+    restoreMinutes: 1440,
+    requiresStage: 'stage_trade_road',
+  },
+  {
+    id: 'tracks_deep',
+    x: 1100,
+    y: 1430,
+    label: 'Следы крупного зверя',
+    restoreMinutes: 1440,
+    requiresStage: 'stage_free_town',
   },
 ]
