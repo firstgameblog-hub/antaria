@@ -711,26 +711,49 @@ const BODY: Draw = (ctx, w, h) => {
   ctx.fill()
   ctx.stroke()
 
-  // Кисть вытянутой руки.
+  // Кисть вытянутой руки: пальцы поджаты, видна тыльная сторона с костяшками.
   ctx.fillStyle = skin
   ctx.beginPath()
-  ctx.ellipse(-188, -34, 14, 10, -0.4, 0, Math.PI * 2)
+  ctx.moveTo(-178, -36)
+  ctx.quadraticCurveTo(-188, -43, -197, -39)
+  ctx.quadraticCurveTo(-203, -34, -199, -27)
+  ctx.quadraticCurveTo(-190, -21, -181, -26)
+  ctx.quadraticCurveTo(-176, -31, -178, -36)
+  ctx.closePath()
   ctx.fill()
   ctx.stroke()
 
+  // Костяшки: четыре бугорка по краю, без отдельных пальцев.
+  ctx.strokeStyle = 'rgba(70, 46, 30, 0.55)'
+  ctx.lineWidth = 1.4
   for (let i = 0; i < 4; i += 1) {
     ctx.beginPath()
-    ctx.roundRect(-204 + i * 5.2, -48 + i * 1.4, 4.6, 14, 2.2)
-    ctx.fill()
+    ctx.arc(-196 + i * 4.6, -38 + i * 1.1, 2.4, -2.4, 0.6)
     ctx.stroke()
   }
 
-  // Правая рука под телом: видно плечо.
-  ctx.fillStyle = shirt
+  // Складки на тыльной стороне.
   ctx.beginPath()
-  ctx.ellipse(-104, 26, 26, 14, 0.25, 0, Math.PI * 2)
+  ctx.moveTo(-193, -33)
+  ctx.quadraticCurveTo(-188, -29, -184, -29)
+  ctx.moveTo(-191, -30)
+  ctx.quadraticCurveTo(-187, -27, -183, -27)
+  ctx.stroke()
+
+  // Большой палец поджат сбоку.
+  ctx.fillStyle = skin
+  ctx.strokeStyle = outline
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.ellipse(-183, -24, 6, 4, 0.4, 0, Math.PI * 2)
   ctx.fill()
   ctx.stroke()
+
+  // Тень под кистью.
+  ctx.fillStyle = 'rgba(24, 16, 10, 0.25)'
+  ctx.beginPath()
+  ctx.ellipse(-192, -22, 15, 5, 0.1, 0, Math.PI * 2)
+  ctx.fill()
 
   // Шея.
   ctx.fillStyle = skin
