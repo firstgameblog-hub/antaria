@@ -77,12 +77,12 @@ export const MORNING: StoryScene = {
     },
     {
       id: 'task',
-      art: 'marta_roof',
+      art: 'headman',
       text: '— Марта ночью воду из дома вычерпывала. Крыша совсем прохудилась. Принеси ей веток, сколько найдёшь, — она подопрёт.',
     },
     {
       id: 'trader',
-      art: 'korney',
+      art: 'headman',
       text: '— И к Корнею загляни. Он с утра там, товар разложил. Может, чем разживёмся.',
       journal: 'Отец сказал: нас осталось мало и зима близко.',
     },
@@ -518,7 +518,7 @@ export const FINALE: StoryScene = {
 /** Тринадцатая глава: первый столичный гость. */
 export const CAPITAL_TRADER: StoryScene = {
   id: 'capital_trader',
-  art: 'korney',
+  art: 'road',
   title: 'Столичный гость',
   beats: [
     {
@@ -540,7 +540,7 @@ export const CAPITAL_TRADER: StoryScene = {
 /** Глава внутри «Вольного посада»: первый рынок. */
 export const FREE_MARKET: StoryScene = {
   id: 'free_market',
-  art: 'korney',
+  art: 'road',
   title: 'Первый рынок',
   beats: [
     {
