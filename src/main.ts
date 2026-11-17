@@ -469,16 +469,22 @@ function finishCombat(): void {
         flash('Налёт отбит. Деревня стоит.', 6000)
       } else if (result.outcome === 'defeat') {
         const stolen = loseSupplies(0.4)
+        const broken = damageBuilding()
         state.village.population = Math.max(1, state.village.population - 3)
         state.flags['raid.done'] = true
-        addJournal(`Налётчики ворвались в деревню. Унесли ${stolen} припасов, трое ушли навсегда.`)
-        flash(`Налёт: −${stolen} припасов, −3 человека.`, 7000)
+        addJournal(
+          `Налётчики ворвались в деревню. Унесли ${stolen} припасов, трое ушли навсегда.${broken ? ` Разбит ${broken.toLowerCase()}.` : ''}`,
+        )
+        flash(`Налёт: −${stolen} припасов, −3 человека${broken ? `, разбит ${broken.toLowerCase()}` : ''}.`, 7000)
       } else {
         const stolen = loseSupplies(0.25)
+        const broken = damageBuilding()
         state.village.population = Math.max(1, state.village.population - 1)
         state.flags['raid.done'] = true
-        addJournal(`Ты ушёл с ворот. Налётчики взяли ${stolen} припасов и одного человека.`)
-        flash(`Налёт: −${stolen} припасов, −1 человек.`, 7000)
+        addJournal(
+          `Ты ушёл с ворот. Налётчики взяли ${stolen} припасов и одного человека.${broken ? ` Разбит ${broken.toLowerCase()}.` : ''}`,
+        )
+        flash(`Налёт: −${stolen} припасов, −1 человек${broken ? `, разбит ${broken.toLowerCase()}` : ''}.`, 7000)
       }
     }
 
@@ -496,8 +502,19 @@ function finishCombat(): void {
   updateHud()
 }
 
-/** Теряем часть припасов со склада. Возвращает, сколько унесли. */
-function loseSupplies(fraction: number): number {
+/** Одна из построек страдает от налёта. Возвращает имя, если что-то сломали. */
+function damageBuilding(): string | null {
+  const candidates = state.world.buildings.filter((id) => !state.world.damaged.includes(id))
+  if (candidates.length === 0) return null
+
+  const id = candidates[Math.floor(Math.random() * candidates.length)]
+  if (!id) return null
+
+  state.world.damaged.push(id)
+  return structureById(id)?.name ?? id
+}
+
+/** Теряем часть припасов со склада. Возвращает, сколько унесли. */function loseSupplies(fraction: number): number {
   let lost = 0
 
   for (const stack of [...state.village.storage.stacks]) {
@@ -559,6 +576,13 @@ function openJournal(): void {
   })
 }
 
+function repairCost(structure: StructureDef): { itemId: string; count: number }[] {
+  return structure.cost.map((cost) => ({
+    itemId: cost.itemId,
+    count: Math.max(1, Math.ceil(cost.count / 2)),
+  }))
+}
+
 function openVillage(): void {
   const current = stageById(state.village.stageId)
   if (!current) return
@@ -574,8 +598,35 @@ function openVillage(): void {
         have: countOf(state.village.storage, requirement.itemId),
         need: requirement.count,
       })),
-    getDailyNeed: () => {
-      const season = seasonOf(state.clock.day)
+    getDamaged: () =>
+      state.world.damaged.map((id) => {
+        const structure = structureById(id)
+        const cost = structure ? repairCost(structure) : []
+        return {
+          id,
+          name: structure?.name ?? id,
+          cost: cost.map((part) => `${part.count} × ${itemName(part.itemId)}`).join(', '),
+        }
+      }),
+    onRepair: (id) => {
+      const structure = structureById(id)
+      if (!structure) return 'Такой постройки нет'
+
+      const cost = repairCost(structure)
+      const missing = cost.some(
+        (part) => countOf(state.village.storage, part.itemId) < part.count,
+      )
+      if (missing) return 'На складе не хватает материалов'
+
+      for (const part of cost) removeItems(state.village.storage, part.itemId, part.count)
+
+      state.world.damaged = state.world.damaged.filter((candidate) => candidate !== id)
+      addJournal(`${structure.name} снова в строю.`)
+      persist()
+      updateHud()
+      return `${structure.name}: починено`
+    },
+    getDailyNeed: () => {      const season = seasonOf(state.clock.day)
       const needs = dailyNeeds(state.village.population, season)
       const winterNote = needs.winter ? ' Зима: расход двойной.' : ''
       const fields = START_VILLAGE.filter((building) => building.kind === 'field').length
@@ -754,8 +805,13 @@ function openCraft(): void {
       const recipe = recipeById(recipeId)
       if (!recipe) return 'Такого рецепта нет'
 
-      if (recipe.station === 'forge' && !state.world.buildings.includes('forge')) {
-        return 'Для этого нужен горн. Построй его на участке.'
+      if (
+        recipe.station === 'forge' &&
+        (!state.world.buildings.includes('forge') || state.world.damaged.includes('forge'))
+      ) {
+        return state.world.damaged.includes('forge')
+          ? 'Горн разбит. Сначала почини его в «Деревне».'
+          : 'Для этого нужен горн. Построй его на участке.'
       }
 
       const result = craftRecipe(state, recipe, ITEM_BY_ID)

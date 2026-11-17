@@ -224,6 +224,7 @@ export function normalizeSave(data: SaveRecord): GameState {
         trust: asInt(asRecord(asRecord(data['world'])['trader'])['trust'], 0, 0, 100),
       },
       buildings: normalizeBuildings(asRecord(data['world'])['buildings']),
+      damaged: normalizeBuildings(asRecord(data['world'])['damaged']),
     },
     flags: normalizeFlags(data['flags']),
     journal: normalizeJournal(data['journal']),

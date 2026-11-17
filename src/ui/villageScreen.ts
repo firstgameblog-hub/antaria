@@ -13,12 +13,20 @@ export interface VillageRequirement {
   need: number
 }
 
+export interface VillageDamaged {
+  id: string
+  name: string
+  cost: string
+}
+
 export interface VillageScreenOptions {
   getStageName: () => string
   getNextStageName: () => string | null
   getRequirements: () => readonly VillageRequirement[]
+  getDamaged: () => readonly VillageDamaged[]
   getDailyNeed: () => string
   onDeposit: () => string
+  onRepair: (id: string) => string
   onCeremony: () => void
   onClose: () => void
 }
@@ -39,6 +47,7 @@ function render(): void {
   const stageName = options.getStageName()
   const nextStageName = options.getNextStageName()
   const requirements = options.getRequirements()
+  const damaged = options.getDamaged()
   const ready = requirements.length > 0 && requirements.every((row) => row.have >= row.need)
 
   overlay.innerHTML = `
@@ -50,6 +59,24 @@ function render(): void {
 
       <div class="village__body">
         <p class="village__daily">${escapeHtml(options.getDailyNeed())}</p>
+        ${
+          damaged.length > 0
+            ? `<section class="village__damaged">
+                 <h3 class="village__damaged-title">Пострадало</h3>
+                 <ul class="village__list">
+                   ${damaged
+                     .map(
+                       (row) => `
+                     <li class="village__row village__row--broken">
+                       <span>${escapeHtml(row.name)} <small>${escapeHtml(row.cost)}</small></span>
+                       <button class="village__repair" data-repair="${row.id}">Починить</button>
+                     </li>`,
+                     )
+                     .join('')}
+                 </ul>
+               </section>`
+            : ''
+        }
         ${
           nextStageName
             ? `<p class="village__next">Следующая стадия — <strong>${escapeHtml(nextStageName)}</strong>. Для неё нужно сдать на склад:</p>
@@ -86,6 +113,15 @@ function render(): void {
     if (!options) return
     status = options.onDeposit()
     render()
+  })
+
+  overlay.querySelectorAll<HTMLButtonElement>('button[data-repair]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const id = button.dataset['repair']
+      if (!id || !options) return
+      status = options.onRepair(id)
+      render()
+    })
   })
 
   overlay.querySelector('[data-village="ceremony"]')?.addEventListener('click', () => {
