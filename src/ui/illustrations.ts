@@ -549,126 +549,247 @@ const SMELL: Draw = (ctx, w, h) => {
 }
 
 const BODY: Draw = (ctx, w, h) => {
-  backdrop(ctx, w, h, '#3b3329', '#171310')
+  // Земля у порога: утоптанная глина, солома, редкие камни.
+  backdrop(ctx, w, h, '#4a4033', '#221b15')
 
-  // Земля и солома под рукой.
-  ctx.strokeStyle = 'rgba(120, 96, 60, 0.55)'
-  ctx.lineWidth = 2
-  for (let i = 0; i < 46; i += 1) {
-    const x = (i * 53) % w
-    const y = h * 0.5 + ((i * 31) % (h * 0.5))
+  // Пятна глины.
+  for (let i = 0; i < 26; i += 1) {
+    const x = (i * 137) % w
+    const y = (i * 83) % h
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(96, 78, 54, 0.22)' : 'rgba(70, 56, 38, 0.22)'
+    ctx.beginPath()
+    ctx.ellipse(x, y, 26 + (i % 5) * 8, 12 + (i % 3) * 5, (i % 7) * 0.5, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // Солома: короткие штрихи в разные стороны.
+  ctx.lineWidth = 1.8
+  for (let i = 0; i < 70; i += 1) {
+    const x = (i * 61) % w
+    const y = (i * 103) % h
+    const angle = ((i * 37) % 360) * (Math.PI / 180)
+    ctx.strokeStyle = i % 3 === 0 ? 'rgba(186, 156, 104, 0.45)' : 'rgba(150, 124, 82, 0.3)'
     ctx.beginPath()
     ctx.moveTo(x, y)
-    ctx.lineTo(x + 16, y - 4)
+    ctx.lineTo(x + Math.cos(angle) * 13, y - Math.sin(angle) * 7)
     ctx.stroke()
   }
 
-  // Рука лежит на земле ладонью вверх, чужая и слишком большая.
-  const cx = w * 0.52
-  const cy = h * 0.66
-  const palmW = w * 0.17
-  const palmH = h * 0.2
+  // Свет из открытой двери: мягкое пятно справа, без резкой границы.
+  const door = ctx.createRadialGradient(w * 0.88, h * 0.16, 10, w * 0.88, h * 0.16, h * 0.85)
+  door.addColorStop(0, 'rgba(230, 204, 152, 0.26)')
+  door.addColorStop(1, 'rgba(230, 204, 152, 0)')
+  ctx.fillStyle = door
+  ctx.fillRect(0, 0, w, h)
 
-  const skin = '#c39a78'
-  const skinShade = '#a87e5e'
-  const edge = '#3f2b1e'
+  const scale = Math.min(w / 620, h / 340)
 
-  // Тень под рукой.
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'
+  ctx.save()
+  ctx.translate(w * 0.48, h * 0.5)
+  ctx.rotate(-0.08)
+  ctx.scale(scale, scale)
+  ctx.translate(20, 0)
+
+  const skin = '#b9895f'
+  const shirt = '#6f6858'
+  const shirtDark = '#585244'
+  const trousers = '#4a3d2f'
+  const boot = '#2a2018'
+  const outline = 'rgba(26, 16, 10, 0.85)'
+
+  // Мягкая тень под лежащим.
+  const shadow = ctx.createRadialGradient(-40, 8, 10, -40, 8, 210)
+  shadow.addColorStop(0, 'rgba(0, 0, 0, 0.38)')
+  shadow.addColorStop(1, 'rgba(0, 0, 0, 0)')
+  ctx.fillStyle = shadow
   ctx.beginPath()
-  ctx.ellipse(cx + w * 0.01, cy + palmH * 0.9, palmW * 1.25, palmH * 0.5, 0, 0, Math.PI * 2)
+  ctx.ellipse(-40, 8, 210, 78, 0, 0, Math.PI * 2)
   ctx.fill()
 
-  // Пальцы.
-  const fingers = [
-    { dx: -palmW * 0.78, len: palmH * 0.95, tilt: -0.22 },
-    { dx: -palmW * 0.28, len: palmH * 1.15, tilt: -0.08 },
-    { dx: palmW * 0.2, len: palmH * 1.08, tilt: 0.06 },
-    { dx: palmW * 0.62, len: palmH * 0.85, tilt: 0.2 },
-  ]
+  // Ноги.
+  ctx.strokeStyle = outline
+  ctx.lineWidth = 2.4
+  ctx.fillStyle = trousers
 
-  for (const finger of fingers) {
-    const fx = cx + finger.dx
-    const fy = cy - palmH * 0.55
+  // Дальняя нога: бедро, голень, сапог.
+  ctx.beginPath()
+  ctx.moveTo(0, -18)
+  ctx.quadraticCurveTo(52, -16, 78, -2)
+  ctx.lineTo(72, 16)
+  ctx.quadraticCurveTo(44, 6, 0, 4)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
 
-    ctx.save()
-    ctx.translate(fx, fy)
-    ctx.rotate(finger.tilt)
-    ctx.fillStyle = skin
-    ctx.strokeStyle = edge
-    ctx.lineWidth = 2.4
-    ctx.beginPath()
-    ctx.roundRect(-palmW * 0.16, -finger.len, palmW * 0.32, finger.len, palmW * 0.16)
-    ctx.fill()
-    ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(70, -2)
+  ctx.quadraticCurveTo(96, 10, 104, 30)
+  ctx.lineTo(86, 38)
+  ctx.quadraticCurveTo(78, 18, 64, 12)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
 
-    // Складки на сгибах.
-    ctx.strokeStyle = 'rgba(70, 48, 34, 0.45)'
-    ctx.lineWidth = 1.4
-    for (let joint = 1; joint <= 2; joint += 1) {
-      const jy = -finger.len + (finger.len * joint) / 3
-      ctx.beginPath()
-      ctx.moveTo(-palmW * 0.13, jy)
-      ctx.lineTo(palmW * 0.13, jy)
-      ctx.stroke()
-    }
-    ctx.restore()
-  }
+  ctx.fillStyle = boot
+  ctx.beginPath()
+  ctx.ellipse(106, 40, 17, 9, 0.5, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
 
-  // Ладонь.
-  ctx.fillStyle = skin
-  ctx.strokeStyle = edge
+  // Ближняя нога.
+  ctx.fillStyle = trousers
+  ctx.beginPath()
+  ctx.moveTo(0, 4)
+  ctx.quadraticCurveTo(48, 16, 72, 34)
+  ctx.lineTo(58, 50)
+  ctx.quadraticCurveTo(34, 30, -4, 22)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(66, 34)
+  ctx.quadraticCurveTo(82, 50, 84, 66)
+  ctx.lineTo(66, 70)
+  ctx.quadraticCurveTo(64, 52, 52, 44)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.fillStyle = boot
+  ctx.beginPath()
+  ctx.ellipse(80, 72, 16, 9, 0.6, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Торс: спина, рубаха.
+  ctx.fillStyle = shirt
+  ctx.strokeStyle = outline
   ctx.lineWidth = 2.6
   ctx.beginPath()
-  ctx.ellipse(cx, cy, palmW, palmH, 0, 0, Math.PI * 2)
+  ctx.moveTo(-124, -32)
+  ctx.quadraticCurveTo(-70, -38, -16, -28)
+  ctx.quadraticCurveTo(4, -20, 6, -6)
+  ctx.quadraticCurveTo(4, 12, -14, 26)
+  ctx.quadraticCurveTo(-70, 40, -122, 24)
+  ctx.quadraticCurveTo(-136, -4, -124, -32)
+  ctx.closePath()
   ctx.fill()
   ctx.stroke()
 
-  // Тень на ладони и линии.
-  ctx.fillStyle = skinShade
-  ctx.globalAlpha = 0.5
-  ctx.beginPath()
-  ctx.ellipse(cx + palmW * 0.15, cy + palmH * 0.15, palmW * 0.7, palmH * 0.7, 0.3, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.globalAlpha = 1
+  // Складки рубахи на спине.
+  ctx.strokeStyle = 'rgba(30, 22, 14, 0.3)'
+  ctx.lineWidth = 2
+  for (let i = 0; i < 4; i += 1) {
+    ctx.beginPath()
+    ctx.moveTo(-96 + i * 24, -26 + i * 2)
+    ctx.quadraticCurveTo(-84 + i * 24, -4, -96 + i * 22, 20 + i * 3)
+    ctx.stroke()
+  }
 
-  ctx.strokeStyle = 'rgba(70, 48, 34, 0.5)'
-  ctx.lineWidth = 1.6
+  // Пояс.
+  ctx.fillStyle = shirtDark
+  ctx.strokeStyle = outline
+  ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.moveTo(cx - palmW * 0.5, cy - palmH * 0.1)
-  ctx.quadraticCurveTo(cx, cy + palmH * 0.1, cx + palmW * 0.45, cy - palmH * 0.2)
-  ctx.moveTo(cx - palmW * 0.2, cy + palmH * 0.5)
-  ctx.quadraticCurveTo(cx + palmW * 0.05, cy + palmH * 0.7, cx + palmW * 0.3, cy + palmH * 0.45)
+  ctx.moveTo(-14, -18)
+  ctx.lineTo(6, -12)
+  ctx.lineTo(4, 8)
+  ctx.lineTo(-18, 2)
+  ctx.closePath()
+  ctx.fill()
   ctx.stroke()
 
-  // Большой палец.
+  // Левая рука вытянута вперёд, к свету.
+  ctx.fillStyle = shirt
+  ctx.beginPath()
+  ctx.moveTo(-118, -26)
+  ctx.quadraticCurveTo(-150, -40, -176, -42)
+  ctx.lineTo(-178, -26)
+  ctx.quadraticCurveTo(-148, -24, -118, -8)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Кисть вытянутой руки.
   ctx.fillStyle = skin
-  ctx.strokeStyle = edge
-  ctx.lineWidth = 2.4
-  ctx.save()
-  ctx.translate(cx - palmW * 0.9, cy + palmH * 0.15)
-  ctx.rotate(-0.55)
   ctx.beginPath()
-  ctx.roundRect(-palmW * 0.17, -palmH * 0.35, palmW * 0.34, palmH * 0.75, palmW * 0.17)
+  ctx.ellipse(-188, -34, 14, 10, -0.4, 0, Math.PI * 2)
   ctx.fill()
   ctx.stroke()
+
+  for (let i = 0; i < 4; i += 1) {
+    ctx.beginPath()
+    ctx.roundRect(-204 + i * 5.2, -48 + i * 1.4, 4.6, 14, 2.2)
+    ctx.fill()
+    ctx.stroke()
+  }
+
+  // Правая рука под телом: видно плечо.
+  ctx.fillStyle = shirt
+  ctx.beginPath()
+  ctx.ellipse(-104, 26, 26, 14, 0.25, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Шея.
+  ctx.fillStyle = skin
+  ctx.beginPath()
+  ctx.roundRect(-130, -16, 14, 26, 6)
+  ctx.fill()
+  ctx.stroke()
+
+  // Голова лежит щекой: видно затылок и ухо.
+  ctx.beginPath()
+  ctx.ellipse(-150, -4, 24, 21, -0.12, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Волосы.
+  ctx.fillStyle = '#3b2a1c'
+  ctx.beginPath()
+  ctx.ellipse(-154, -12, 22, 17, -0.2, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.strokeStyle = 'rgba(90, 66, 42, 0.6)'
+  ctx.lineWidth = 1.2
+  for (let i = 0; i < 6; i += 1) {
+    ctx.beginPath()
+    ctx.moveTo(-168 + i * 4, -20 + (i % 3) * 3)
+    ctx.quadraticCurveTo(-160 + i * 4, -10, -166 + i * 4, -2)
+    ctx.stroke()
+  }
+
+  // Ухо.
+  ctx.fillStyle = skin
+  ctx.strokeStyle = 'rgba(60, 38, 24, 0.8)'
+  ctx.beginPath()
+  ctx.ellipse(-132, -2, 4, 6, 0.2, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Линия челюсти у земли.
+  ctx.beginPath()
+  ctx.moveTo(-140, 10)
+  ctx.quadraticCurveTo(-150, 16, -160, 12)
+  ctx.stroke()
+
   ctx.restore()
 
-  // Заноза.
-  ctx.strokeStyle = '#2f2014'
-  ctx.lineWidth = 2.4
-  ctx.beginPath()
-  ctx.moveTo(cx - palmW * 0.1, cy + palmH * 0.05)
-  ctx.lineTo(cx + palmW * 0.22, cy + palmH * 0.22)
-  ctx.stroke()
+  // Пара соломинок поверх тела.
+  ctx.strokeStyle = 'rgba(186, 156, 104, 0.45)'
+  ctx.lineWidth = 1.8
+  for (let i = 0; i < 5; i += 1) {
+    const x = w * (0.34 + i * 0.06)
+    const y = h * (0.42 + (i % 2) * 0.05)
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+    ctx.lineTo(x + 12, y - 4)
+    ctx.stroke()
+  }
 
-  // Утренний свет узкой полосой.
-  ctx.globalAlpha = 0.1
-  ctx.fillStyle = '#d9d2bf'
-  ctx.fillRect(0, h * 0.1, w, h * 0.08)
-  ctx.globalAlpha = 1
-
-  vignette(ctx, w, h, 0.66)
+  vignette(ctx, w, h, 0.6)
 }
 
 /** Кисть руки: ладонь, четыре пальца и большой, с лёгким изгибом. */
