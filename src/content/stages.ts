@@ -41,7 +41,7 @@ export const STAGES: readonly StageDef[] = [
       { itemId: 'stone', count: 4 },
     ],
     ceremonyScene: '',
-    journalOnEnter: 'Первый дым над деревней. Двадцать пять душ, новый частокол и зима, которую можно пережить.',
+    journalOnEnter: '',
   },
 ]
 

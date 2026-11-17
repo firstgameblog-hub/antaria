@@ -135,7 +135,32 @@ export const FIRST_SMOKE: StoryScene = {
   ],
 }
 
-export const ALL_SCENES: readonly StoryScene[] = [PROLOGUE, MORNING, FIRST_SMOKE]
+/** Глава вторая: незнакомец у ворот (9.5, M3). */
+export const STRANGER: StoryScene = {
+  id: 'stranger',
+  title: 'Незнакомец',
+  beats: [
+    {
+      id: 'gate',
+      text: 'Он стоит у ворот с самого утра. Ни входит, ни уходит. Просто смотрит, как над деревней поднимается дым.',
+    },
+    {
+      id: 'ask',
+      text: '— Это ты, значит, поднял их, — говорит он. Не спрашивает. Голос ровный, как у человека, привыкшего, что его слушают.',
+    },
+    {
+      id: 'deal',
+      text: 'Он из Тихой Пади, деревни за рекой. У них есть соль и железо, у нас — дрова и руки. Можно торговать. Можно платить. Можно ждать гостей.',
+    },
+    {
+      id: 'leave',
+      text: 'Он уходит, не дожидаясь ответа. У ворот остаётся след от сапог и ощущение, что выбор уже сделали за тебя.',
+      journal: 'У ворот стоял человек из Тихой Пади. Он предложил торговать — или платить. Ответа он не ждал.',
+    },
+  ],
+}
+
+export const ALL_SCENES: readonly StoryScene[] = [PROLOGUE, MORNING, FIRST_SMOKE, STRANGER]
 
 export function sceneById(id: string): StoryScene | undefined {
   return ALL_SCENES.find((scene) => scene.id === id)

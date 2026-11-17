@@ -4,7 +4,7 @@ import { createCombat, resolveTurn, type CombatState } from './core/combat'
 import { WOLF, DEER, WILD_ENCOUNTERS } from './content/enemies'
 import type { CombatAction, EnemyDef } from './data/combat'
 import { HUNT_SPOTS, type HuntSpot } from './content/hunting'
-import { ROOF_THREAD, threadById, type ThreadDef } from './content/threads'
+import { THREADS, threadById, type ThreadDef } from './content/threads'
 import { openRequestScreen, closeRequestScreen } from './ui/requestScreen'
 import { openVillageScreen, closeVillageScreen } from './ui/villageScreen'
 import { nextStage, stageById } from './content/stages'
@@ -524,17 +524,26 @@ function startCeremony(): void {
     persist()
     updateHud()
     flash(`Деревня стала: ${next.name}`, 6000)
+
+    // Сразу после первого дыма — гость у ворот: начало второй главы.
+    if (state.flags['stranger.met'] !== true) {
+      state.flags['stranger.met'] = true
+      startStory('stranger')
+    }
   })
 }
 
 /** Открытые просьбы: видно, о чём люди просят прямо сейчас. */function openRequests(): string[] {
   const requests: string[] = []
 
-  if (state.flags[`${ROOF_THREAD.id}.done`] !== true) {
-    const list = ROOF_THREAD.requirements
+  for (const thread of THREADS) {
+    if (state.flags[`${thread.id}.done`] === true) continue
+
+    const list = thread.requirements
       .map((requirement) => `${itemName(requirement.itemId)} — ${requirement.count} шт.`)
       .join(', ')
-    requests.push(`Марта просит: ${list}`)
+
+    requests.push(`${thread.npcName} просит: ${list}`)
   }
 
   if (state.flags['trader.order.done'] !== true) {
@@ -921,8 +930,10 @@ function frame(time: number): void {
     nearby,
     stageId: state.village.stageId,
     buildings: state.world.buildings,
-    drips:
-      state.flags[`${ROOF_THREAD.id}.done`] === true ? [] : [{ x: ROOF_THREAD.drip.x, y: ROOF_THREAD.drip.y }],
+    drips: THREADS.filter(
+      (thread) =>
+        thread.drip !== undefined && state.flags[`${thread.id}.done`] !== true,
+    ).map((thread) => ({ x: thread.drip?.x ?? 0, y: thread.drip?.y ?? 0 })),
     hoveredLabel,
     gatherProgress,
     player: {
@@ -1005,14 +1016,16 @@ function activeNpcs(): ActiveNpc[] {
     },
   ]
 
-  if (state.flags[`${ROOF_THREAD.id}.done`] !== true) {
+  for (const thread of THREADS) {
+    if (state.flags[`${thread.id}.done`] === true) continue
+
     list.push({
-      id: ROOF_THREAD.id,
-      x: ROOF_THREAD.x,
-      y: ROOF_THREAD.y,
+      id: thread.id,
+      x: thread.x,
+      y: thread.y,
       facing: 'left',
       kind: 'villager',
-      label: `${ROOF_THREAD.npcName} · ${ROOF_THREAD.short}`,
+      label: `${thread.npcName} · ${thread.short}`,
     })
   }
 
