@@ -64,6 +64,52 @@ export const SCHEDULES: Record<string, readonly ScheduleStop[]> = {
     { from: 12 * 60, x: 660, y: 760, note: 'у ворот' },
     { from: 18 * 60, x: 600, y: 820, note: 'у телеги' },
   ],
+  thread_wall_gap: [
+    { from: 6 * 60, x: 900, y: 300, note: 'у стены' },
+    { from: 12 * 60, x: 860, y: 420, note: 'у стены, с инструментом' },
+    { from: 18 * 60, x: 900, y: 300, note: 'у стены' },
+  ],
+  thread_bellows: [
+    { from: 6 * 60, x: 400, y: 520, note: 'у горна' },
+    { from: 12 * 60, x: 560, y: 560, note: 'у костра' },
+    { from: 13 * 60, x: 400, y: 520, note: 'у горна' },
+    { from: 19 * 60, x: 400, y: 520, note: 'у горна, при свете' },
+  ],
+  thread_new_well: [
+    { from: 6 * 60, x: 760, y: 300, note: 'с ведром' },
+    { from: 11 * 60, x: 600, y: 300, note: 'у старого колодца' },
+    { from: 17 * 60, x: 760, y: 300, note: 'с ведром' },
+  ],
+  thread_counters: [
+    { from: 6 * 60, x: 520, y: 720, note: 'над товаром' },
+    { from: 12 * 60, x: 620, y: 640, note: 'у костра' },
+    { from: 13 * 60, x: 520, y: 720, note: 'над товаром' },
+  ],
+  thread_inn: [
+    { from: 6 * 60, x: 980, y: 620, note: 'у пристройки' },
+    { from: 12 * 60, x: 900, y: 700, note: 'носит доски' },
+    { from: 18 * 60, x: 980, y: 620, note: 'у крыльца' },
+  ],
+  thread_scales: [
+    { from: 6 * 60, x: 860, y: 880, note: 'у весов' },
+    { from: 12 * 60, x: 900, y: 760, note: 'у конторы' },
+    { from: 18 * 60, x: 860, y: 880, note: 'у весов' },
+  ],
+  thread_scriptorium: [
+    { from: 6 * 60, x: 300, y: 480, note: 'над книгами' },
+    { from: 13 * 60, x: 400, y: 560, note: 'у суда' },
+    { from: 18 * 60, x: 300, y: 480, note: 'над книгами' },
+  ],
+  thread_hospital: [
+    { from: 6 * 60, x: 980, y: 820, note: 'у больного' },
+    { from: 12 * 60, x: 900, y: 760, note: 'за травами' },
+    { from: 17 * 60, x: 980, y: 820, note: 'у больного' },
+  ],
+  thread_bridge: [
+    { from: 6 * 60, x: 700, y: 900, note: 'у брода' },
+    { from: 12 * 60, x: 760, y: 860, note: 'у брода, с бревном' },
+    { from: 18 * 60, x: 700, y: 900, note: 'у брода' },
+  ],
 }
 
 export function scheduleOf(id: string): readonly ScheduleStop[] | undefined {
