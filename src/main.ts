@@ -132,6 +132,7 @@ let lastFireDistance = -1
 let combat: CombatState | null = null
 let combatContext: 'wild' | 'raid' | 'boss' = 'wild'
 let raidPending = false
+let raidResolved = false
 let danger = 0
 let pendingAmbush = false
 const dayStats = { gathered: 0, crafted: 0, traded: 0, built: 0, fought: 0 }
@@ -464,7 +465,10 @@ function finishCombat(): void {
     }
 
     // Налёт: поражение и бегство стоят деревне дорого.
-    if (context === 'raid') {      if (result.outcome === 'victory') {
+    if (context === 'raid') {
+      raidResolved = true
+
+      if (result.outcome === 'victory') {
         state.flags['raid.done'] = true
         flash('Налёт отбит. Деревня стоит.', 6000)
       } else if (result.outcome === 'defeat') {
@@ -500,6 +504,11 @@ function finishCombat(): void {
 
   persist()
   updateHud()
+
+  if (raidResolved) {
+    raidResolved = false
+    afterRaidScene()
+  }
 }
 
 /** Одна из построек страдает от налёта. Возвращает имя, если что-то сломали. */
@@ -527,6 +536,12 @@ function damageBuilding(): string | null {
   return lost
 }
 
+function afterRaidScene(): void {
+  if (state.flags['chapter.after_raid'] === true) return
+  state.flags['chapter.after_raid'] = true
+  startStory('after_raid')
+}
+
 function startRaid(): void {
   openRaidScreen({
     text: 'Ночью у ворот факелы. Пятеро, может, шестеро. Один стоит впереди и не прячет лица — значит, не боится, что его запомнят.',
@@ -540,6 +555,7 @@ function startRaid(): void {
       flash('Налётчики ушли, забрав двадцать монет.', 6000)
       persist()
       updateHud()
+      afterRaidScene()
     },
     onHide: () => {
       const stolen = loseSupplies(0.4)
@@ -549,6 +565,7 @@ function startRaid(): void {
       flash(`Налётчики ушли с добычей: −${stolen} припасов, −1 человек.`, 6000)
       persist()
       updateHud()
+      afterRaidScene()
     },
   })
 }
@@ -694,6 +711,12 @@ function startCeremony(): void {
     if (state.flags['stranger.met'] !== true) {
       state.flags['stranger.met'] = true
       startStory('stranger')
+    }
+
+    // Дорога ожила: первый караван приходит сразу после перехода.
+    if (next.id === 'stage_trade_road' && state.flags['chapter.caravan'] !== true) {
+      state.flags['chapter.caravan'] = true
+      startStory('first_caravan')
     }
   })
 }
@@ -1810,6 +1833,7 @@ if (import.meta.env.DEV) {
       fireDistance: () => lastFireDistance,
       obstacleCount: () => obstacles.length,
       ambush: () => startAmbush(),
+      hasScene: (id: string) => Boolean(sceneById(id)),
       ambushRoll: () => {
         tryAmbush()
         return { danger, pending: pendingAmbush, inCombat: combat !== null }
