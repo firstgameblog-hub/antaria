@@ -630,7 +630,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 2rem 1.5rem;
-  background: #17130f;
+  background: radial-gradient(circle at 50% 35%, #2a231b 0%, #17130f 100%);
   cursor: pointer;
   overflow-y: auto;
 }

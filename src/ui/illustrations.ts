@@ -2180,9 +2180,9 @@ export function drawIllustration(
   draw(ctx, width, height)
   ctx.restore()
 
-  // Края растворяются в цвете страницы: у кадра нет видимой рамки.
+  // Края растворяются в фоне страницы: у кадра нет видимой рамки.
   const fade = Math.max(8, Math.min(width, height) * 0.09)
-  const page = 'rgba(23, 19, 15, '
+  const page = 'rgba(36, 29, 22, '
 
   const strips: [number, number, number, number, number, number, number, number][] = [
     // x, y, w, h, x0, y0, x1, y1 — координаты градиента
