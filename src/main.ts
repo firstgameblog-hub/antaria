@@ -227,6 +227,14 @@ function advanceTime(minutes: number): void {
 function processNight(absoluteDayIndex: number): void {
   const dayOfYear = (absoluteDayIndex % DAYS_PER_YEAR) + 1
   const season = seasonOf(dayOfYear)
+
+  // Поля кормят деревню: без этого всё держалось бы на руках игрока.
+  const fieldYield = season === 'winter' ? 0 : season === 'autumn' ? 1 : 2
+  const fields = START_VILLAGE.filter((building) => building.kind === 'field').length
+  const harvest = fieldYield * fields
+  const grain = itemDef('grain')
+  if (harvest > 0 && grain) addItems(state.village.storage, grain, harvest, 1, ITEM_BY_ID)
+
   const result = applyDailyUpkeep(state.village.storage, state.village.population, season)
 
   if (result.lost > 0) {
@@ -570,7 +578,14 @@ function openVillage(): void {
       const season = seasonOf(state.clock.day)
       const needs = dailyNeeds(state.village.population, season)
       const winterNote = needs.winter ? ' Зима: расход двойной.' : ''
-      return `В день деревня съедает ${needs.food} еды и сжигает ${needs.fuel} дров.${winterNote}`
+      const fields = START_VILLAGE.filter((building) => building.kind === 'field').length
+      const yieldPerField = season === 'winter' ? 0 : season === 'autumn' ? 1 : 2
+      const harvest = fields * yieldPerField
+      const harvestNote =
+        harvest > 0
+          ? ` Поля дают ${harvest} зерна за ночь.`
+          : ' Зимой поля не дают ничего.'
+      return `В день деревня съедает ${needs.food} еды и сжигает ${needs.fuel} дров.${winterNote}${harvestNote}`
     },
     onDeposit: () => {
       if (!next) return 'Дальше некуда'
