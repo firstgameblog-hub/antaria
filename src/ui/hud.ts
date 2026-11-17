@@ -161,7 +161,7 @@ export function createHud(handlers: HudHandlers): Hud {
       }
 
       if (stageEl) {
-        stageEl.textContent = `${data.stage} · людей: ${data.population}`
+        stageEl.textContent = data.stage
       }
 
       if (resourcesEl) renderResources(resourcesEl, data.resources)

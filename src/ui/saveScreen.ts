@@ -77,7 +77,7 @@ function slotDetails(info: SlotInfo): string {
   const size = summary.bytes < 1024 ? `${summary.bytes} Б` : `${(summary.bytes / 1024).toFixed(1)} КБ`
 
   return [
-    `Год ${summary.year}, день ${summary.day} · ${escapeHtml(stageLabel(summary.stageId))} · ${summary.population} чел.`,
+    `Год ${summary.year}, день ${summary.day} · ${escapeHtml(stageLabel(summary.stageId))}`,
     `<span class="slot__meta">${formatSavedAt(summary.savedAt)} · ${size}</span>`,
   ].join('<br>')
 }

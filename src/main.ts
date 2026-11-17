@@ -271,7 +271,7 @@ function processNight(absoluteDayIndex: number): void {
         ? 'Зимняя ночь была голодной. Несколько человек ушли, не дождавшись утра.'
         : 'Ночью не хватило еды. Кто-то собрал узел и ушёл.',
     )
-    flash(`Деревня потеряла людей: −${result.lost}. Не хватило еды или дров.`, 6000)
+    flash('Деревня потеряла людей: не хватило еды или дров.', 6000)
   }
 
   morningEvent()
@@ -598,7 +598,7 @@ function finishCombat(): void {
         addJournal(
           `Налётчики ворвались в деревню. Унесли ${stolen} припасов, трое ушли навсегда.${broken ? ` Разбит ${broken.toLowerCase()}.` : ''}`,
         )
-        flash(`Налёт: −${stolen} припасов, −3 человека${broken ? `, разбит ${broken.toLowerCase()}` : ''}.`, 7000)
+        flash(`Налёт: −${stolen} припасов, люди ушли${broken ? `, разбит ${broken.toLowerCase()}` : ''}.`, 7000)
       } else {
         const stolen = loseSupplies(hasStoneWall() ? 0.2 : 0.4)
         const broken = damageBuilding()
@@ -607,7 +607,7 @@ function finishCombat(): void {
         addJournal(
           `Ты ушёл с ворот. Налётчики взяли ${stolen} припасов и одного человека.${broken ? ` Разбит ${broken.toLowerCase()}.` : ''}`,
         )
-        flash(`Налёт: −${stolen} припасов, −1 человек${broken ? `, разбит ${broken.toLowerCase()}` : ''}.`, 7000)
+        flash(`Налёт: −${stolen} припасов, кто-то ушёл${broken ? `, разбит ${broken.toLowerCase()}` : ''}.`, 7000)
       }
     }
 
@@ -621,7 +621,7 @@ function finishCombat(): void {
         addJournal(
           `Волна ${siegeWave()} прошла по улице. Унесли ${stolen} припасов, двое не вернулись со стены.${broken ? ` Разбит ${broken.toLowerCase()}.` : ''}`,
         )
-        flash(`Волна ${siegeWave()}: −${stolen} припасов, −2 человека.`, 7000)
+        flash(`Волна ${siegeWave()}: −${stolen} припасов, со стены кто-то не вернулся.`, 7000)
       }
 
       if (siegeWave() >= 3) finishSiege()
@@ -1009,7 +1009,7 @@ function startRaid(): void {
       state.village.population = Math.max(1, state.village.population - 1)
       state.flags['raid.done'] = true
       addJournal(`Спрятались за частоколом. Унесли ${stolen} припасов и одного человека.`)
-      flash(`Налётчики ушли с добычей: −${stolen} припасов, −1 человек.`, 6000)
+      flash(`Налётчики ушли с добычей: −${stolen} припасов, одного человека увели.`, 6000)
       persist()
       updateHud()
       afterRaidScene()
@@ -1091,7 +1091,7 @@ function openSiegeWave(): void {
       addJournal(
         `Держали стены. Волна ${wave} ушла, но двое остались на стене навсегда. Камня ушло ${stone}.`,
       )
-      flash(`Стены выстояли: −${stone} камня, −2 человека.`, 6000)
+      flash(`Стены выстояли: −${stone} камня, на стене кого-то не досчитались.`, 6000)
       persist()
       updateHud()
       nextSiegeWave()
@@ -2099,7 +2099,7 @@ function openThread(thread: ThreadDef): void {
       state.flags[`${thread.id}.refused`] = true
       state.village.population = Math.max(1, state.village.population - 1)
       addJournal(thread.failText ?? `${thread.npcName} не дождался помощи и ушёл.`)
-      flash(`${thread.npcName} больше не ждёт. Деревня стала меньше на одного человека.`, 7000)
+      flash(`${thread.npcName} больше не ждёт. В деревне стало на одного меньше.`, 7000)
       closeRequestScreen()
       persist()
       updateHud()
