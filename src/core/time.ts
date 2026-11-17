@@ -24,20 +24,25 @@ export const SEASON_LABELS: Record<Season, string> = {
 }
 
 /**
- * Стоимость действий в игровых минутах. Числа-заглушки: калибруются,
- * когда появятся сами действия (блоки 6, 7, 8).
+ * Стоимость действий в игровых минутах. День — 12 рабочих часов,
+ * поэтому каждое действие здесь стоит заметную часть дня (1.3.8, M2).
  */
 export type ActionKind = 'move_short' | 'move_long' | 'gather' | 'craft' | 'talk' | 'trade' | 'fight'
 
 export const ACTION_MINUTES: Record<ActionKind, number> = {
   move_short: 5,
   move_long: 15,
-  gather: 10,
-  craft: 20,
-  talk: 5,
-  trade: 10,
-  fight: 5,
+  gather: 60,
+  craft: 120,
+  talk: 60,
+  trade: 60,
+  fight: 60,
 }
+
+/** Вечер: после этого часа работать нельзя, только спать. */
+export const DAY_END_MINUTES = 19 * 60
+/** Утро: раньше этого часа тоже не работают. */
+export const DAY_START_MINUTES = 6 * 60
 
 export interface TimeStep {
   clock: ClockState
@@ -93,6 +98,11 @@ export function formatDate(clock: ClockState): string {
 
 export function formatDateTime(clock: ClockState): string {
   return `${formatDate(clock)} · ${formatTime(clock.minutes)}`
+}
+
+/** Можно ли ещё работать: не ночь и не глухая темень. */
+export function isWorkingHours(clock: ClockState): boolean {
+  return clock.minutes >= DAY_START_MINUTES && clock.minutes < DAY_END_MINUTES
 }
 
 /** Время в абсолютных минутах от начала игры: удобно сравнивать сроки. */

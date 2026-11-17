@@ -22,6 +22,7 @@ import {
   MINUTES_PER_DAY,
   absoluteMinutes,
   addMinutes,
+  isWorkingHours,
   nextMorning,
   seasonOf,
 } from './core/time'
@@ -128,6 +129,14 @@ let lastFireDistance = -1
 let combat: CombatState | null = null
 let danger = 0
 let pendingAmbush = false
+const dayStats = { gathered: 0, crafted: 0, traded: 0, built: 0, fought: 0 }
+
+/** Светлое время: без него ни собирать, ни строить, ни торговать. */
+function daylightOk(): boolean {
+  if (isWorkingHours(state.clock)) return true
+  flash('Стемнело. До утра ничего не сделать — ложись спать.')
+  return false
+}
 let obstacles: ReturnType<typeof buildObstacles> = buildObstacles([])
 
 function refreshObstacles(): void {
@@ -224,6 +233,36 @@ function processNight(absoluteDayIndex: number): void {
     )
     flash(`Деревня потеряла людей: −${result.lost}. Не хватило еды или дров.`, 6000)
   }
+
+  morningEvent()
+}
+
+/** Утреннее событие: деревня не молчит, даже если игрок ничего не делает. */
+function morningEvent(): void {
+  const storage = state.village.storage
+  const food =
+    countOf(storage, 'berry') + countOf(storage, 'meat') + countOf(storage, 'broth')
+
+  if (food === 0) {
+    addJournal('Утро началось с пустого склада. Деревня молчит и ждёт еды.')
+    flash('С утра на складе пусто. Люди ждут еды.', 6000)
+    return
+  }
+
+  const roll = Math.random()
+
+  if (roll < 0.35) {
+    const berries = itemDef('berry')
+    if (berries) addItems(storage, berries, 3, 1, ITEM_BY_ID)
+    addJournal('Кто-то оставил у ворот корзину ягод. Не сказал кто.')
+    return
+  }
+
+  if (roll < 0.6 && food > 4) {
+    const berries = itemDef('berry')
+    if (berries) removeItems(storage, 'berry', Math.min(3, countOf(storage, 'berry')))
+    addJournal('Ночью подмокла часть припасов. Половину пришлось выбросить.')
+  }
 }
 
 /** Ночь (3.2.6). Время идёт вперёд, утром — сводка. Следы в деревне появятся с 7.16. */
@@ -237,12 +276,25 @@ function sleep(): void {
   danger = 0
   pendingAmbush = false
 
+  const summary = [
+    dayStats.gathered > 0 ? `собрано ${dayStats.gathered}` : '',
+    dayStats.crafted > 0 ? `сделано ${dayStats.crafted}` : '',
+    dayStats.traded > 0 ? `сделок ${dayStats.traded}` : '',
+    dayStats.built > 0 ? `построено ${dayStats.built}` : '',
+    dayStats.fought > 0 ? `боёв ${dayStats.fought}` : '',
+  ]
+    .filter((part) => part !== '')
+    .join(', ')
+
+  dayStats.gathered = 0
+  dayStats.crafted = 0
+  dayStats.traded = 0
+  dayStats.built = 0
+  dayStats.fought = 0
+
   nightNote = {
-    text:
-      step.daysPassed > 1
-        ? `Ты проспал мимо ${step.daysPassed} ночей. В деревне пока тихо.`
-        : 'Ночь прошла. В деревне пока тихо.',
-    until: performance.now() + 4500,
+    text: summary === '' ? 'День прошёл без дел.' : `День закончен: ${summary}.`,
+    until: performance.now() + 5500,
   }
   persist()
   updateHud()
@@ -271,6 +323,7 @@ function playerCombatStats(): { maxHp: number; minDamage: number; maxDamage: num
 function beginCombat(enemy: EnemyDef, options: { playerFirst?: boolean } = {}): void {
   if (combat) return
 
+  dayStats.fought += 1
   combat = createCombat(enemy, state.player.health.current, playerCombatStats(), options)
   ambience.setDucked(true)
 
@@ -325,6 +378,8 @@ function tryAmbush(): void {
 }
 
 function startHunt(spot: HuntSpot): void {
+  if (!daylightOk()) return
+
   const now = absoluteMinutes(state.clock)
 
   if (!isReady(state.world.nodes, spot.id, now)) {
@@ -570,6 +625,8 @@ function openCraft(): void {
       return recipe ? canCraft(recipe, state.player.inventory, ITEM_BY_ID) : false
     },
     onCraft: (recipeId) => {
+      if (!daylightOk()) return 'Стемнело. Ремесло — только днём.'
+
       const recipe = recipeById(recipeId)
       if (!recipe) return 'Такого рецепта нет'
 
@@ -585,6 +642,7 @@ function openCraft(): void {
 
       playCraft()
       advanceTime(recipe.minutes)
+      dayStats.crafted += 1
       persist()
       updateHud()
       return result.message
@@ -969,6 +1027,8 @@ function openThread(thread: ThreadDef): void {
     requirements: thread.requirements,
     getInventory: () => state.player.inventory,
     onDeliver: () => {
+      if (!daylightOk()) return 'Стемнело. Люди уже спят.'
+
       const missing = thread.requirements.some(
         (requirement) => countOf(state.player.inventory, requirement.itemId) < requirement.count,
       )
@@ -1018,6 +1078,8 @@ function openBuild(structure: StructureDef): void {
     })),
     minutes: structure.minutes,
     onBuild: () => {
+      if (!daylightOk()) return 'Стемнело. Строить можно только днём.'
+
       const missing = structure.cost.some(
         (cost) => countOf(state.village.storage, cost.itemId) < cost.count,
       )
@@ -1029,6 +1091,7 @@ function openBuild(structure: StructureDef): void {
 
       state.world.buildings.push(structure.id)
       advanceTime(structure.minutes)
+      dayStats.built += 1
       addJournal(structure.journal)
       refreshObstacles()
       persist()
@@ -1059,20 +1122,27 @@ function openTrade(): void {
   openTradeScreen({
     getState: () => state,
     onBuy: (itemId) => {
+      if (!daylightOk()) return 'Стемнело. Корней уже свернул товар.'
+
       const offer = TRADER.sells.find((candidate) => candidate.itemId === itemId)
       if (!offer) return 'Такого товара нет'
 
       const result = buy(state, offer, ITEM_BY_ID)
       if (!result.ok) return result.reason
 
+      dayStats.traded += 1
       playCoin()
       persist()
       updateHud()
       return result.message
     },
     onSell: (itemId) => {
+      if (!daylightOk()) return 'Стемнело. Корней уже свернул товар.'
+
       const result = sell(state, itemId, 1, ITEM_BY_ID)
       if (!result.ok) return result.reason
+
+      dayStats.traded += 1
 
       if (state.flags['journal.firstTrade'] !== true) {
         state.flags['journal.firstTrade'] = true
@@ -1122,6 +1192,8 @@ function nodeLabel(node: GatheringNodeDef, now: number): string {
 }
 
 function startGathering(node: GatheringNodeDef): void {
+  if (!daylightOk()) return
+
   const now = absoluteMinutes(state.clock)
 
   if (!isReady(state.world.nodes, node.id, now)) {
@@ -1162,6 +1234,7 @@ function finishGathering(): void {
 
   markGathered(state.world.nodes, node.id, now, node.restoreMinutes)
   advanceTime(ACTION_MINUTES.gather)
+  dayStats.gathered += 1
 
   flash(
     added < node.count
