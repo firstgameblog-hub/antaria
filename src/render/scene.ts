@@ -786,7 +786,7 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
   // Поля — плоская земля: рисуются всегда под всем, иначе герой «проваливается» под них
   for (const building of START_VILLAGE) {
     if (building.kind === 'field') {
-      drawBuilding(ctx, building, TILE, options.time)
+      drawBuilding(ctx, building, TILE, options.time, options.stageId)
     }
   }
 
@@ -803,7 +803,7 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
       h: building.h * TILE,
     },
     draw: () => {
-      drawBuilding(ctx, building, TILE, options.time)
+      drawBuilding(ctx, building, TILE, options.time, options.stageId)
     },
   }))
 

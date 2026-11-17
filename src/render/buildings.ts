@@ -13,6 +13,16 @@ interface HouseStyle {
   roof: string
   roofDark: string
   porch?: boolean
+  /** Каменный цоколь под стеной. */
+  foundation?: boolean
+  /** Сколько окон на фасаде. */
+  windows?: number
+  /** Труба с дымом. */
+  chimney?: boolean
+  /** Черепица: горизонтальные линии на скатах. */
+  tiles?: boolean
+  /** Наличники вокруг окон. */
+  frames?: boolean
 }
 
 function roundRect(
@@ -67,6 +77,26 @@ function drawHouse(
   ctx.fill()
   ctx.stroke()
 
+  // Каменный цоколь: видно, что дом пережил не одну зиму.
+  if (style.foundation === true) {
+    ctx.fillStyle = '#a8a094'
+    ctx.strokeStyle = PALETTE.ink
+    ctx.lineWidth = 1.4
+    roundRect(ctx, x + w * 0.09, wallTop + wallHeight - h * 0.09, w * 0.82, h * 0.09, 1)
+    ctx.fill()
+    ctx.stroke()
+
+    ctx.strokeStyle = 'rgba(58, 47, 36, 0.25)'
+    ctx.lineWidth = 1
+    for (let row = 1; row < 2; row += 1) {
+      const lineY = wallTop + wallHeight - h * 0.09 + (h * 0.09 * row) / 2
+      ctx.beginPath()
+      ctx.moveTo(x + w * 0.1, lineY)
+      ctx.lineTo(x + w * 0.9, lineY)
+      ctx.stroke()
+    }
+  }
+
   // Крыша: два ската, разделённые коньком
   const eave = wallTop + 5
   const ridgeLeft = x + w * 0.17
@@ -108,6 +138,31 @@ function drawHouse(
   ctx.lineTo(mid, eave)
   ctx.stroke()
 
+  // Черепица: с третьего стиля крыша перестаёт быть соломой.
+  if (style.tiles === true) {
+    ctx.strokeStyle = 'rgba(58, 47, 36, 0.2)'
+    ctx.lineWidth = 1
+    for (let row = 1; row < 4; row += 1) {
+      const lineY = y + ((eave - y) * row) / 4
+      ctx.beginPath()
+      ctx.moveTo(mid + (row * w) / 12, lineY)
+      ctx.lineTo(x + w * 0.98 - (row * w) / 20, lineY)
+      ctx.moveTo(mid - (row * w) / 12, lineY)
+      ctx.lineTo(x + w * 0.02 + (row * w) / 20, lineY)
+      ctx.stroke()
+    }
+  }
+
+  // Труба: признак того, что в доме есть печь, а не очаг по-старому.
+  if (style.chimney === true) {
+    ctx.fillStyle = '#8d8378'
+    ctx.strokeStyle = PALETTE.ink
+    ctx.lineWidth = 1.4
+    const chimneyX = x + w * 0.66
+    ctx.fillRect(chimneyX, y - h * 0.06, w * 0.08, h * 0.16)
+    ctx.strokeRect(chimneyX, y - h * 0.06, w * 0.08, h * 0.16)
+  }
+
   // Дверь
   const doorW = w * 0.15
   const doorH = wallHeight * 0.62
@@ -115,16 +170,38 @@ function drawHouse(
   roundRect(ctx, x + w * 0.5 - doorW / 2, wallTop + wallHeight - doorH, doorW, doorH, 1)
   ctx.fill()
 
-  // Окно
+  // Окна: одно в старой избе, два — в доме, который надстраивали.
+  const windows = style.windows ?? 1
   const winW = w * 0.11
   const winH = wallHeight * 0.22
-  ctx.fillStyle = 'rgba(255, 240, 200, 0.55)'
-  ctx.strokeStyle = PALETTE.ink
-  ctx.lineWidth = 1.2
-  const winX = x + w * 0.22
   const winY = wallTop + wallHeight * 0.28
-  ctx.fillRect(winX, winY, winW, winH)
-  ctx.strokeRect(winX, winY, winW, winH)
+  const windowXs = windows >= 2 ? [0.22, 0.66] : [0.22]
+
+  for (const position of windowXs) {
+    const winX = x + w * position
+
+    if (style.frames === true) {
+      ctx.fillStyle = '#f2ece0'
+      ctx.strokeStyle = PALETTE.ink
+      ctx.lineWidth = 1.2
+      ctx.fillRect(winX - 1.5, winY - 1.5, winW + 3, winH + 3)
+      ctx.strokeRect(winX - 1.5, winY - 1.5, winW + 3, winH + 3)
+    }
+
+    ctx.fillStyle = 'rgba(255, 240, 200, 0.55)'
+    ctx.strokeStyle = PALETTE.ink
+    ctx.lineWidth = 1.2
+    ctx.fillRect(winX, winY, winW, winH)
+    ctx.strokeRect(winX, winY, winW, winH)
+
+    // Переплёт
+    ctx.beginPath()
+    ctx.moveTo(winX + winW / 2, winY)
+    ctx.lineTo(winX + winW / 2, winY + winH)
+    ctx.moveTo(winX, winY + winH / 2)
+    ctx.lineTo(winX + winW, winY + winH / 2)
+    ctx.stroke()
+  }
 
   if (style.porch === true) {
     ctx.fillStyle = PALETTE.woodDark
@@ -252,18 +329,42 @@ function drawCampfire(ctx: CanvasRenderingContext2D, x: number, y: number, w: nu
   ctx.globalAlpha = 1
 }
 
-const HOUSE_STYLES: Record<'headman_hut' | 'workers_house', HouseStyle> = {
-  headman_hut: {
-    wall: PALETTE.wood,
-    roof: PALETTE.thatch,
-    roofDark: PALETTE.thatchDark,
-    porch: true,
-  },
-  workers_house: {
-    wall: PALETTE.woodDark,
-    roof: PALETTE.roofWood,
-    roofDark: PALETTE.roofWoodDark,
-  },
+/**
+ * Стиль домов по эпохе (4.1.8).
+ * 0 — старая изба, 1 — подлатанная, 2 — посад с цоколем, 3 — город.
+ */
+const HOUSE_STYLES: Record<
+  'headman_hut' | 'workers_house',
+  readonly [HouseStyle, HouseStyle, HouseStyle, HouseStyle]
+> = {
+  headman_hut: [
+    { wall: '#6d5740', roof: PALETTE.thatch, roofDark: PALETTE.thatchDark, porch: true, windows: 1 },
+    { wall: PALETTE.wood, roof: PALETTE.roofWood, roofDark: PALETTE.roofWoodDark, porch: true, windows: 1 },
+    { wall: '#cdbb98', roof: '#9a6a4e', roofDark: '#7f553e', porch: true, foundation: true, windows: 2, chimney: true, tiles: true },
+    { wall: '#e9e1d1', roof: '#a4543f', roofDark: '#83402f', porch: true, foundation: true, windows: 2, chimney: true, tiles: true, frames: true },
+  ],
+  workers_house: [
+    { wall: '#5f4b36', roof: PALETTE.thatch, roofDark: PALETTE.thatchDark, windows: 1 },
+    { wall: PALETTE.woodDark, roof: PALETTE.roofWood, roofDark: PALETTE.roofWoodDark, windows: 1 },
+    { wall: '#bfae8c', roof: '#8f6248', roofDark: '#744e39', foundation: true, windows: 2, chimney: true, tiles: true },
+    { wall: '#ded6c6', roof: '#98503c', roofDark: '#7a3d2d', foundation: true, windows: 2, chimney: true, tiles: true, frames: true },
+  ],
+}
+
+/** Эпоха по id стадии: чем дальше, тем крепче стройка. */
+export function stageTier(stageId: string): 0 | 1 | 2 | 3 {
+  switch (stageId) {
+    case 'stage_dying':
+      return 0
+    case 'stage_first_smoke':
+    case 'stage_trade_road':
+      return 1
+    case 'stage_stone_belt':
+    case 'stage_free_town':
+      return 2
+    default:
+      return 3
+  }
 }
 
 export function drawBuilding(
@@ -271,11 +372,14 @@ export function drawBuilding(
   building: PlacedBuilding,
   tile: number,
   time: number,
+  stageId = 'stage_dying',
 ): void {
   const x = building.x * tile
   const y = building.y * tile
   const w = building.w * tile
   const h = building.h * tile
+
+  const tier = stageTier(stageId)
 
   switch (building.kind as BuildingKind) {
     case 'campfire':
@@ -285,10 +389,17 @@ export function drawBuilding(
       drawField(ctx, x, y, w, h)
       break
     case 'headman_hut':
-      drawHouse(ctx, x, y, w, h, HOUSE_STYLES.headman_hut)
+      drawHouse(ctx, x, y, w, h, HOUSE_STYLES.headman_hut[tier] ?? HOUSE_STYLES.headman_hut[0])
       break
     case 'workers_house':
-      drawHouse(ctx, x, y, w, h, HOUSE_STYLES.workers_house)
+      drawHouse(
+        ctx,
+        x,
+        y,
+        w,
+        h,
+        HOUSE_STYLES.workers_house[tier] ?? HOUSE_STYLES.workers_house[0],
+      )
       break
   }
 }
