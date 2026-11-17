@@ -22,6 +22,8 @@ let overlay: HTMLDivElement | null = null
 let options: StoryScreenOptions | null = null
 let beatIndex = 0
 let extraText: string | null = null
+/** Картинка к тексту, который показан после выбора. */
+let extraArt: string | undefined
 
 function close(): void {
   globalThis.removeEventListener('keydown', onKeyDown)
@@ -43,6 +45,7 @@ function advance(): void {
   if (extraText === null && beat?.choices && beat.choices.length > 0) return
 
   extraText = null
+  extraArt = undefined
   beatIndex += 1
 
   if (beatIndex >= options.scene.beats.length) {
@@ -59,6 +62,7 @@ function choose(choice: StoryChoice): void {
 
   options.onChoice(beatIndex, choice)
   extraText = choice.after ?? null
+  extraArt = choice.art
 
   if (extraText === null) {
     advance()
@@ -92,7 +96,7 @@ function render(): void {
   const beat = options.scene.beats[beatIndex]
   const text = extraText ?? beat?.text ?? ''
   const choices = extraText === null ? (beat?.choices ?? []) : []
-  const art = extraText === null ? beat?.art : undefined
+  const art = extraText === null ? beat?.art : extraArt
 
   overlay.innerHTML = `
     <div class="story">
@@ -147,6 +151,7 @@ export function openStoryScreen(screenOptions: StoryScreenOptions): void {
   options = screenOptions
   beatIndex = Math.max(0, Math.min(screenOptions.startBeat, screenOptions.scene.beats.length - 1))
   extraText = null
+  extraArt = undefined
 
   overlay?.remove()
   overlay = document.createElement('div')
