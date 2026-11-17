@@ -671,200 +671,422 @@ const BODY: Draw = (ctx, w, h) => {
   vignette(ctx, w, h, 0.66)
 }
 
-const FATHER: Draw = (ctx, w, h) => {
-  backdrop(ctx, w, h, '#3d3729', '#12100c')
+/** Кисть руки: ладонь, четыре пальца и большой, с лёгким изгибом. */
+function drawOpenHand(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  scale: number,
+  angle: number,
+  mirror = 1,
+): void {
+  const skin = '#b78c69'
+  const shade = '#8f6647'
+  const edge = 'rgba(42, 28, 18, 0.85)'
+  const palmW = 26 * scale
+  const palmH = 32 * scale
 
-  // Свет от костра снизу: лицо выхвачено из темноты.
-  const light = ctx.createRadialGradient(w * 0.5, h * 1.05, 10, w * 0.5, h * 1.05, h * 0.95)
-  light.addColorStop(0, 'rgba(232, 158, 76, 0.3)')
-  light.addColorStop(1, 'rgba(232, 158, 76, 0)')
-  ctx.fillStyle = light
-  ctx.fillRect(0, 0, w, h)
-
-  // Плечи в грубой рубахе.
-  ctx.fillStyle = '#4a4238'
-  ctx.beginPath()
-  ctx.ellipse(w * 0.5, h * 1.16, w * 0.42, h * 0.42, 0, 0, Math.PI * 2)
-  ctx.fill()
-
-  // Голова склонена набок.
   ctx.save()
-  ctx.translate(w * 0.5, h * 0.46)
-  ctx.rotate(-0.06)
+  ctx.translate(cx, cy)
+  ctx.rotate(angle)
+  ctx.scale(mirror, 1)
 
-  ctx.fillStyle = '#b98f6a'
-  ctx.strokeStyle = '#2f2115'
-  ctx.lineWidth = 3
+  // Ладонь: не круг, а скошенный пятиугольник.
+  ctx.fillStyle = skin
+  ctx.strokeStyle = edge
+  ctx.lineWidth = 1.6 * scale
   ctx.beginPath()
-  ctx.ellipse(0, 0, w * 0.14, h * 0.19, 0, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.stroke()
-
-  // Волосы: седая масса по краю головы, без иголок.
-  ctx.fillStyle = 'rgba(198, 190, 176, 0.9)'
-  ctx.beginPath()
-  ctx.ellipse(0, -h * 0.09, w * 0.145, h * 0.075, 0, Math.PI, Math.PI * 2)
-  ctx.fill()
-
-  // Глаза в тени: тревога, а не умиление.
-  ctx.fillStyle = 'rgba(40, 28, 18, 0.85)'
-  ctx.beginPath()
-  ctx.ellipse(-w * 0.05, -h * 0.02, w * 0.028, h * 0.016, 0.1, 0, Math.PI * 2)
-  ctx.ellipse(w * 0.05, -h * 0.02, w * 0.028, h * 0.016, -0.1, 0, Math.PI * 2)
-  ctx.fill()
-
-  ctx.fillStyle = 'rgba(240, 230, 210, 0.6)'
-  ctx.beginPath()
-  ctx.arc(-w * 0.047, -h * 0.024, w * 0.007, 0, Math.PI * 2)
-  ctx.arc(w * 0.053, -h * 0.024, w * 0.007, 0, Math.PI * 2)
-  ctx.fill()
-
-  // Брови, нос, складки.
-  ctx.strokeStyle = 'rgba(70, 52, 38, 0.8)'
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.moveTo(-w * 0.085, -h * 0.045)
-  ctx.lineTo(-w * 0.025, -h * 0.05)
-  ctx.moveTo(w * 0.025, -h * 0.05)
-  ctx.lineTo(w * 0.085, -h * 0.045)
-  ctx.stroke()
-
-  ctx.beginPath()
-  ctx.moveTo(0, -h * 0.03)
-  ctx.lineTo(-w * 0.01, h * 0.03)
-  ctx.lineTo(w * 0.015, h * 0.035)
-  ctx.stroke()
-
-  // Рот — короткая прямая линия на коже, без улыбки.
-  ctx.strokeStyle = 'rgba(60, 40, 28, 0.9)'
-  ctx.beginPath()
-  ctx.moveTo(-w * 0.028, h * 0.075)
-  ctx.lineTo(w * 0.028, h * 0.075)
-  ctx.stroke()
-
-  // Борода ниже рта: широкая, тяжёлая.
-  ctx.fillStyle = '#cfc7b9'
-  ctx.strokeStyle = '#8d8577'
-  ctx.lineWidth = 1.4
-  ctx.beginPath()
-  ctx.moveTo(-w * 0.118, h * 0.06)
-  ctx.quadraticCurveTo(-w * 0.1, h * 0.22, 0, h * 0.27)
-  ctx.quadraticCurveTo(w * 0.1, h * 0.22, w * 0.118, h * 0.06)
-  ctx.quadraticCurveTo(w * 0.06, h * 0.11, 0, h * 0.105)
-  ctx.quadraticCurveTo(-w * 0.06, h * 0.11, -w * 0.118, h * 0.06)
+  ctx.moveTo(-palmW * 0.9, palmH * 0.55)
+  ctx.quadraticCurveTo(-palmW * 1.05, -palmH * 0.1, -palmW * 0.7, -palmH * 0.55)
+  ctx.quadraticCurveTo(0, -palmH * 0.75, palmW * 0.7, -palmH * 0.5)
+  ctx.quadraticCurveTo(palmW * 1.02, palmH * 0.1, palmW * 0.85, palmH * 0.6)
+  ctx.quadraticCurveTo(0, palmH * 0.95, -palmW * 0.9, palmH * 0.55)
   ctx.closePath()
   ctx.fill()
   ctx.stroke()
 
-  ctx.strokeStyle = 'rgba(120, 112, 100, 0.55)'
-  ctx.lineWidth = 1
-  for (let i = -4; i <= 4; i += 1) {
+  // Тень у основания пальцев.
+  ctx.fillStyle = shade
+  ctx.globalAlpha = 0.35
+  ctx.beginPath()
+  ctx.ellipse(0, -palmH * 0.2, palmW * 0.75, palmH * 0.3, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.globalAlpha = 1
+
+  // Пальцы.
+  const fingers = [
+    { x: -palmW * 0.55, len: 1.45, tilt: -0.28, w: 0.36 },
+    { x: -palmW * 0.16, len: 1.62, tilt: -0.1, w: 0.36 },
+    { x: palmW * 0.22, len: 1.55, tilt: 0.08, w: 0.35 },
+    { x: palmW * 0.58, len: 1.25, tilt: 0.26, w: 0.32 },
+  ]
+
+  for (const finger of fingers) {
+    ctx.save()
+    ctx.translate(finger.x, -palmH * 0.55)
+    ctx.rotate(finger.tilt)
+    const fw = palmW * finger.w
+    const flen = palmH * finger.len
+
+    ctx.fillStyle = skin
+    ctx.strokeStyle = edge
+    ctx.lineWidth = 1.5 * scale
     ctx.beginPath()
-    ctx.moveTo(i * w * 0.022, h * 0.12)
-    ctx.lineTo(i * w * 0.026, h * 0.24)
+    ctx.roundRect(-fw / 2, -flen, fw, flen, fw * 0.48)
+    ctx.fill()
+    ctx.stroke()
+
+    // Складки сгибов.
+    ctx.strokeStyle = 'rgba(70, 46, 30, 0.45)'
+    ctx.lineWidth = 1 * scale
+    for (let joint = 1; joint <= 2; joint += 1) {
+      const jy = -flen + (flen * joint) / 3
+      ctx.beginPath()
+      ctx.moveTo(-fw * 0.38, jy)
+      ctx.lineTo(fw * 0.38, jy)
+      ctx.stroke()
+    }
+
+    // Блик.
+    ctx.fillStyle = 'rgba(255, 230, 200, 0.12)'
+    ctx.beginPath()
+    ctx.roundRect(-fw * 0.28, -flen + fw * 0.2, fw * 0.2, flen * 0.6, fw * 0.1)
+    ctx.fill()
+
+    ctx.restore()
+  }
+
+  // Большой палец.
+  ctx.save()
+  ctx.translate(palmW * 0.78, palmH * 0.05)
+  ctx.rotate(0.75)
+  ctx.fillStyle = skin
+  ctx.strokeStyle = edge
+  ctx.lineWidth = 1.5 * scale
+  ctx.beginPath()
+  ctx.roundRect(-palmW * 0.18, -palmH * 0.42, palmW * 0.36, palmH * 0.8, palmW * 0.18)
+  ctx.fill()
+  ctx.stroke()
+  ctx.restore()
+
+  ctx.restore()
+}
+
+const FATHER: Draw = (ctx, w, h) => {
+  // Тёмная изба и балка над головой.
+  backdrop(ctx, w, h, '#221a12', '#0a0705')
+
+  ctx.fillStyle = '#171009'
+  ctx.fillRect(0, 0, w, h * 0.18)
+  ctx.strokeStyle = 'rgba(120, 92, 58, 0.16)'
+  ctx.lineWidth = 2
+  for (let y = h * 0.2; y < h * 0.75; y += h * 0.12) {
+    ctx.beginPath()
+    ctx.moveTo(0, y)
+    ctx.lineTo(w, y)
     ctx.stroke()
   }
 
-  // Морщины у глаз.
-  ctx.strokeStyle = 'rgba(90, 70, 50, 0.5)'
-  ctx.lineWidth = 1.2
+  // Свет костра снизу.
+  const fire = ctx.createRadialGradient(w * 0.52, h * 1.05, 12, w * 0.52, h * 1.05, h * 0.95)
+  fire.addColorStop(0, 'rgba(232, 158, 76, 0.34)')
+  fire.addColorStop(0.6, 'rgba(190, 110, 50, 0.12)')
+  fire.addColorStop(1, 'rgba(190, 110, 50, 0)')
+  ctx.fillStyle = fire
+  ctx.fillRect(0, 0, w, h)
+
+  // Холодный свет из щели в крыше — мягкое пятно, а не полоса поперёк лица.
+  ctx.globalAlpha = 0.04
+  ctx.fillStyle = '#cfd8d4'
+  ctx.beginPath()
+  ctx.ellipse(w * 0.74, h * 0.06, w * 0.12, h * 0.14, -0.3, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.globalAlpha = 1
+
+  // Плечи в грубой рубахе.
+  ctx.fillStyle = '#4a4136'
+  ctx.beginPath()
+  ctx.ellipse(w * 0.5, h * 1.22, w * 0.44, h * 0.46, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.strokeStyle = 'rgba(120, 105, 86, 0.25)'
+  ctx.lineWidth = 2
+  for (let i = -3; i <= 3; i += 1) {
+    ctx.beginPath()
+    ctx.moveTo(w * 0.5 + i * w * 0.06, h * 0.84)
+    ctx.lineTo(w * 0.5 + i * w * 0.075, h)
+    ctx.stroke()
+  }
+
+  // Шея.
+  ctx.fillStyle = '#a97c58'
+  ctx.beginPath()
+  ctx.roundRect(w * 0.45, h * 0.6, w * 0.1, h * 0.2, w * 0.02)
+  ctx.fill()
+
+  // Голова: наклонена к тебе, видна снизу.
+  ctx.save()
+  ctx.translate(w * 0.5, h * 0.42)
+  ctx.rotate(-0.05)
+
+  const faceW = w * 0.155
+  const faceH = h * 0.205
+
+  ctx.fillStyle = '#b68a63'
+  ctx.strokeStyle = 'rgba(48, 30, 18, 0.9)'
+  ctx.lineWidth = 2.4
+  ctx.beginPath()
+  ctx.moveTo(-faceW, -faceH * 0.15)
+  ctx.quadraticCurveTo(-faceW * 1.02, faceH * 0.55, -faceW * 0.42, faceH * 0.92)
+  ctx.quadraticCurveTo(0, faceH * 1.08, faceW * 0.42, faceH * 0.92)
+  ctx.quadraticCurveTo(faceW * 1.02, faceH * 0.55, faceW, -faceH * 0.15)
+  ctx.quadraticCurveTo(0, -faceH * 0.95, -faceW, -faceH * 0.15)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Тень на левой щеке, тёплый свет на правой.
+  ctx.fillStyle = 'rgba(70, 45, 28, 0.35)'
+  ctx.beginPath()
+  ctx.ellipse(-faceW * 0.5, faceH * 0.15, faceW * 0.45, faceH * 0.5, -0.2, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.fillStyle = 'rgba(240, 190, 130, 0.14)'
+  ctx.beginPath()
+  ctx.ellipse(faceW * 0.52, faceH * 0.1, faceW * 0.4, faceH * 0.45, 0.2, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Лысина с бликом.
+  ctx.fillStyle = 'rgba(255, 235, 205, 0.1)'
+  ctx.beginPath()
+  ctx.ellipse(0, -faceH * 0.5, faceW * 0.6, faceH * 0.22, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Седина по бокам: узкие пряди у самого края головы.
+  ctx.fillStyle = 'rgba(198, 190, 174, 0.5)'
   for (const side of [-1, 1]) {
-    for (let i = 0; i < 2; i += 1) {
-      ctx.beginPath()
-      ctx.moveTo(side * w * 0.075, -h * 0.015 + i * h * 0.012)
-      ctx.lineTo(side * w * 0.1, -h * 0.03 + i * h * 0.014)
-      ctx.stroke()
-    }
+    ctx.beginPath()
+    ctx.ellipse(
+      side * faceW * 0.95,
+      -faceH * 0.05,
+      faceW * 0.1,
+      faceH * 0.36,
+      side * 0.1,
+      0,
+      Math.PI * 2,
+    )
+    ctx.fill()
+  }
+
+  // Брови: тяжёлые, седые.
+  ctx.strokeStyle = 'rgba(176, 168, 152, 0.95)'
+  ctx.lineWidth = 4
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(-faceW * 0.62, -faceH * 0.16)
+  ctx.quadraticCurveTo(-faceW * 0.3, -faceH * 0.27, -faceW * 0.08, -faceH * 0.16)
+  ctx.moveTo(faceW * 0.08, -faceH * 0.16)
+  ctx.quadraticCurveTo(faceW * 0.3, -faceH * 0.27, faceW * 0.62, -faceH * 0.16)
+  ctx.stroke()
+  ctx.lineCap = 'butt'
+
+  // Глаза: глубоко посаженные, с тяжёлым веком.
+  for (const side of [-1, 1]) {
+    const ex = side * faceW * 0.34
+    ctx.fillStyle = 'rgba(230, 220, 205, 0.9)'
+    ctx.beginPath()
+    ctx.ellipse(ex, -faceH * 0.03, faceW * 0.16, faceH * 0.055, 0, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.fillStyle = '#3a2a1c'
+    ctx.beginPath()
+    ctx.arc(ex, -faceH * 0.03, faceW * 0.07, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.fillStyle = 'rgba(255, 250, 240, 0.75)'
+    ctx.beginPath()
+    ctx.arc(ex - faceW * 0.02, -faceH * 0.045, faceW * 0.022, 0, Math.PI * 2)
+    ctx.fill()
+
+    // Верхнее веко.
+    ctx.strokeStyle = 'rgba(60, 40, 26, 0.8)'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.moveTo(ex - faceW * 0.17, -faceH * 0.06)
+    ctx.quadraticCurveTo(ex, -faceH * 0.12, ex + faceW * 0.17, -faceH * 0.06)
+    ctx.stroke()
+
+    // Мешки и морщины.
+    ctx.strokeStyle = 'rgba(120, 80, 52, 0.55)'
+    ctx.lineWidth = 1.4
+    ctx.beginPath()
+    ctx.moveTo(ex - faceW * 0.14, faceH * 0.03)
+    ctx.quadraticCurveTo(ex, faceH * 0.08, ex + faceW * 0.14, faceH * 0.03)
+    ctx.stroke()
+  }
+
+  // Нос: длинный, с горбинкой.
+  ctx.fillStyle = '#b08560'
+  ctx.strokeStyle = 'rgba(60, 38, 24, 0.7)'
+  ctx.lineWidth = 1.6
+  ctx.beginPath()
+  ctx.moveTo(-faceW * 0.06, -faceH * 0.09)
+  ctx.quadraticCurveTo(faceW * 0.02, faceH * 0.1, -faceW * 0.1, faceH * 0.17)
+  ctx.quadraticCurveTo(0, faceH * 0.24, faceW * 0.12, faceH * 0.16)
+  ctx.stroke()
+
+  // Морщины на лбу.
+  ctx.strokeStyle = 'rgba(110, 74, 48, 0.45)'
+  ctx.lineWidth = 1.4
+  for (let i = 0; i < 3; i += 1) {
+    ctx.beginPath()
+    ctx.moveTo(-faceW * 0.42, -faceH * (0.36 + i * 0.06))
+    ctx.quadraticCurveTo(0, -faceH * (0.42 + i * 0.06), faceW * 0.42, -faceH * (0.36 + i * 0.06))
+    ctx.stroke()
+  }
+
+  // Усы: тяжёлые, свисают по сторонам рта.
+  ctx.fillStyle = 'rgba(200, 192, 176, 0.98)'
+  ctx.beginPath()
+  ctx.moveTo(-faceW * 0.5, faceH * 0.3)
+  ctx.quadraticCurveTo(-faceW * 0.2, faceH * 0.14, 0, faceH * 0.2)
+  ctx.quadraticCurveTo(faceW * 0.2, faceH * 0.14, faceW * 0.5, faceH * 0.3)
+  ctx.quadraticCurveTo(faceW * 0.3, faceH * 0.44, faceW * 0.06, faceH * 0.36)
+  ctx.quadraticCurveTo(0, faceH * 0.33, -faceW * 0.06, faceH * 0.36)
+  ctx.quadraticCurveTo(-faceW * 0.3, faceH * 0.44, -faceW * 0.5, faceH * 0.3)
+  ctx.closePath()
+  ctx.fill()
+
+  ctx.strokeStyle = 'rgba(150, 142, 126, 0.5)'
+  ctx.lineWidth = 1.2
+  for (let i = -3; i <= 3; i += 1) {
+    ctx.beginPath()
+    ctx.moveTo(i * faceW * 0.12, faceH * 0.23)
+    ctx.lineTo(i * faceW * 0.14, faceH * 0.34)
+    ctx.stroke()
+  }
+
+  // Рот: опущенные уголки, тревога.
+  ctx.strokeStyle = 'rgba(58, 34, 22, 0.9)'
+  ctx.lineWidth = 2.4
+  ctx.beginPath()
+  ctx.moveTo(-faceW * 0.22, faceH * 0.42)
+  ctx.quadraticCurveTo(0, faceH * 0.37, faceW * 0.22, faceH * 0.42)
+  ctx.stroke()
+
+  // Борода: тяжёлая, неровная, с прядями.
+  ctx.fillStyle = 'rgba(178, 172, 158, 0.95)'
+  ctx.beginPath()
+  ctx.moveTo(-faceW * 0.88, faceH * 0.34)
+  ctx.quadraticCurveTo(-faceW * 0.95, faceH * 1.05, -faceW * 0.2, faceH * 1.35)
+  ctx.quadraticCurveTo(0, faceH * 1.45, faceW * 0.2, faceH * 1.35)
+  ctx.quadraticCurveTo(faceW * 0.95, faceH * 1.05, faceW * 0.88, faceH * 0.34)
+  ctx.quadraticCurveTo(faceW * 0.45, faceH * 0.62, 0, faceH * 0.6)
+  ctx.quadraticCurveTo(-faceW * 0.45, faceH * 0.62, -faceW * 0.88, faceH * 0.34)
+  ctx.closePath()
+  ctx.fill()
+
+  // Тени в бороде.
+  ctx.strokeStyle = 'rgba(120, 112, 98, 0.5)'
+  ctx.lineWidth = 1.2
+  for (let i = -5; i <= 5; i += 1) {
+    ctx.beginPath()
+    ctx.moveTo(i * faceW * 0.14, faceH * 0.7)
+    ctx.quadraticCurveTo(i * faceW * 0.17, faceH * 1.05, i * faceW * 0.12, faceH * 1.34)
+    ctx.stroke()
   }
 
   ctx.restore()
 
-  vignette(ctx, w, h, 0.55)
+  vignette(ctx, w, h, 0.6)
 }
 
 const NOEXIT: Draw = (ctx, w, h) => {
-  backdrop(ctx, w, h, '#14110d', '#040302')
+  backdrop(ctx, w, h, '#17130f', '#050403')
 
-  // Слабый свет из щели под крышкой.
-  const light = ctx.createLinearGradient(0, h * 0.1, 0, h * 0.6)
-  light.addColorStop(0, 'rgba(210, 220, 225, 0.16)')
-  light.addColorStop(1, 'rgba(210, 220, 225, 0)')
-  ctx.fillStyle = light
-  ctx.fillRect(0, 0, w, h * 0.6)
+  // Свет из щели: холодная полоса сверху, тепло снизу.
+  const slit = ctx.createLinearGradient(0, 0, 0, h * 0.45)
+  slit.addColorStop(0, 'rgba(206, 218, 220, 0.14)')
+  slit.addColorStop(1, 'rgba(206, 218, 220, 0)')
+  ctx.fillStyle = slit
+  ctx.fillRect(0, 0, w, h * 0.45)
 
-  // Ладони перед лицом: пальцы растопырены.
-  const drawHand = (cx: number, cy: number, mirror: number): void => {
-    const palmW = w * 0.105
-    const palmH = h * 0.15
+  const warm = ctx.createRadialGradient(w * 0.5, h * 1.1, 10, w * 0.5, h * 1.1, h * 0.7)
+  warm.addColorStop(0, 'rgba(226, 150, 70, 0.2)')
+  warm.addColorStop(1, 'rgba(226, 150, 70, 0)')
+  ctx.fillStyle = warm
+  ctx.fillRect(0, 0, w, h)
 
-    ctx.save()
-    ctx.translate(cx, cy)
-    ctx.scale(mirror, 1)
+  // Пустая рамка меню, которого нет: только контур и серые места под кнопки.
+  const mx = w * 0.27
+  const my = h * 0.16
+  const mw = w * 0.46
+  const mh = h * 0.3
 
-    const edge = '#3a281c'
+  ctx.strokeStyle = 'rgba(200, 214, 214, 0.12)'
+  ctx.lineWidth = 2
+  ctx.setLineDash([6, 8])
+  ctx.beginPath()
+  ctx.roundRect(mx, my, mw, mh, 6)
+  ctx.stroke()
+  ctx.setLineDash([])
 
-    // Пальцы.
-    for (const finger of [
-      { dx: -0.78, len: 1.25, tilt: -0.3 },
-      { dx: -0.26, len: 1.5, tilt: -0.1 },
-      { dx: 0.22, len: 1.45, tilt: 0.1 },
-      { dx: 0.66, len: 1.15, tilt: 0.28 },
-    ]) {
-      ctx.save()
-      ctx.translate(finger.dx * palmW, -palmH * 0.6)
-      ctx.rotate(finger.tilt)
-      ctx.fillStyle = '#b98f6e'
-      ctx.strokeStyle = edge
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.roundRect(-palmW * 0.15, -palmH * finger.len, palmW * 0.3, palmH * finger.len, palmW * 0.15)
-      ctx.fill()
-      ctx.stroke()
-      ctx.restore()
-    }
-
-    // Ладонь.
-    ctx.fillStyle = '#b98f6e'
-    ctx.strokeStyle = edge
-    ctx.lineWidth = 2.4
+  ctx.fillStyle = 'rgba(200, 214, 214, 0.04)'
+  for (let i = 0; i < 3; i += 1) {
     ctx.beginPath()
-    ctx.ellipse(0, 0, palmW, palmH * 0.85, 0, 0, Math.PI * 2)
+    ctx.roundRect(mx + mw * 0.08, my + mh * (0.16 + i * 0.26), mw * 0.84, mh * 0.14, 3)
     ctx.fill()
-    ctx.stroke()
-
-    // Большой палец.
-    ctx.save()
-    ctx.translate(palmW * 0.85, palmH * 0.1)
-    ctx.rotate(0.6)
-    ctx.beginPath()
-    ctx.roundRect(-palmW * 0.16, -palmH * 0.35, palmW * 0.32, palmH * 0.7, palmW * 0.16)
-    ctx.fill()
-    ctx.stroke()
-    ctx.restore()
-
-    // Тень ладони.
-    ctx.fillStyle = 'rgba(60, 40, 28, 0.25)'
-    ctx.beginPath()
-    ctx.ellipse(palmW * 0.2, palmH * 0.15, palmW * 0.6, palmH * 0.4, 0.2, 0, Math.PI * 2)
-    ctx.fill()
-
-    ctx.restore()
   }
 
-  drawHand(w * 0.28, h * 0.86, -1)
-  drawHand(w * 0.72, h * 0.86, 1)
-
-  // Дым между пальцами: никакого меню.
-  ctx.strokeStyle = 'rgba(200, 200, 200, 0.06)'
-  ctx.lineWidth = 14
+  // Дым между лицами и руками.
+  ctx.strokeStyle = 'rgba(190, 190, 185, 0.06)'
+  ctx.lineWidth = 18
   ctx.lineCap = 'round'
-  ctx.beginPath()
-  ctx.moveTo(w * 0.5, h * 0.95)
-  ctx.bezierCurveTo(w * 0.42, h * 0.6, w * 0.6, h * 0.42, w * 0.5, h * 0.1)
-  ctx.stroke()
+  for (const baseX of [w * 0.42, w * 0.58]) {
+    ctx.beginPath()
+    ctx.moveTo(baseX, h * 0.95)
+    ctx.bezierCurveTo(baseX - w * 0.06, h * 0.66, baseX + w * 0.08, h * 0.46, baseX, h * 0.24)
+    ctx.stroke()
+  }
   ctx.lineCap = 'butt'
 
-  vignette(ctx, w, h, 0.8)
+  // Руки перед лицом: ближняя крупнее, дальняя меньше и выше. Предплечья уходят вниз.
+  ctx.fillStyle = '#a97f5d'
+  ctx.strokeStyle = 'rgba(42, 28, 18, 0.8)'
+  ctx.lineWidth = 3
+
+  ctx.beginPath()
+  ctx.moveTo(w * 0.24, h * 1.02)
+  ctx.lineTo(w * 0.26, h * 0.9)
+  ctx.quadraticCurveTo(w * 0.33, h * 0.84, w * 0.4, h * 0.9)
+  ctx.lineTo(w * 0.44, h * 1.02)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(w * 0.6, h * 1.02)
+  ctx.lineTo(w * 0.63, h * 0.82)
+  ctx.quadraticCurveTo(w * 0.68, h * 0.76, w * 0.73, h * 0.83)
+  ctx.lineTo(w * 0.76, h * 1.02)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  drawOpenHand(ctx, w * 0.33, h * 0.92, 2.0, -0.16, -1)
+  drawOpenHand(ctx, w * 0.68, h * 0.84, 1.6, 0.2, 1)
+
+  // Холодный контровой свет по верхним фалангам.
+  ctx.strokeStyle = 'rgba(206, 220, 220, 0.14)'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(w * 0.2, h * 0.55)
+  ctx.lineTo(w * 0.3, h * 0.44)
+  ctx.moveTo(w * 0.6, h * 0.48)
+  ctx.lineTo(w * 0.72, h * 0.5)
+  ctx.stroke()
+
+  vignette(ctx, w, h, 0.78)
 }
 
 const VILLAGE: Draw = (ctx, w, h) => {
