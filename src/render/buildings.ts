@@ -6,6 +6,7 @@
  */
 
 import type { BuildingKind, PlacedBuilding } from '../content/scene'
+import type { Season } from '../core/time'
 import { PALETTE } from './palette'
 
 interface HouseStyle {
@@ -223,7 +224,19 @@ function drawHouse(
   ctx.lineCap = 'butt'
 }
 
-function drawField(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+/**
+ * Поле: эпоха меняет уход, сезон — то, что на нём растёт.
+ * Старое поле — кривые борозды и сорняк; городское — ровные гряды с водой по краю.
+ */
+function drawField(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  tier: number,
+  season: Season,
+): void {
   ctx.fillStyle = PALETTE.soil
   ctx.strokeStyle = PALETTE.ink
   ctx.lineWidth = 2
@@ -231,35 +244,90 @@ function drawField(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.fill()
   ctx.stroke()
 
-  const rows = 4
+  // С эпохи посада поле обложено камнем: земля стала хозяйством.
+  if (tier >= 2) {
+    ctx.fillStyle = '#a8a094'
+    ctx.strokeStyle = PALETTE.ink
+    ctx.lineWidth = 1.2
+    const kerb = 5
+    ctx.fillRect(x + 3, y + 3, w - 6, kerb)
+    ctx.fillRect(x + 3, y + h - 3 - kerb, w - 6, kerb)
+    ctx.fillRect(x + 3, y + 3, kerb, h - 6)
+    ctx.fillRect(x + w - 3 - kerb, y + 3, kerb, h - 6)
+    ctx.strokeRect(x + 3, y + 3, w - 6, h - 6)
+
+    // Оросительная канавка вдоль верхнего края.
+    ctx.fillStyle = 'rgba(96, 128, 132, 0.55)'
+    ctx.fillRect(x + 10, y + 11, w - 20, 3)
+  }
+
+  if (season === 'winter') {
+    // Снег: поле спит, видно только межу.
+    ctx.fillStyle = 'rgba(238, 242, 240, 0.85)'
+    roundRect(ctx, x + 6, y + 6, w - 12, h - 12, 3)
+    ctx.fill()
+
+    ctx.strokeStyle = 'rgba(58, 47, 36, 0.18)'
+    ctx.lineWidth = 1
+    for (let row = 1; row < 3; row += 1) {
+      const rowY = y + 6 + ((h - 12) * row) / 3
+      ctx.beginPath()
+      ctx.moveTo(x + 10, rowY)
+      ctx.lineTo(x + w - 10, rowY)
+      ctx.stroke()
+    }
+    return
+  }
+
+  const rows = tier >= 2 ? 5 : 4
   const gap = (h - 14) / rows
+  const rowInset = tier >= 2 ? 12 : 9
+
   for (let row = 0; row < rows; row += 1) {
     const rowY = y + 9 + row * gap
+    const wobble = tier === 0 ? Math.sin(row * 2.3) * 3 : 0
 
     // Борозда
     ctx.fillStyle = PALETTE.soilDark
     ctx.globalAlpha = 0.5
-    roundRect(ctx, x + 9, rowY, w - 18, gap * 0.34, 2)
+    roundRect(ctx, x + rowInset + wobble, rowY, w - rowInset * 2, gap * 0.34, 2)
     ctx.fill()
     ctx.globalAlpha = 1
 
-    // Всходы
-    const plants = 6
+    // Осенью поле стоит стернёй: зелень скошена.
+    if (season === 'autumn') {
+      ctx.strokeStyle = '#b99a54'
+      ctx.lineWidth = 1.4
+      for (let stub = 0; stub < 7; stub += 1) {
+        const stubX = x + 14 + (stub * (w - 28)) / 6
+        const top = rowY + gap * 0.3
+        ctx.beginPath()
+        ctx.moveTo(stubX, top)
+        ctx.lineTo(stubX, top - 4)
+        ctx.stroke()
+      }
+      continue
+    }
+
+    // Всходы: у старого поля их меньше и они разной высоты.
+    const plants = tier === 0 ? 4 : 6
     for (let plant = 0; plant < plants; plant += 1) {
       const plantX = x + 14 + (plant * (w - 28)) / (plants - 1)
       const top = rowY + gap * 0.34
+      const height = season === 'summer' ? 8 : 6
+      const jitter = tier === 0 ? Math.sin(plant * 3.1 + row) * 2 : 0
 
       ctx.strokeStyle = PALETTE.cropDark
       ctx.lineWidth = 1.2
       ctx.beginPath()
       ctx.moveTo(plantX, top)
-      ctx.lineTo(plantX, top - 6)
+      ctx.lineTo(plantX, top - height - jitter)
       ctx.stroke()
 
       ctx.fillStyle = PALETTE.crop
       ctx.beginPath()
-      ctx.ellipse(plantX - 2.2, top - 6, 2.4, 1.6, -0.5, 0, Math.PI * 2)
-      ctx.ellipse(plantX + 2.2, top - 7, 2.4, 1.6, 0.5, 0, Math.PI * 2)
+      ctx.ellipse(plantX - 2.2, top - height - jitter, 2.4, 1.6, -0.5, 0, Math.PI * 2)
+      ctx.ellipse(plantX + 2.2, top - height - jitter - 1, 2.4, 1.6, 0.5, 0, Math.PI * 2)
       ctx.fill()
     }
   }
@@ -373,6 +441,7 @@ export function drawBuilding(
   tile: number,
   time: number,
   stageId = 'stage_dying',
+  season: Season = 'summer',
 ): void {
   const x = building.x * tile
   const y = building.y * tile
@@ -386,7 +455,7 @@ export function drawBuilding(
       drawCampfire(ctx, x, y, w, h, time)
       break
     case 'field':
-      drawField(ctx, x, y, w, h)
+      drawField(ctx, x, y, w, h, tier, season)
       break
     case 'headman_hut':
       drawHouse(ctx, x, y, w, h, HOUSE_STYLES.headman_hut[tier] ?? HOUSE_STYLES.headman_hut[0])

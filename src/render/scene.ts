@@ -8,6 +8,7 @@ import { STRUCTURES } from '../content/buildings'
 import { drawPlot, drawStructure } from './structures'
 import type { NodeKind } from '../data/gathering'
 import type { Facing, Point, Rect } from '../core/movement'
+import type { Season } from '../core/time'
 import { drawBuilding, stageTier } from './buildings'
 import { drawGatheringNode, drawLair, drawTracks } from './nodes'
 import { drawTrader, drawVillager } from './npc'
@@ -598,6 +599,8 @@ export interface SceneOptions {
   drips: readonly SceneDrip[]
   nearby: readonly Point[]
   stageId: string
+  /** Время года: от него зависит, что на полях. */
+  season: Season
   buildings: readonly string[]
   /** Ворота открыты: за частоколом больше не темнее, чем внутри. */
   gateOpen: boolean
@@ -786,7 +789,7 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
   // Поля — плоская земля: рисуются всегда под всем, иначе герой «проваливается» под них
   for (const building of START_VILLAGE) {
     if (building.kind === 'field') {
-      drawBuilding(ctx, building, TILE, options.time, options.stageId)
+      drawBuilding(ctx, building, TILE, options.time, options.stageId, options.season)
     }
   }
 
@@ -803,7 +806,7 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
       h: building.h * TILE,
     },
     draw: () => {
-      drawBuilding(ctx, building, TILE, options.time, options.stageId)
+      drawBuilding(ctx, building, TILE, options.time, options.stageId, options.season)
     },
   }))
 

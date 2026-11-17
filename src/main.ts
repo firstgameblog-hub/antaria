@@ -1793,6 +1793,7 @@ function frame(time: number): void {
     spots: sceneSpots,
     nearby,
     stageId: state.village.stageId,
+    season: seasonOf(state.clock.day),
     gateOpen: gateOpen(),
     buildings: state.world.buildings,
     drips: THREADS.filter(
