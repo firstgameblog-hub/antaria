@@ -15,7 +15,7 @@ import type { StructureDef } from './data/buildings'
 import { openBuildScreen, closeBuildScreen } from './ui/buildScreen'
 import { canCraft, craftRecipe } from './core/crafting'
 import { addItems, countOf, equip, removeItems, transfer, weightOf } from './core/inventory'
-import { describeRestore, isReady, markGathered, minutesUntilReady } from './core/gathering'
+import { describeRestore, dormantReason, isReady, markGathered, minutesUntilReady, seasonalYield } from './core/gathering'
 import { distance, facingOf, findFreeSpot, movePlayer, stepToward, type Facing, type Point } from './core/movement'
 import { AUTO_SLOT, readBackup, readSlot, writeSlot } from './core/storage'
 import {
@@ -516,6 +516,12 @@ function finishCombat(): void {
       }
 
       state.player.health.current = Math.max(1, result.playerHp)
+
+      // Зимой мех гуще: со зверя снимают лишнюю шкуру.
+      if (context === 'wild' && seasonOf(state.clock.day) === 'winter') {
+        const hide = itemDef('hide')
+        if (hide) addItems(state.player.inventory, hide, 1, 1, ITEM_BY_ID)
+      }
 
       addJournal(
         result.enemy.id === 'roe_deer'
@@ -2269,7 +2275,15 @@ function nodeAt(worldX: number, worldY: number): GatheringNodeDef | null {
 }
 
 function nodeLabel(node: GatheringNodeDef, now: number): string {
-  if (isReady(state.world.nodes, node.id, now)) return node.name
+  const season = seasonOf(state.clock.day)
+  const dormant = dormantReason(node.kind, season)
+  if (dormant) return `${node.name} · ${dormant}`
+
+  if (isReady(state.world.nodes, node.id, now)) {
+    const amount = seasonalYield(node.count, node.kind, season)
+    return amount < node.count ? `${node.name} · сейчас ${amount}` : node.name
+  }
+
   const left = minutesUntilReady(state.world.nodes, node.id, now)
   return `${node.name} · ${describeRestore(left)}`
 }
@@ -2280,6 +2294,12 @@ function startGathering(node: GatheringNodeDef): void {
   if (node.requiredTool !== undefined && state.player.equipment.tool !== node.requiredTool) {
     const tool = itemDef(node.requiredTool)
     flash(`Нужна ${tool ? tool.name.toLowerCase() : 'инструмент'}. Без неё здесь делать нечего.`)
+    return
+  }
+
+  const dormant = dormantReason(node.kind, seasonOf(state.clock.day))
+  if (dormant) {
+    flash(`${node.name}: ${dormant}.`)
     return
   }
 
@@ -2314,7 +2334,13 @@ function finishGathering(): void {
     return
   }
 
-  const added = addItems(state.player.inventory, def, node.count, 1, ITEM_BY_ID)
+  const amount = seasonalYield(node.count, node.kind, seasonOf(state.clock.day))
+  if (amount === 0) {
+    flash(`${node.name}: ${dormantReason(node.kind, seasonOf(state.clock.day)) ?? 'пусто'}.`)
+    return
+  }
+
+  const added = addItems(state.player.inventory, def, amount, 1, ITEM_BY_ID)
 
   if (added === 0) {
     flash('Не влезло: груз переполнен.')
@@ -2326,8 +2352,8 @@ function finishGathering(): void {
   dayStats.gathered += 1
 
   flash(
-    added < node.count
-      ? `Собрано: ${def.name} ×${added} из ${node.count} — больше не влезло.`
+    added < amount
+      ? `Собрано: ${def.name} ×${added} из ${amount} — больше не влезло.`
       : `Собрано: ${def.name} ×${added}`,
   )
 
