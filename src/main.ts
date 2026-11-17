@@ -1,7 +1,8 @@
 import './styles.css'
 import { createInitialState, SPAWN_POINT, type GameState } from './core/state'
 import { createCombat, resolveTurn, type CombatState } from './core/combat'
-import { WOLF, DEER, WILD_ENCOUNTERS } from './content/enemies'
+import { WOLF, DEER, BANDIT_LEADER, WILD_ENCOUNTERS } from './content/enemies'
+import { openRaidScreen } from './ui/raidScreen'
 import type { CombatAction, EnemyDef } from './data/combat'
 import { HUNT_SPOTS, type HuntSpot } from './content/hunting'
 import { THREADS, threadById, type ThreadDef } from './content/threads'
@@ -128,6 +129,8 @@ let storyOpen = false
 let audioGreeted = false
 let lastFireDistance = -1
 let combat: CombatState | null = null
+let combatContext: 'wild' | 'raid' = 'wild'
+let raidPending = false
 let danger = 0
 let pendingAmbush = false
 const dayStats = { gathered: 0, crafted: 0, traded: 0, built: 0, fought: 0 }
@@ -236,6 +239,11 @@ function processNight(absoluteDayIndex: number): void {
   }
 
   morningEvent()
+
+  if (state.flags['raid.done'] !== true) {
+    const due = state.flags['raid.due_day']
+    if (typeof due === 'number' && absoluteDayIndex >= due) raidPending = true
+  }
 }
 
 /** Утреннее событие: деревня не молчит, даже если игрок ничего не делает. */
@@ -299,6 +307,11 @@ function sleep(): void {
   }
   persist()
   updateHud()
+
+  if (raidPending) {
+    raidPending = false
+    startRaid()
+  }
 }
 
 function persist(): void {
@@ -321,9 +334,14 @@ function playerCombatStats(): { maxHp: number; minDamage: number; maxDamage: num
   }
 }
 
-function beginCombat(enemy: EnemyDef, options: { playerFirst?: boolean } = {}): void {
+function beginCombat(
+  enemy: EnemyDef,
+  options: { playerFirst?: boolean } = {},
+  context: 'wild' | 'raid' = 'wild',
+): void {
   if (combat) return
 
+  combatContext = context
   dayStats.fought += 1
   combat = createCombat(enemy, state.player.health.current, playerCombatStats(), options)
   ambience.setDucked(true)
@@ -395,7 +413,9 @@ function startHunt(spot: HuntSpot): void {
 
 function finishCombat(): void {
   const result = combat
+  const context = combatContext
   combat = null
+  combatContext = 'wild'
   danger = 0
   pendingAmbush = false
   ambience.setDucked(storyOpen)
@@ -413,7 +433,9 @@ function finishCombat(): void {
       addJournal(
         result.enemy.id === 'roe_deer'
           ? 'Вышел по следам на поляну и взял косулю. Мясо будет.'
-          : 'Волк на тропе у хвороста. Я остался стоять, он — нет.',
+          : result.enemy.id === 'bandit_leader'
+            ? 'Налёт отбит. Главарь остался у ворот, остальные ушли в темноту.'
+            : 'Волк на тропе у хвороста. Я остался стоять, он — нет.',
       )
     }
 
@@ -428,10 +450,70 @@ function finishCombat(): void {
       camera.centerOn(state.player.position.x, state.player.position.y)
       addJournal('Меня оттащили к костру. Кто-то видел и не стал дожидаться.')
     }
+
+    // Налёт: поражение и бегство стоят деревне дорого.
+    if (context === 'raid') {
+      if (result.outcome === 'victory') {
+        state.flags['raid.done'] = true
+        flash('Налёт отбит. Деревня стоит.', 6000)
+      } else if (result.outcome === 'defeat') {
+        const stolen = loseSupplies(0.4)
+        state.village.population = Math.max(1, state.village.population - 3)
+        state.flags['raid.done'] = true
+        addJournal(`Налётчики ворвались в деревню. Унесли ${stolen} припасов, трое ушли навсегда.`)
+        flash(`Налёт: −${stolen} припасов, −3 человека.`, 7000)
+      } else {
+        const stolen = loseSupplies(0.25)
+        state.village.population = Math.max(1, state.village.population - 1)
+        state.flags['raid.done'] = true
+        addJournal(`Ты ушёл с ворот. Налётчики взяли ${stolen} припасов и одного человека.`)
+        flash(`Налёт: −${stolen} припасов, −1 человек.`, 7000)
+      }
+    }
   }
 
   persist()
   updateHud()
+}
+
+/** Теряем часть припасов со склада. Возвращает, сколько унесли. */
+function loseSupplies(fraction: number): number {
+  let lost = 0
+
+  for (const stack of [...state.village.storage.stacks]) {
+    const take = Math.floor(stack.count * fraction)
+    if (take <= 0) continue
+    removeItems(state.village.storage, stack.id, take)
+    lost += take
+  }
+
+  return lost
+}
+
+function startRaid(): void {
+  openRaidScreen({
+    text: 'Ночью у ворот факелы. Пятеро, может, шестеро. Один стоит впереди и не прячет лица — значит, не боится, что его запомнят.',
+    payCost: 20,
+    canPay: state.player.money >= 20,
+    onFight: () => beginCombat(BANDIT_LEADER, {}, 'raid'),
+    onPay: () => {
+      state.player.money -= 20
+      state.flags['raid.done'] = true
+      addJournal('Откупился от налётчиков. Двадцать монет ушли в чужие руки.')
+      flash('Налётчики ушли, забрав двадцать монет.', 6000)
+      persist()
+      updateHud()
+    },
+    onHide: () => {
+      const stolen = loseSupplies(0.4)
+      state.village.population = Math.max(1, state.village.population - 1)
+      state.flags['raid.done'] = true
+      addJournal(`Спрятались за частоколом. Унесли ${stolen} припасов и одного человека.`)
+      flash(`Налётчики ушли с добычей: −${stolen} припасов, −1 человек.`, 6000)
+      persist()
+      updateHud()
+    },
+  })
 }
 
 /** Запись в дневник-хронику (9.4), без повторов. */
@@ -520,6 +602,11 @@ function startCeremony(): void {
     state.village.population = next.population
 
     if (next.journalOnEnter !== '') addJournal(next.journalOnEnter)
+
+    // Через три ночи после подъёма деревни приходят за добычей.
+    if (next.id === 'stage_first_smoke') {
+      state.flags['raid.due_day'] = Math.floor(absoluteMinutes(state.clock) / MINUTES_PER_DAY) + 3
+    }
 
     persist()
     updateHud()

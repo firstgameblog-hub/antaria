@@ -482,6 +482,30 @@ body {
   opacity: 0.55;
 }
 
+/* ---------- Налёт ---------- */
+
+.raid {
+  width: min(34rem, 100%);
+  color: #e8ddc9;
+  text-align: left;
+}
+
+.raid .story__chapter {
+  margin-bottom: 1.2rem;
+}
+
+.raid__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1.8rem;
+}
+
+.raid__actions button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 /* ---------- Бой ---------- */
 
 .combat-overlay {

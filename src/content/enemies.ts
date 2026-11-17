@@ -55,4 +55,16 @@ export const WILD_ENCOUNTERS: readonly { enemy: EnemyDef; weight: number }[] = [
   { enemy: WOLF, weight: 2 },
 ]
 
-export const ENEMIES: readonly EnemyDef[] = [WOLF, DEER, DOG]
+/** Главарь налётчиков: приходит, когда деревня начинает подниматься. */
+export const BANDIT_LEADER: EnemyDef = {
+  id: 'bandit_leader',
+  name: 'Главарь налётчиков',
+  maxHp: 22,
+  minDamage: 4,
+  maxDamage: 6,
+  initiative: 1,
+  intro: 'Он стоит впереди и не прячет лица. Значит, не боится, что его запомнят.',
+  loot: [{ itemId: 'meat', count: 2 }, { itemId: 'hide', count: 1 }],
+}
+
+export const ENEMIES: readonly EnemyDef[] = [WOLF, DEER, DOG, BANDIT_LEADER]
