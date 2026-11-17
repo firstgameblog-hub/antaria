@@ -115,4 +115,45 @@ export const ATAMAN: EnemyDef = {
   ],
 }
 
-export const ENEMIES: readonly EnemyDef[] = [WOLF, DEER, DOG, BANDIT_LEADER, OLD_WOLF, ATAMAN]
+/** Городской ратник: приходит с осадой, не за добычей. */
+export const CITY_SOLDIER: EnemyDef = {
+  id: 'city_soldier',
+  name: 'Городской ратник',
+  maxHp: 26,
+  minDamage: 3,
+  maxDamage: 6,
+  initiative: 1,
+  intro: 'Он идёт ровным шагом, будто уже считает нашу стену своей. Железо на нём чужое — с городского склада.',
+  weakness: 'Он держит щит слишком высоко: под ним открыт бок.',
+  weakMultiplier: 1.7,
+  loot: [{ itemId: 'steel', count: 1, chance: 0.6 }, { itemId: 'meat', count: 1, chance: 0.5 }],
+}
+
+/** Воевода: последняя волна осады. */
+export const SIEGE_CAPTAIN: EnemyDef = {
+  id: 'siege_captain',
+  name: 'Воевода',
+  maxHp: 40,
+  minDamage: 5,
+  maxDamage: 7,
+  initiative: 1,
+  intro: 'Он не слезает с коня, пока не видит ворот. Потом слезает — медленно, будто делает нам одолжение.',
+  weakness: 'Правая рука в кожаной перчатке: под ней не зажила рана.',
+  weakMultiplier: 1.8,
+  enrages: true,
+  loot: [
+    { itemId: 'steel', count: 2 },
+    { itemId: 'hide', count: 1 },
+  ],
+}
+
+export const ENEMIES: readonly EnemyDef[] = [
+  WOLF,
+  DEER,
+  DOG,
+  BANDIT_LEADER,
+  OLD_WOLF,
+  ATAMAN,
+  CITY_SOLDIER,
+  SIEGE_CAPTAIN,
+]

@@ -1,7 +1,7 @@
 import './styles.css'
 import { createInitialState, SPAWN_POINT, type GameState } from './core/state'
 import { createCombat, resolveTurn, type CombatState } from './core/combat'
-import { WOLF, DEER, BANDIT_LEADER, ENEMIES, WILD_ENCOUNTERS } from './content/enemies'
+import { WOLF, DEER, BANDIT_LEADER, ENEMIES, WILD_ENCOUNTERS, CITY_SOLDIER, SIEGE_CAPTAIN } from './content/enemies'
 import { BOSS_SPOTS } from './content/bosses'
 import { openRaidScreen } from './ui/raidScreen'
 import type { CombatAction, EnemyDef } from './data/combat'
@@ -132,9 +132,10 @@ let storyOpen = false
 let audioGreeted = false
 let lastFireDistance = -1
 let combat: CombatState | null = null
-let combatContext: 'wild' | 'raid' | 'boss' = 'wild'
+let combatContext: 'wild' | 'raid' | 'boss' | 'siege' = 'wild'
 let raidPending = false
 let raidResolved = false
+let siegePending = false
 let pendingSeasonScene: string | null = null
 let danger = 0
 let pendingAmbush = false
@@ -273,6 +274,12 @@ function processNight(absoluteDayIndex: number): void {
     const due = state.flags['raid.due_day']
     if (typeof due === 'number' && absoluteDayIndex >= due) raidPending = true
   }
+
+  // Осада приходит в Белый город: одна ночь, три волны.
+  if (state.flags['siege.done'] !== true && siegeWave() === 0) {
+    const siegeDue = state.flags['siege.due_day']
+    if (typeof siegeDue === 'number' && absoluteDayIndex >= siegeDue) siegePending = true
+  }
 }
 
 /** Утреннее событие: деревня не молчит, даже если игрок ничего не делает. */
@@ -350,6 +357,11 @@ function sleep(): void {
     startRaid()
   }
 
+  if (siegePending) {
+    siegePending = false
+    openSiegeWave()
+  }
+
   if (pendingSeasonScene !== null) {
     const sceneId = pendingSeasonScene
     pendingSeasonScene = null
@@ -383,7 +395,7 @@ function playerCombatStats(): { maxHp: number; minDamage: number; maxDamage: num
 function beginCombat(
   enemy: EnemyDef,
   options: { playerFirst?: boolean; enemyHpPenalty?: number; extraLog?: string[] } = {},
-  context: 'wild' | 'raid' | 'boss' = 'wild',
+  context: 'wild' | 'raid' | 'boss' | 'siege' = 'wild',
 ): void {
   if (combat) return
 
@@ -528,6 +540,23 @@ function finishCombat(): void {
         )
         flash(`Налёт: −${stolen} припасов, −1 человек${broken ? `, разбит ${broken.toLowerCase()}` : ''}.`, 7000)
       }
+    }
+
+    if (context === 'siege') {
+      if (result.outcome === 'victory') {
+        flash(`Волна ${siegeWave()} отбита.`, 5000)
+      } else {
+        const stolen = loseSupplies(0.25)
+        const broken = damageBuilding()
+        state.village.population = Math.max(1, state.village.population - 2)
+        addJournal(
+          `Волна ${siegeWave()} прошла по улице. Унесли ${stolen} припасов, двое не вернулись со стены.${broken ? ` Разбит ${broken.toLowerCase()}.` : ''}`,
+        )
+        flash(`Волна ${siegeWave()}: −${stolen} припасов, −2 человека.`, 7000)
+      }
+
+      if (siegeWave() >= 3) finishSiege()
+      else openSiegeWave()
     }
 
     if (context === 'boss' && result.outcome === 'victory') {
@@ -919,8 +948,85 @@ function startRaid(): void {
   })
 }
 
-/** Запись в дневник-хронику (9.4), без повторов. */
-function addJournal(text: string): void {
+const SIEGE_WAVE_TEXT: Record<number, string> = {
+  1: 'На дороге пыль. Первыми идут те, кто не жалеет ног: полсотни пеших с топорами и без знамён. Они останавливаются в поле и начинают ждать.',
+  2: 'К утру их стало больше. Они не кричат и не жгут — просто стоят и ждут, пока мы устанем смотреть на них со стены.',
+  3: 'К вечеру приезжает воевода. Он не торопится слезать с коня. За ним ведут тех, кто остался от первых двух волн.',
+}
+
+const SIEGE_PAY = 60
+
+function siegeWave(): number {
+  const value = state.flags['siege.wave']
+  return typeof value === 'number' ? value : 0
+}
+
+function nextSiegeWave(): void {
+  if (siegeWave() >= 3) finishSiege()
+  else openSiegeWave()
+}
+
+function openSiegeWave(): void {
+  if (state.flags['siege.done'] === true) return
+
+  const wave = siegeWave() + 1
+  state.flags['siege.wave'] = wave
+
+  openRaidScreen({
+    title: `Осада. Волна ${wave} из 3`,
+    text: SIEGE_WAVE_TEXT[wave] ?? '',
+    payCost: SIEGE_PAY,
+    canPay: state.player.money >= SIEGE_PAY,
+    fightLabel: 'Выйти за ворота',
+    payLabel: `Послать дары (${SIEGE_PAY} монет)`,
+    hideLabel: 'Держать стены',
+    onFight: () => {
+      beginCombat(wave >= 3 ? SIEGE_CAPTAIN : CITY_SOLDIER, {}, 'siege')
+    },
+    onPay: () => {
+      state.player.money -= SIEGE_PAY
+      advanceTime(ACTION_MINUTES.talk)
+      addJournal(
+        `Послал воеводе дары. ${SIEGE_PAY} монет — и волна ${wave} ушла, не начиная боя. Это не мир, но это ночь без крови.`,
+      )
+      flash('Дары приняты. Они отходят на ночь.', 6000)
+      persist()
+      updateHud()
+      nextSiegeWave()
+    },
+    onHide: () => {
+      const stone = Math.min(15, countOf(state.village.storage, 'stone'))
+      if (stone > 0) removeItems(state.village.storage, 'stone', stone)
+      state.village.population = Math.max(1, state.village.population - 2)
+      addJournal(
+        `Держали стены. Волна ${wave} ушла, но двое остались на стене навсегда. Камня ушло ${stone}.`,
+      )
+      flash(`Стены выстояли: −${stone} камня, −2 человека.`, 6000)
+      persist()
+      updateHud()
+      nextSiegeWave()
+    },
+  })
+}
+
+function finishSiege(): void {
+  state.flags['siege.done'] = true
+  state.flags['siege.wave'] = 3
+
+  const steel = itemDef('steel')
+  if (steel) addItems(state.player.inventory, steel, 2, 1, ITEM_BY_ID)
+  state.player.money += 80
+
+  addJournal(
+    'Осада кончилась. Город не взял нас и ушёл. На стене остались зарубки — считать их не стали.',
+  )
+  flash('Осада выдержана: +80 монет, +2 стали.', 7000)
+  persist()
+  updateHud()
+  startStory('siege_end')
+}
+
+/** Запись в дневник-хронику (9.4), без повторов. */function addJournal(text: string): void {
   if (state.journal.some((entry) => entry.text === text)) return
   state.journal.push({
     year: state.clock.year,
@@ -1089,6 +1195,14 @@ function startCeremony(): void {
     if (next.id === 'stage_stone_belt' && state.flags['chapter.stone_walls'] !== true) {
       state.flags['chapter.stone_walls'] = true
       startStory('stone_walls')
+    }
+
+    // Белый город: через две ночи приходит осада.
+    if (next.id === 'stage_white_city') {
+      state.flags['siege.due_day'] =
+        Math.floor(absoluteMinutes(state.clock) / MINUTES_PER_DAY) + 2
+      state.flags['siege.wave'] = 0
+      state.flags['siege.done'] = false
     }
   })
 }

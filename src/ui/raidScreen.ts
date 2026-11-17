@@ -14,6 +14,11 @@ export interface RaidScreenOptions {
   onFight: () => void
   onPay: () => void
   onHide: () => void
+  /** Надпись над текстом. По умолчанию — обычная ночь у ворот. */
+  title?: string
+  fightLabel?: string
+  payLabel?: string
+  hideLabel?: string
 }
 
 let overlay: HTMLDivElement | null = null
@@ -30,12 +35,12 @@ export function openRaidScreen(options: RaidScreenOptions): void {
 
   overlay.innerHTML = `
     <div class="raid">
-      <div class="story__chapter">Ночь. У ворот</div>
+      <div class="story__chapter">${escapeHtml(options.title ?? 'Ночь. У ворот')}</div>
       <p class="story__text">${escapeHtml(options.text)}</p>
       <div class="raid__actions">
-        <button class="combat__button" data-raid="fight">Выйти против них</button>
-        <button class="combat__button" data-raid="pay" ${options.canPay ? '' : 'disabled'}>Откупиться (${options.payCost} монет)</button>
-        <button class="combat__button" data-raid="hide">Спрятаться за частоколом</button>
+        <button class="combat__button" data-raid="fight">${escapeHtml(options.fightLabel ?? 'Выйти против них')}</button>
+        <button class="combat__button" data-raid="pay" ${options.canPay ? '' : 'disabled'}>${escapeHtml(options.payLabel ?? `Откупиться (${options.payCost} монет)`)}</button>
+        <button class="combat__button" data-raid="hide">${escapeHtml(options.hideLabel ?? 'Спрятаться за частоколом')}</button>
       </div>
     </div>
   `
