@@ -37,6 +37,8 @@ import { TRADER } from './content/trader'
 import { CARAVAN } from './content/caravan'
 import { openDiplomacyScreen } from './ui/diplomacyScreen'
 import { sceneById } from './content/story'
+import { scheduleOf } from './content/villagers'
+import { positionAt } from './core/schedule'
 import type { StoryBeat, StoryScene } from './data/story'
 import { buy, completeOrder, sell } from './core/trade'
 import { Camera } from './render/camera'
@@ -1582,6 +1584,7 @@ function frame(time: number): void {
   if (notesChanged) updateHud()
 
   const walking = updateMovement(dt)
+  updateNpcMotion(dt)
 
   if (pendingSeasonScene !== null && combat === null && !storyOpen) {
     const sceneId = pendingSeasonScene
@@ -1685,7 +1688,9 @@ function frame(time: number): void {
       : hoveredNpcId !== null
         ? (() => {
             const npc = activeNpcs().find((candidate) => candidate.id === hoveredNpcId)
-            return npc ? { x: npc.x, y: npc.y, label: npc.label } : null
+            if (!npc) return null
+            const point = npcPoint(npc)
+            return { x: point.x, y: point.y, label: npc.label }
           })()
         : hoveredPlotDef
           ? {
@@ -1722,13 +1727,16 @@ function frame(time: number): void {
     hoveredId,
     moveTarget,
     nodes: sceneNodes,
-    npcs: activeNpcs().map((npc) => ({
-      id: npc.id,
-      x: npc.x,
-      y: npc.y,
-      facing: npc.facing,
-      kind: npc.kind,
-    })),
+    npcs: activeNpcs().map((npc) => {
+      const point = npcPoint(npc)
+      return {
+        id: npc.id,
+        x: point.x,
+        y: point.y,
+        facing: npc.facing,
+        kind: npc.kind,
+      }
+    }),
     spots: sceneSpots,
     nearby,
     stageId: state.village.stageId,
@@ -1789,7 +1797,8 @@ function npcAt(worldX: number, worldY: number): ActiveNpc | null {
   let closestDistance = 26
 
   for (const npc of activeNpcs()) {
-    const d = Math.hypot(worldX - npc.x, worldY - (npc.y - 14))
+    const point = npcPoint(npc)
+    const d = Math.hypot(worldX - point.x, worldY - (point.y - 14))
     if (d <= closestDistance) {
       closest = npc
       closestDistance = d
@@ -1797,6 +1806,40 @@ function npcAt(worldX: number, worldY: number): ActiveNpc | null {
   }
 
   return closest
+}
+
+/** Плавное перемещение жителей: время прыгает действиями, шаги — глазами. */
+const npcDisplay = new Map<string, Point>()
+
+function npcPoint(npc: ActiveNpc): Point {
+  return npcDisplay.get(npc.id) ?? { x: npc.x, y: npc.y }
+}
+
+function updateNpcMotion(dt: number): void {
+  const alive = new Set<string>()
+
+  for (const npc of activeNpcs()) {
+    alive.add(npc.id)
+    const display = npcDisplay.get(npc.id)
+
+    if (!display) {
+      npcDisplay.set(npc.id, { x: npc.x, y: npc.y })
+      continue
+    }
+
+    const factor = Math.min(1, dt * 3)
+    display.x += (npc.x - display.x) * factor
+    display.y += (npc.y - display.y) * factor
+
+    if (Math.hypot(npc.x - display.x, npc.y - display.y) < 0.5) {
+      display.x = npc.x
+      display.y = npc.y
+    }
+  }
+
+  for (const id of [...npcDisplay.keys()]) {
+    if (!alive.has(id)) npcDisplay.delete(id)
+  }
 }
 
 interface ActiveNpc {
@@ -1808,43 +1851,55 @@ interface ActiveNpc {
   label: string
 }
 
+/** Где человек сейчас по распорядку. null — спит, на улице его нет. */
+function placeOf(
+  id: string,
+  fallbackX: number,
+  fallbackY: number,
+  minutes: number,
+): { x: number; y: number; note: string | null } | null {
+  const schedule = scheduleOf(id)
+  if (!schedule) return { x: fallbackX, y: fallbackY, note: null }
+  return positionAt(schedule, minutes)
+}
+
 function activeNpcs(): ActiveNpc[] {
-  const list: ActiveNpc[] = [
-    {
+  const minutes = state.clock.minutes
+  const list: ActiveNpc[] = []
+
+  // Торговец тоже человек: днём торгует, вечером у костра, ночью спит.
+  const traderPlace = placeOf(TRADER.id, TRADER.x, TRADER.y, minutes)
+  if (traderPlace) {
+    list.push({
       id: TRADER.id,
-      x: TRADER.x,
-      y: TRADER.y,
+      x: traderPlace.x,
+      y: traderPlace.y,
       facing: TRADER.facing,
       kind: 'trader',
-      label: `${TRADER.name} · ${TRADER.title}`,
-    },
-  ]
+      label: traderPlace.note
+        ? `${TRADER.name} · ${traderPlace.note}`
+        : `${TRADER.name} · ${TRADER.title}`,
+    })
+  }
 
   for (const thread of THREADS) {
     const done = state.flags[`${thread.id}.done`] === true
+    const talked = state.flags[`${thread.id}.talked`] === true
 
-    if (done) {
-      const talked = state.flags[`${thread.id}.talked`] === true
-      if (thread.followUpScene === undefined || talked) continue
+    if (done && (thread.followUpScene === undefined || talked)) continue
 
-      list.push({
-        id: thread.id,
-        x: thread.x,
-        y: thread.y,
-        facing: 'left',
-        kind: 'villager',
-        label: `${thread.npcName} · ${thread.followUpLabel ?? 'хочет поговорить'}`,
-      })
-      continue
-    }
+    const place = placeOf(thread.id, thread.x, thread.y, minutes)
+    if (!place) continue
 
     list.push({
       id: thread.id,
-      x: thread.x,
-      y: thread.y,
+      x: place.x,
+      y: place.y,
       facing: 'left',
       kind: 'villager',
-      label: `${thread.npcName} · ${thread.short}`,
+      label: done
+        ? `${thread.npcName} · ${thread.followUpLabel ?? 'хочет поговорить'}`
+        : `${thread.npcName} · ${thread.short}`,
     })
   }
 
