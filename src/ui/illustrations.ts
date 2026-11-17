@@ -1509,6 +1509,418 @@ const HEADMAN: Draw = (ctx, w, h) => {
   vignette(ctx, w, h, 0.55)
 }
 
+/** Протекающая крыша: изба, капли, женщина под стрехой. */
+const MARTA_ROOF: Draw = (ctx, w, h) => {
+  backdrop(ctx, w, h, '#9aa0a0', '#4c463a')
+
+  // Изба справа.
+  const hx = w * 0.42
+  const hy = h * 0.3
+  const hw = w * 0.5
+  const hh = h * 0.5
+
+  ctx.fillStyle = '#6b5844'
+  ctx.strokeStyle = 'rgba(30, 22, 14, 0.85)'
+  ctx.lineWidth = 3
+  ctx.fillRect(hx, hy + hh * 0.35, hw, hh * 0.65)
+  ctx.strokeRect(hx, hy + hh * 0.35, hw, hh * 0.65)
+
+  // Соломенная крыша с прорехой.
+  ctx.fillStyle = '#a89159'
+  ctx.beginPath()
+  ctx.moveTo(hx - w * 0.04, hy + hh * 0.38)
+  ctx.lineTo(hx + hw * 0.5, hy)
+  ctx.lineTo(hx + hw + w * 0.04, hy + hh * 0.38)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.fillStyle = '#8d7a4c'
+  ctx.beginPath()
+  ctx.moveTo(hx + hw * 0.6, hy + hh * 0.12)
+  ctx.lineTo(hx + hw * 0.72, hy + hh * 0.2)
+  ctx.lineTo(hx + hw * 0.62, hy + hh * 0.36)
+  ctx.lineTo(hx + hw * 0.5, hy + hh * 0.24)
+  ctx.closePath()
+  ctx.fill()
+
+  // Дверь и окно.
+  ctx.fillStyle = '#33261a'
+  ctx.fillRect(hx + hw * 0.6, hy + hh * 0.62, hw * 0.16, hh * 0.38)
+  ctx.fillStyle = 'rgba(240, 220, 160, 0.35)'
+  ctx.fillRect(hx + hw * 0.2, hy + hh * 0.62, hw * 0.12, hh * 0.16)
+
+  // Земля и лужа.
+  ctx.fillStyle = '#4e4536'
+  ctx.fillRect(0, h * 0.8, w, h * 0.2)
+  ctx.fillStyle = 'rgba(96, 120, 120, 0.4)'
+  ctx.beginPath()
+  ctx.ellipse(hx + hw * 0.18, h * 0.9, w * 0.11, h * 0.03, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Капли.
+  ctx.strokeStyle = 'rgba(200, 220, 225, 0.5)'
+  ctx.lineWidth = 2
+  for (let i = 0; i < 5; i += 1) {
+    const dx = hx + hw * (0.5 + i * 0.03)
+    ctx.beginPath()
+    ctx.moveTo(dx, hy + hh * 0.4 + i * 6)
+    ctx.lineTo(dx, hy + hh * 0.5 + i * 12)
+    ctx.stroke()
+  }
+
+  // Женщина в платке под стрехой.
+  ctx.fillStyle = '#4a4048'
+  ctx.beginPath()
+  ctx.ellipse(hx - w * 0.07, h * 0.72, w * 0.045, h * 0.11, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.fillStyle = '#c09070'
+  ctx.beginPath()
+  ctx.arc(hx - w * 0.07, h * 0.65, w * 0.025, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.fillStyle = '#8d5a4a'
+  ctx.beginPath()
+  ctx.arc(hx - w * 0.07, h * 0.645, w * 0.03, Math.PI, Math.PI * 2)
+  ctx.fill()
+
+  vignette(ctx, w, h, 0.55)
+}
+
+/** Корней: телега, товар, торговец в плаще. */
+const KORNEY: Draw = (ctx, w, h) => {
+  backdrop(ctx, w, h, '#a7a79c', '#5a5344')
+
+  // Земля.
+  ctx.fillStyle = '#574d3d'
+  ctx.fillRect(0, h * 0.74, w, h * 0.26)
+
+  // Телега слева.
+  ctx.fillStyle = '#6b533a'
+  ctx.strokeStyle = 'rgba(30, 22, 14, 0.8)'
+  ctx.lineWidth = 3
+  ctx.fillRect(w * 0.06, h * 0.5, w * 0.34, h * 0.16)
+  ctx.strokeRect(w * 0.06, h * 0.5, w * 0.34, h * 0.16)
+
+  ctx.fillStyle = '#3f3122'
+  ctx.beginPath()
+  ctx.arc(w * 0.12, h * 0.72, h * 0.08, 0, Math.PI * 2)
+  ctx.arc(w * 0.34, h * 0.72, h * 0.08, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Тюки в телеге.
+  ctx.fillStyle = '#b9a887'
+  ctx.beginPath()
+  ctx.ellipse(w * 0.16, h * 0.48, w * 0.07, h * 0.06, 0, 0, Math.PI * 2)
+  ctx.ellipse(w * 0.3, h * 0.46, w * 0.06, h * 0.05, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Расстеленная ткань с товаром.
+  ctx.fillStyle = 'rgba(220, 208, 180, 0.85)'
+  ctx.beginPath()
+  ctx.moveTo(w * 0.46, h * 0.8)
+  ctx.lineTo(w * 0.82, h * 0.74)
+  ctx.lineTo(w * 0.88, h * 0.86)
+  ctx.lineTo(w * 0.5, h * 0.92)
+  ctx.closePath()
+  ctx.fill()
+
+  // Верёвка, камень, нож.
+  ctx.strokeStyle = '#8f6d42'
+  ctx.lineWidth = 5
+  ctx.beginPath()
+  ctx.arc(w * 0.56, h * 0.83, w * 0.035, 0, Math.PI * 2)
+  ctx.stroke()
+
+  ctx.fillStyle = '#8a857c'
+  ctx.beginPath()
+  ctx.ellipse(w * 0.68, h * 0.83, w * 0.03, h * 0.02, 0.2, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.strokeStyle = '#cfd4d6'
+  ctx.lineWidth = 3
+  ctx.beginPath()
+  ctx.moveTo(w * 0.76, h * 0.85)
+  ctx.lineTo(w * 0.82, h * 0.82)
+  ctx.stroke()
+
+  // Корней: плащ, капюшон, посох-палка.
+  ctx.fillStyle = '#4d4335'
+  ctx.beginPath()
+  ctx.ellipse(w * 0.42, h * 0.62, w * 0.075, h * 0.17, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.fillStyle = '#b08a63'
+  ctx.beginPath()
+  ctx.arc(w * 0.42, h * 0.44, w * 0.05, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.fillStyle = '#5e5140'
+  ctx.beginPath()
+  ctx.arc(w * 0.42, h * 0.43, w * 0.058, Math.PI, Math.PI * 2)
+  ctx.fill()
+
+  vignette(ctx, w, h, 0.5)
+}
+
+/** Дорога на юг: колея между жердями, дымка. */
+const ROAD: Draw = (ctx, w, h) => {
+  backdrop(ctx, w, h, '#b3b3a8', '#6f6552')
+
+  // Поле.
+  ctx.fillStyle = '#7d7554'
+  ctx.fillRect(0, h * 0.45, w, h * 0.55)
+
+  // Дорога с перспективой.
+  ctx.fillStyle = '#8d7c5c'
+  ctx.beginPath()
+  ctx.moveTo(w * 0.42, h * 0.45)
+  ctx.lineTo(w * 0.58, h * 0.45)
+  ctx.lineTo(w * 0.92, h)
+  ctx.lineTo(w * 0.08, h)
+  ctx.closePath()
+  ctx.fill()
+
+  // Колеи.
+  ctx.strokeStyle = 'rgba(90, 72, 48, 0.55)'
+  ctx.lineWidth = 4
+  for (const offset of [-0.12, 0.12]) {
+    ctx.beginPath()
+    ctx.moveTo(w * (0.5 + offset * 0.08), h * 0.46)
+    ctx.lineTo(w * (0.5 + offset), h)
+    ctx.stroke()
+  }
+
+  // Жерди вдоль дороги.
+  ctx.strokeStyle = '#5d4a34'
+  ctx.lineWidth = 3
+  for (let i = 0; i < 8; i += 1) {
+    const t = i / 8
+    const y = h * (0.5 + t * 0.1)
+    const spread = w * (0.2 + t * 0.45)
+    ctx.beginPath()
+    ctx.moveTo(w * 0.5 - spread, y)
+    ctx.lineTo(w * 0.5 - spread, y + h * 0.12)
+    ctx.moveTo(w * 0.5 + spread, y)
+    ctx.lineTo(w * 0.5 + spread, y + h * 0.12)
+    ctx.stroke()
+  }
+
+  // Дальние крыши.
+  ctx.fillStyle = 'rgba(94, 86, 70, 0.8)'
+  ctx.beginPath()
+  ctx.moveTo(w * 0.24, h * 0.45)
+  ctx.lineTo(w * 0.33, h * 0.38)
+  ctx.lineTo(w * 0.42, h * 0.45)
+  ctx.closePath()
+  ctx.moveTo(w * 0.58, h * 0.45)
+  ctx.lineTo(w * 0.67, h * 0.39)
+  ctx.lineTo(w * 0.76, h * 0.45)
+  ctx.closePath()
+  ctx.fill()
+
+  vignette(ctx, w, h, 0.45)
+}
+
+/** Стена и башня: то, что защищает. */
+const WALL: Draw = (ctx, w, h) => {
+  backdrop(ctx, w, h, '#9fa6a8', '#57503f')
+
+  // Земля.
+  ctx.fillStyle = '#5b5242'
+  ctx.fillRect(0, h * 0.72, w, h * 0.28)
+
+  // Частокол.
+  ctx.fillStyle = '#5f4a33'
+  for (let x = 0; x < w; x += w * 0.026) {
+    const postH = h * (0.28 + ((x * 13) % 11) / 100)
+    ctx.fillRect(x, h * 0.72 - postH, w * 0.016, postH)
+  }
+
+  // Башня справа.
+  const tx = w * 0.66
+  const tw = w * 0.16
+  const ty = h * 0.2
+
+  ctx.fillStyle = '#8f8a80'
+  ctx.strokeStyle = 'rgba(30, 24, 16, 0.8)'
+  ctx.lineWidth = 3
+  ctx.fillRect(tx, ty + h * 0.1, tw, h * 0.52)
+  ctx.strokeRect(tx, ty + h * 0.1, tw, h * 0.52)
+
+  // Кладка.
+  ctx.strokeStyle = 'rgba(40, 32, 22, 0.25)'
+  ctx.lineWidth = 1.5
+  for (let row = 1; row < 5; row += 1) {
+    const y = ty + h * 0.1 + (h * 0.52 * row) / 5
+    ctx.beginPath()
+    ctx.moveTo(tx, y)
+    ctx.lineTo(tx + tw, y)
+    ctx.stroke()
+  }
+
+  // Крыша и флаг.
+  ctx.fillStyle = '#6b4a37'
+  ctx.beginPath()
+  ctx.moveTo(tx - tw * 0.15, ty + h * 0.12)
+  ctx.lineTo(tx + tw * 0.5, ty - h * 0.02)
+  ctx.lineTo(tx + tw * 1.15, ty + h * 0.12)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.strokeStyle = '#4a3a2a'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(tx + tw * 0.5, ty - h * 0.02)
+  ctx.lineTo(tx + tw * 0.5, ty - h * 0.14)
+  ctx.stroke()
+
+  ctx.fillStyle = '#a8503f'
+  ctx.beginPath()
+  ctx.moveTo(tx + tw * 0.5, ty - h * 0.14)
+  ctx.lineTo(tx + tw * 0.86, ty - h * 0.1)
+  ctx.lineTo(tx + tw * 0.5, ty - h * 0.05)
+  ctx.closePath()
+  ctx.fill()
+
+  // Ворота слева.
+  ctx.fillStyle = '#3f3122'
+  ctx.fillRect(w * 0.18, h * 0.62, w * 0.14, h * 0.1)
+
+  vignette(ctx, w, h, 0.5)
+}
+
+/** Зима: крыши под снегом, дым, снежинки. */
+const WINTER: Draw = (ctx, w, h) => {
+  backdrop(ctx, w, h, '#b9c2c4', '#6f7a7a')
+
+  // Снег на земле.
+  ctx.fillStyle = '#e8eeec'
+  ctx.fillRect(0, h * 0.6, w, h * 0.4)
+
+  // Избы.
+  const huts = [
+    { x: 0.08, w: 0.22 },
+    { x: 0.38, w: 0.26 },
+    { x: 0.7, w: 0.2 },
+  ]
+
+  for (const hut of huts) {
+    const hx = w * hut.x
+    const hw = w * hut.w
+    const hy = h * 0.48
+
+    ctx.fillStyle = '#5b4a39'
+    ctx.fillRect(hx, hy, hw, h * 0.16)
+
+    ctx.fillStyle = '#4a3b2d'
+    ctx.beginPath()
+    ctx.moveTo(hx - hw * 0.08, hy)
+    ctx.lineTo(hx + hw * 0.5, hy - h * 0.13)
+    ctx.lineTo(hx + hw * 1.08, hy)
+    ctx.closePath()
+    ctx.fill()
+
+    // Снег на крыше.
+    ctx.fillStyle = '#f2f6f4'
+    ctx.beginPath()
+    ctx.moveTo(hx - hw * 0.06, hy - h * 0.01)
+    ctx.lineTo(hx + hw * 0.5, hy - h * 0.14)
+    ctx.lineTo(hx + hw * 1.06, hy - h * 0.01)
+    ctx.lineTo(hx + hw * 0.96, hy - h * 0.03)
+    ctx.lineTo(hx + hw * 0.5, hy - h * 0.11)
+    ctx.lineTo(hx + hw * 0.04, hy - h * 0.03)
+    ctx.closePath()
+    ctx.fill()
+
+    // Дым.
+    ctx.strokeStyle = 'rgba(230, 236, 234, 0.4)'
+    ctx.lineWidth = 6
+    ctx.beginPath()
+    ctx.moveTo(hx + hw * 0.7, hy - h * 0.1)
+    ctx.bezierCurveTo(hx + hw * 0.8, hy - h * 0.2, hx + hw * 0.6, hy - h * 0.26, hx + hw * 0.74, hy - h * 0.34)
+    ctx.stroke()
+  }
+
+  // Снежинки.
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
+  for (let i = 0; i < 90; i += 1) {
+    const x = (i * 137) % w
+    const y = (i * 71) % h
+    ctx.beginPath()
+    ctx.arc(x, y, i % 4 === 0 ? 1.8 : 1.1, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  vignette(ctx, w, h, 0.35)
+}
+
+/** Костёр вечером: огонь и силуэты вокруг. */
+const CAMPFIRE: Draw = (ctx, w, h) => {
+  backdrop(ctx, w, h, '#1a1712', '#0a0806')
+
+  // Силуэты изб.
+  ctx.fillStyle = '#221c15'
+  ctx.beginPath()
+  ctx.moveTo(0, h * 0.62)
+  ctx.lineTo(w * 0.16, h * 0.48)
+  ctx.lineTo(w * 0.34, h * 0.62)
+  ctx.lineTo(w * 0.5, h * 0.5)
+  ctx.lineTo(w * 0.68, h * 0.62)
+  ctx.lineTo(w * 0.86, h * 0.46)
+  ctx.lineTo(w, h * 0.62)
+  ctx.lineTo(w, h)
+  ctx.lineTo(0, h)
+  ctx.closePath()
+  ctx.fill()
+
+  // Огонь.
+  const fire = ctx.createRadialGradient(w * 0.5, h * 0.78, 6, w * 0.5, h * 0.78, h * 0.5)
+  fire.addColorStop(0, 'rgba(240, 170, 80, 0.45)')
+  fire.addColorStop(1, 'rgba(240, 170, 80, 0)')
+  ctx.fillStyle = fire
+  ctx.fillRect(0, 0, w, h)
+
+  ctx.fillStyle = '#e08a3c'
+  ctx.beginPath()
+  ctx.ellipse(w * 0.5, h * 0.8, w * 0.02, h * 0.05, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.fillStyle = '#f6d79a'
+  ctx.beginPath()
+  ctx.ellipse(w * 0.5, h * 0.8, w * 0.01, h * 0.03, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Искры.
+  ctx.fillStyle = 'rgba(246, 200, 130, 0.7)'
+  for (let i = 0; i < 12; i += 1) {
+    const y = h * (0.7 - (i % 6) * 0.06)
+    const x = w * (0.48 + Math.sin(i) * 0.05)
+    ctx.beginPath()
+    ctx.arc(x, y, 1.4, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // Силуэты у огня.
+  const figures = [0.3, 0.36, 0.64, 0.7]
+  for (const fx of figures) {
+    const fy = h * 0.84
+    ctx.fillStyle = 'rgba(14, 11, 8, 0.9)'
+    ctx.beginPath()
+    ctx.ellipse(w * fx, fy, w * 0.022, h * 0.045, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.moveTo(w * fx - w * 0.022, fy + h * 0.04)
+    ctx.quadraticCurveTo(w * fx, fy - h * 0.08, w * fx + w * 0.022, fy + h * 0.04)
+    ctx.closePath()
+    ctx.fill()
+  }
+
+  vignette(ctx, w, h, 0.6)
+}
+
 const ILLUSTRATIONS: Record<string, Draw> = {
   room: ROOM,
   capsule: CAPSULE,
@@ -1521,6 +1933,12 @@ const ILLUSTRATIONS: Record<string, Draw> = {
   noexit: NOEXIT,
   village: VILLAGE,
   headman: HEADMAN,
+  marta_roof: MARTA_ROOF,
+  korney: KORNEY,
+  road: ROAD,
+  wall: WALL,
+  winter: WINTER,
+  campfire: CAMPFIRE,
 }
 
 export function hasIllustration(id: string): boolean {

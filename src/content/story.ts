@@ -69,6 +69,7 @@ export const PROLOGUE: StoryScene = {
 
 export const MORNING: StoryScene = {
   id: 'morning',
+  art: 'village',
   title: 'Утро',
   beats: [
     {
@@ -87,10 +88,12 @@ export const MORNING: StoryScene = {
     },
     {
       id: 'task',
+      art: 'marta_roof',
       text: '— Марта ночью воду из дома вычерпывала. Крыша совсем прохудилась. Принеси ей веток, сколько найдёшь, — она подопрёт.',
     },
     {
       id: 'trader',
+      art: 'korney',
       text: '— И к Корнею загляни. Он с утра там, товар разложил. Может, чем разживёмся.',
       journal: 'Отец сказал: нас двадцать. Зима близко.',
     },
@@ -102,6 +105,7 @@ export const SCENES: readonly StoryScene[] = [PROLOGUE, MORNING]
 /** Переход со стадии «Последний очаг» на «Первый дым» (M2.4). */
 export const FIRST_SMOKE: StoryScene = {
   id: 'first_smoke',
+  art: 'village',
   title: 'Первый дым',
   beats: [
     {
@@ -127,6 +131,7 @@ export const FIRST_SMOKE: StoryScene = {
 /** Глава вторая: незнакомец у ворот (9.5, M3). */
 export const STRANGER: StoryScene = {
   id: 'stranger',
+  art: 'headman',
   title: 'Незнакомец',
   beats: [
     {
@@ -152,6 +157,7 @@ export const STRANGER: StoryScene = {
 /** Переход на «Торговый путь» (стадия 2, M3.7). */
 export const TRADE_ROAD: StoryScene = {
   id: 'trade_road',
+  art: 'road',
   title: 'Торговый путь',
   beats: [
     {
@@ -177,6 +183,7 @@ export const TRADE_ROAD: StoryScene = {
 /** Глава третья: утро после налёта. */
 export const AFTER_RAID: StoryScene = {
   id: 'after_raid',
+  art: 'wall',
   title: 'После налёта',
   beats: [
     {
@@ -202,6 +209,7 @@ export const AFTER_RAID: StoryScene = {
 /** Глава четвёртая: первый караван на ожившей дороге. */
 export const FIRST_CARAVAN: StoryScene = {
   id: 'first_caravan',
+  art: 'road',
   title: 'Первый караван',
   beats: [
     {
@@ -227,6 +235,7 @@ export const FIRST_CARAVAN: StoryScene = {
 /** Переход на «Каменный пояс» (стадия 3, M4.1). */
 export const STONE_BELT: StoryScene = {
   id: 'stone_belt',
+  art: 'wall',
   title: 'Каменный пояс',
   beats: [
     {
@@ -252,6 +261,7 @@ export const STONE_BELT: StoryScene = {
 /** Глава пятая: стена и люди. */
 export const STONE_WALLS: StoryScene = {
   id: 'stone_walls',
+  art: 'wall',
   title: 'Стена и люди',
   beats: [
     {
@@ -277,6 +287,7 @@ export const STONE_WALLS: StoryScene = {
 /** Первая зима: проверка на выживание. */
 export const FIRST_WINTER: StoryScene = {
   id: 'first_winter',
+  art: 'winter',
   title: 'Первая зима',
   beats: [
     {
@@ -302,6 +313,7 @@ export const FIRST_WINTER: StoryScene = {
 /** Продолжения линий жителей (9.9). */
 export const MARTA_AFTER: StoryScene = {
   id: 'marta_after',
+  art: 'campfire',
   title: 'Марта',
   beats: [
     { id: 'husband', text: '— Он ушёл на ту войну, — говорит Марта. — Дочка его не помнит. А я помню всё.' },
@@ -316,6 +328,7 @@ export const MARTA_AFTER: StoryScene = {
 
 export const AGAFYA_AFTER: StoryScene = {
   id: 'agafya_after',
+  art: 'campfire',
   title: 'Агафья',
   beats: [
     { id: 'eat', text: '— Внуки едят, — говорит Агафья. — Это всё, что я хотела.' },
@@ -329,6 +342,7 @@ export const AGAFYA_AFTER: StoryScene = {
 
 export const ONDREY_AFTER: StoryScene = {
   id: 'ondrey_after',
+  art: 'campfire',
   title: 'Ондрей',
   beats: [
     { id: 'field', text: '— Пойдём, покажу, — Ондрей идёт к полю и говорит быстрее, чем обычно.' },
@@ -344,6 +358,7 @@ export const ONDREY_AFTER: StoryScene = {
 /** Глава седьмая: солдаты соседнего города. */
 export const SOLDIERS: StoryScene = {
   id: 'soldiers',
+  art: 'wall',
   title: 'С дороги',
   beats: [
     { id: 'see', text: 'С башни видно: по дороге идут не телеги. Пешие, ровным шагом, с железом.' },
@@ -363,6 +378,7 @@ export const SOLDIERS: StoryScene = {
 /** Десятая глава: осада выдержана. */
 export const SIEGE_END: StoryScene = {
   id: 'siege_end',
+  art: 'wall',
   title: 'Осада',
   beats: [
     {
@@ -384,6 +400,7 @@ export const SIEGE_END: StoryScene = {
 /** Девятая глава: посад становится белым городом. */
 export const WHITE_CITY: StoryScene = {
   id: 'white_city',
+  art: 'wall',
   title: 'Белый город',
   beats: [
     {
@@ -405,6 +422,7 @@ export const WHITE_CITY: StoryScene = {
 /** Восьмая глава: деревня становится посадом. */
 export const FREE_TOWN: StoryScene = {
   id: 'free_town',
+  art: 'road',
   title: 'Вольный посад',
   beats: [
     {
@@ -430,6 +448,7 @@ export const FREE_TOWN: StoryScene = {
 /** Одиннадцатая глава: Белый город становится Стольным градом. */
 export const CAPITAL: StoryScene = {
   id: 'capital',
+  art: 'road',
   title: 'Стольный град',
   beats: [
     {
@@ -451,6 +470,7 @@ export const CAPITAL: StoryScene = {
 /** Двенадцатая глава: Стольный град становится Столицей Антарии. */
 export const ANTARIA: StoryScene = {
   id: 'antaria',
+  art: 'village',
   title: 'Столица Антарии',
   beats: [
     {
@@ -472,6 +492,7 @@ export const ANTARIA: StoryScene = {
 /** Эпилог: что стало потом. */
 export const FINALE: StoryScene = {
   id: 'finale',
+  art: 'campfire',
   title: 'Что стало потом',
   beats: [
     {
@@ -501,6 +522,7 @@ export const FINALE: StoryScene = {
 /** Тринадцатая глава: первый столичный гость. */
 export const CAPITAL_TRADER: StoryScene = {
   id: 'capital_trader',
+  art: 'korney',
   title: 'Столичный гость',
   beats: [
     {
@@ -522,6 +544,7 @@ export const CAPITAL_TRADER: StoryScene = {
 /** Глава внутри «Вольного посада»: первый рынок. */
 export const FREE_MARKET: StoryScene = {
   id: 'free_market',
+  art: 'korney',
   title: 'Первый рынок',
   beats: [
     {
@@ -543,6 +566,7 @@ export const FREE_MARKET: StoryScene = {
 /** Глава внутри «Белого города»: первый суд. */
 export const FIRST_COURT: StoryScene = {
   id: 'first_court',
+  art: 'village',
   title: 'Первый суд',
   beats: [
     {
@@ -564,6 +588,7 @@ export const FIRST_COURT: StoryScene = {
 /** Глава внутри «Стольного града»: ночная стража. */
 export const NIGHT_WATCH: StoryScene = {
   id: 'night_watch',
+  art: 'wall',
   title: 'Ночная стража',
   beats: [
     {

@@ -32,5 +32,7 @@ export interface StoryBeat {
 export interface StoryScene {
   id: string
   title: string
+  /** Иллюстрация по умолчанию для всех абзацев сцены. */
+  art?: string
   beats: readonly StoryBeat[]
 }

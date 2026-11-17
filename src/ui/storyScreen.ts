@@ -96,7 +96,7 @@ function render(): void {
   const beat = options.scene.beats[beatIndex]
   const text = extraText ?? beat?.text ?? ''
   const choices = extraText === null ? (beat?.choices ?? []) : []
-  const art = extraText === null ? beat?.art : extraArt
+  const art = extraText === null ? (beat?.art ?? options.scene.art) : extraArt
 
   overlay.innerHTML = `
     <div class="story">
