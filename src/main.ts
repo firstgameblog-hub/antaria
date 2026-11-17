@@ -1246,7 +1246,22 @@ function activeNpcs(): ActiveNpc[] {
   ]
 
   for (const thread of THREADS) {
-    if (state.flags[`${thread.id}.done`] === true) continue
+    const done = state.flags[`${thread.id}.done`] === true
+
+    if (done) {
+      const talked = state.flags[`${thread.id}.talked`] === true
+      if (thread.followUpScene === undefined || talked) continue
+
+      list.push({
+        id: thread.id,
+        x: thread.x,
+        y: thread.y,
+        facing: 'left',
+        kind: 'villager',
+        label: `${thread.npcName} · ${thread.followUpLabel ?? 'хочет поговорить'}`,
+      })
+      continue
+    }
 
     list.push({
       id: thread.id,
@@ -1300,7 +1315,20 @@ function openNpc(npc: ActiveNpc): void {
   }
 
   const thread = threadById(npc.id)
-  if (thread) openThread(thread)
+  if (!thread) return
+
+  if (state.flags[`${thread.id}.done`] === true) {
+    if (thread.followUpScene !== undefined) {
+      startStory(thread.followUpScene, 0, () => {
+        state.flags[`${thread.id}.talked`] = true
+        persist()
+        updateHud()
+      })
+    }
+    return
+  }
+
+  openThread(thread)
 }
 
 /** Открытая нить: не квест, а разговор о беде. */
@@ -1992,6 +2020,11 @@ if (import.meta.env.DEV) {
       npcs: () => activeNpcs().map((npc) => ({ id: npc.id, x: npc.x, y: npc.y })),
       spots: () =>
         activeSpots().map((spot) => ({ id: spot.id, x: spot.x, y: spot.y, kind: spot.kind })),
+      talkTo: (id: string) => {
+        const npc = activeNpcs().find((candidate) => candidate.id === id)
+        if (npc) openNpc(npc)
+        return Boolean(npc)
+      },
       ambushRoll: () => {
         tryAmbush()
         return { danger, pending: pendingAmbush, inCombat: combat !== null }

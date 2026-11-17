@@ -25,8 +25,10 @@ export interface ThreadDef {
   requirements: readonly ThreadRequirement[]
   rewardMoney: number
   journalDone: string
-  /** Награда сверх денег: житель начинает работать на склад. */
-  workNote?: string
+  /** Сцена после выполнения: житель хочет поговорить. */
+  followUpScene?: string
+  /** Подпись, когда просьба выполнена, а разговор ещё не случился. */
+  followUpLabel?: string
 }
 
 export const ROOF_THREAD: ThreadDef = {
@@ -44,6 +46,8 @@ export const ROOF_THREAD: ThreadDef = {
   ],
   rewardMoney: 8,
   journalDone: 'Марта закрыла крышу. Ночью я слышал, как в её доме впервые за неделю смеются.',
+  followUpScene: 'marta_after',
+  followUpLabel: 'хочет поговорить',
 }
 
 export const THREADS: readonly ThreadDef[] = [
@@ -62,6 +66,8 @@ export const THREADS: readonly ThreadDef[] = [
     ],
     rewardMoney: 4,
     journalDone: 'Агафья накормила внуков. Вечером она принесла мне горсть сушёных яблок и ничего не сказала.',
+    followUpScene: 'agafya_after',
+    followUpLabel: 'ждёт у порога',
   },
   {
     id: 'thread_plough',
@@ -77,6 +83,8 @@ export const THREADS: readonly ThreadDef[] = [
     ],
     rewardMoney: 10,
     journalDone: 'Плуг починили. Ондрей сказал, что поле вспашут до конца недели, и впервые за месяц посмотрел мне в глаза.',
+    followUpScene: 'ondrey_after',
+    followUpLabel: 'зовёт к полю',
   },
 ]
 

@@ -310,6 +310,48 @@ export const FIRST_WINTER: StoryScene = {
   ],
 }
 
+/** Продолжения линий жителей (9.9). */
+export const MARTA_AFTER: StoryScene = {
+  id: 'marta_after',
+  title: 'Марта',
+  beats: [
+    { id: 'husband', text: '— Он ушёл на ту войну, — говорит Марта. — Дочка его не помнит. А я помню всё.' },
+    { id: 'look', text: 'Она поправляет платок и смотрит мимо меня, на дорогу.' },
+    {
+      id: 'thanks',
+      text: '— Спасибо, что не дал нам замёрзнуть. Больше мне нечего сказать.',
+      journal: 'Марта рассказала о муже, который ушёл на войну и не вернулся. Дочка его не помнит.',
+    },
+  ],
+}
+
+export const AGAFYA_AFTER: StoryScene = {
+  id: 'agafya_after',
+  title: 'Агафья',
+  beats: [
+    { id: 'eat', text: '— Внуки едят, — говорит Агафья. — Это всё, что я хотела.' },
+    {
+      id: 'count',
+      text: 'Она долго молчит. Потом: — Раньше нас было сорок. Теперь двадцать. Ты не считай, сколько осталось. Считай, сколько будет.',
+      journal: 'Агафья сказала: не считай, сколько осталось, считай, сколько будет.',
+    },
+  ],
+}
+
+export const ONDREY_AFTER: StoryScene = {
+  id: 'ondrey_after',
+  title: 'Ондрей',
+  beats: [
+    { id: 'field', text: '— Пойдём, покажу, — Ондрей идёт к полю и говорит быстрее, чем обычно.' },
+    { id: 'brother', text: '— Брат ушёл в город три года назад. Обещал вернуться с деньгами. Поле без него — половина поля.' },
+    {
+      id: 'ask',
+      text: 'Он смотрит на землю. — Если пойдёт вспашка, я справлюсь. Только ты не уходи, ладно?',
+      journal: 'Ондрей просил не уходить. Его брат ушёл в город и не вернулся.',
+    },
+  ],
+}
+
 export const ALL_SCENES: readonly StoryScene[] = [
   PROLOGUE,
   MORNING,
@@ -321,6 +363,9 @@ export const ALL_SCENES: readonly StoryScene[] = [
   STONE_BELT,
   STONE_WALLS,
   FIRST_WINTER,
+  MARTA_AFTER,
+  AGAFYA_AFTER,
+  ONDREY_AFTER,
 ]
 
 export function sceneById(id: string): StoryScene | undefined {
