@@ -630,8 +630,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 2rem 1.5rem;
-  background:
-    radial-gradient(circle at 50% 35%, #2a231b 0%, #17130f 100%);
+  background: #17130f;
   cursor: pointer;
   overflow-y: auto;
 }
@@ -650,15 +649,13 @@ body {
   opacity: 0.45;
 }
 
-/* Иллюстрация к абзацу: кадр, а не фон. */
+/* Иллюстрация к абзацу: кадр без рамки; края растворяются в фоне страницы. */
 .story__art {
   display: block;
   width: 100%;
   margin: 0 0 1.6rem;
-  border: 1px solid rgba(232, 221, 201, 0.16);
-  border-radius: 2px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
-  background: #0a0c10;
+  border: none;
+  background: transparent;
 }
 
 .story__text {

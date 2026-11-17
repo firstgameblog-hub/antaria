@@ -1941,12 +1941,14 @@ const RISING: Draw = (ctx, w, h) => {
   ctx.fillStyle = sun
   ctx.fillRect(0, 0, w, h * 0.6)
 
-  // Утренняя дымка.
-  const haze = ctx.createLinearGradient(0, h * 0.35, 0, h * 0.7)
-  haze.addColorStop(0, 'rgba(232, 230, 216, 0.55)')
+  // Утренняя дымка: без резких краёв, иначе поперёк неба видна полоса.
+  const haze = ctx.createLinearGradient(0, 0, 0, h * 0.78)
+  haze.addColorStop(0, 'rgba(232, 230, 216, 0)')
+  haze.addColorStop(0.42, 'rgba(232, 230, 216, 0.42)')
+  haze.addColorStop(0.72, 'rgba(232, 230, 216, 0.12)')
   haze.addColorStop(1, 'rgba(232, 230, 216, 0)')
   ctx.fillStyle = haze
-  ctx.fillRect(0, h * 0.3, w, h * 0.45)
+  ctx.fillRect(0, 0, w, h * 0.78)
 
   // Дальние избы.
   ctx.fillStyle = '#6f6250'
@@ -2177,5 +2179,26 @@ export function drawIllustration(
   ctx.clearRect(0, 0, width, height)
   draw(ctx, width, height)
   ctx.restore()
+
+  // Края растворяются в цвете страницы: у кадра нет видимой рамки.
+  const fade = Math.max(8, Math.min(width, height) * 0.09)
+  const page = 'rgba(23, 19, 15, '
+
+  const strips: [number, number, number, number, number, number, number, number][] = [
+    // x, y, w, h, x0, y0, x1, y1 — координаты градиента
+    [0, 0, width, fade, 0, 0, 0, fade],
+    [0, height - fade, width, fade, 0, height, 0, height - fade],
+    [0, 0, fade, height, 0, 0, fade, 0],
+    [width - fade, 0, fade, height, width, 0, width - fade, 0],
+  ]
+
+  for (const [x, y, w, h, x0, y0, x1, y1] of strips) {
+    const gradient = ctx.createLinearGradient(x0, y0, x1, y1)
+    gradient.addColorStop(0, `${page}0.95)`)
+    gradient.addColorStop(1, `${page}0)`)
+    ctx.fillStyle = gradient
+    ctx.fillRect(x, y, w, h)
+  }
+
   return true
 }
