@@ -96,4 +96,23 @@ export const OLD_WOLF: EnemyDef = {
   ],
 }
 
-export const ENEMIES: readonly EnemyDef[] = [WOLF, DEER, DOG, BANDIT_LEADER, OLD_WOLF]
+/** Атаман: второй босс, за старым частоколом. */
+export const ATAMAN: EnemyDef = {
+  id: 'ataman',
+  name: 'Атаман',
+  maxHp: 34,
+  minDamage: 4,
+  maxDamage: 6,
+  initiative: 1,
+  intro: 'Он ждёт у костра, будто это его деревня. Под рукой — сабля, за поясом — печать, которой он запечатывает письма в города.',
+  weakness: 'Он бережёт левое плечо: старая рана не зажила.',
+  weakMultiplier: 1.8,
+  enrages: true,
+  loot: [
+    { itemId: 'bandit_seal', count: 1 },
+    { itemId: 'meat', count: 2 },
+    { itemId: 'hide', count: 1 },
+  ],
+}
+
+export const ENEMIES: readonly EnemyDef[] = [WOLF, DEER, DOG, BANDIT_LEADER, OLD_WOLF, ATAMAN]

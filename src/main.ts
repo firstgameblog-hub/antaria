@@ -1,7 +1,7 @@
 import './styles.css'
 import { createInitialState, SPAWN_POINT, type GameState } from './core/state'
 import { createCombat, resolveTurn, type CombatState } from './core/combat'
-import { WOLF, DEER, BANDIT_LEADER, OLD_WOLF, WILD_ENCOUNTERS } from './content/enemies'
+import { WOLF, DEER, BANDIT_LEADER, ENEMIES, WILD_ENCOUNTERS } from './content/enemies'
 import { BOSS_SPOTS } from './content/bosses'
 import { openRaidScreen } from './ui/raidScreen'
 import type { CombatAction, EnemyDef } from './data/combat'
@@ -710,7 +710,7 @@ function startCeremony(): void {
     flash(`Деревня стала: ${next.name}`, 6000)
 
     // Сразу после первого дыма — гость у ворот: начало второй главы.
-    if (state.flags['stranger.met'] !== true) {
+    if (next.id === 'stage_first_smoke' && state.flags['stranger.met'] !== true) {
       state.flags['stranger.met'] = true
       startStory('stranger')
     }
@@ -1404,7 +1404,7 @@ function startBoss(spotId: string): void {
   const boss = BOSS_SPOTS.find((candidate) => candidate.id === spotId)
   if (!boss || state.flags[boss.flag] === true) return
 
-  const enemy = boss.enemyId === 'old_wolf' ? OLD_WOLF : undefined
+  const enemy = ENEMIES.find((candidate) => candidate.id === boss.enemyId)
   if (!enemy) return
 
   beginCombat(enemy, {}, 'boss')
@@ -1960,6 +1960,8 @@ if (import.meta.env.DEV) {
       ambush: () => startAmbush(),
       hasScene: (id: string) => Boolean(sceneById(id)),
       npcs: () => activeNpcs().map((npc) => ({ id: npc.id, x: npc.x, y: npc.y })),
+      spots: () =>
+        activeSpots().map((spot) => ({ id: spot.id, x: spot.x, y: spot.y, kind: spot.kind })),
       ambushRoll: () => {
         tryAmbush()
         return { danger, pending: pendingAmbush, inCombat: combat !== null }

@@ -27,4 +27,13 @@ export const BOSS_SPOTS: readonly BossSpot[] = [
     flag: 'boss.old_wolf',
     journal: 'Старый волк остался в логове. Клык теперь висит у меня на поясе — тяжёлый, как обещание.',
   },
+  {
+    id: 'camp_ataman',
+    x: 200,
+    y: 400,
+    label: 'Лагерь атамана',
+    enemyId: 'ataman',
+    flag: 'boss.ataman',
+    journal: 'Атаман остался у своего костра. Печать у меня — значит, письма в города теперь читаю я.',
+  },
 ]

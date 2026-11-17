@@ -235,6 +235,31 @@ export const FIRST_CARAVAN: StoryScene = {
   ],
 }
 
+/** Переход на «Каменный пояс» (стадия 3, M4.1). */
+export const STONE_BELT: StoryScene = {
+  id: 'stone_belt',
+  title: 'Каменный пояс',
+  beats: [
+    {
+      id: 'seal',
+      text: 'Печать атамана вмуровали в первый камень стены. Никто не решил так специально — просто она была под рукой, а камень был один.',
+    },
+    {
+      id: 'haul',
+      text: 'Камень возили с реки две недели. Ондрей надорвался, но не бросил. Дети таскали щебень в мешках.',
+    },
+    {
+      id: 'wall',
+      text: 'К осени деревня обвелась поясом. Не высоким, не красивым — но за ним можно спать.',
+    },
+    {
+      id: 'town',
+      text: 'Теперь сюда идут не только за товаром. Идут жить.',
+      journal: 'Каменный пояс. Двести пятьдесят душ, стены и первый настоящий город на месте деревни.',
+    },
+  ],
+}
+
 export const ALL_SCENES: readonly StoryScene[] = [
   PROLOGUE,
   MORNING,
@@ -243,6 +268,7 @@ export const ALL_SCENES: readonly StoryScene[] = [
   TRADE_ROAD,
   AFTER_RAID,
   FIRST_CARAVAN,
+  STONE_BELT,
 ]
 
 export function sceneById(id: string): StoryScene | undefined {
