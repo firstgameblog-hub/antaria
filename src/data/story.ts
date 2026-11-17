@@ -13,6 +13,8 @@ export interface StoryChoice {
   value: string
   /** Что герой думает после выбора. Показывается отдельным абзацем. */
   after?: string
+  /** Действие в мире, а не только флаг: например, найм охраны. */
+  action?: string
 }
 
 export interface StoryBeat {

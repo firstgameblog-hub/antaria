@@ -90,6 +90,42 @@ export const STRUCTURES: readonly StructureDef[] = [
     minutes: 90,
     journal: 'Поставили сторожевую башню. Теперь на дороге есть глаза.',
   },
+  {
+    id: 'market',
+    name: 'Рынок',
+    kind: 'market',
+    x: 22,
+    y: 19,
+    w: 3,
+    h: 2,
+    description:
+      'Своё место для торга, а не навес у дороги. Корней сможет держать цену, а не брать что дают.',
+    cost: [
+      { itemId: 'plank', count: 6 },
+      { itemId: 'log', count: 4 },
+      { itemId: 'stone', count: 4 },
+    ],
+    minutes: 90,
+    journal: 'Открыли рынок. Корней впервые за неделю не торговался о каждой монете.',
+  },
+  {
+    id: 'guild',
+    name: 'Гильдия',
+    kind: 'guild',
+    x: 26,
+    y: 19,
+    w: 3,
+    h: 2,
+    description:
+      'Дом, где за деньги берутся за работу: охрана, сопровождение, крепкие руки. Пока — только охрана.',
+    cost: [
+      { itemId: 'log', count: 8 },
+      { itemId: 'plank', count: 4 },
+      { itemId: 'stone', count: 6 },
+    ],
+    minutes: 120,
+    journal: 'Поставили дом гильдии. На двери — доска, на доске — имена тех, кто берётся за работу.',
+  },
 ]
 
 export function structureById(id: string): StructureDef | undefined {

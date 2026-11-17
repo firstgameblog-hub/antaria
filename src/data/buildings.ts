@@ -1,6 +1,6 @@
 /** Схема постройки (2.3.4): сколько стоит и что даёт. */
 
-export type StructureKind = 'well' | 'barn' | 'forge' | 'stall' | 'tower'
+export type StructureKind = 'well' | 'barn' | 'forge' | 'stall' | 'tower' | 'market' | 'guild'
 
 export interface StructureCost {
   itemId: string

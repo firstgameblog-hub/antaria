@@ -37,7 +37,7 @@ import { TRADER } from './content/trader'
 import { CARAVAN } from './content/caravan'
 import { openDiplomacyScreen } from './ui/diplomacyScreen'
 import { sceneById } from './content/story'
-import type { StoryScene } from './data/story'
+import type { StoryBeat, StoryScene } from './data/story'
 import { buy, completeOrder, sell } from './core/trade'
 import { Camera } from './render/camera'
 import {
@@ -258,6 +258,16 @@ function processNight(absoluteDayIndex: number): void {
   }
 
   morningEvent()
+
+  // Нанятая охрана служит три ночи и уходит.
+  const guard = state.flags['guard.days']
+  if (typeof guard === 'number' && guard > 0) {
+    const left = guard - 1
+    state.flags['guard.days'] = left
+    if (left === 0) {
+      addJournal('Охрана из гильдии ушла: три дня вышли. У ворот снова только я.')
+    }
+  }
 
   if (state.flags['raid.done'] !== true) {
     const due = state.flags['raid.due_day']
@@ -543,6 +553,95 @@ function hasStoneWall(): boolean {
   return walled >= 0 && current >= walled
 }
 
+const GUARD_PRICE = 40
+const GUARD_DAYS = 3
+
+/** Сколько дней ещё нанят охранник. 0 — никого. */
+function guardDays(): number {
+  const value = state.flags['guard.days']
+  return typeof value === 'number' ? Math.max(0, value) : 0
+}
+
+function structureReady(id: string): boolean {
+  return state.world.buildings.includes(id) && !state.world.damaged.includes(id)
+}
+
+/** Рынок в деревне: Корней держит цену, а не берёт что дают. */
+function marketBonus(): number {
+  return structureReady('market') ? 0.12 : 0
+}
+
+/** Гильдия: дом, где берутся за работу за деньги. */
+function openGuild(): void {
+  if (!daylightOk()) {
+    flash('Ночью гильдия закрыта. Стучать — только зря людей будить.')
+    return
+  }
+
+  const days = guardDays()
+  const beats: StoryBeat[] = [
+    {
+      id: 'board',
+      text: 'В гильдии пахнет мокрой шерстью и железом. На доске — имена тех, кто берётся за работу. Имена короткие, как у людей, которые не любят рассказывать.',
+    },
+    {
+      id: 'clerk',
+      text: 'За столом сидит человек с разбитыми костяшками и считает на счётах не деньги, а дни.',
+    },
+  ]
+
+  if (days > 0) {
+    beats.push({
+      id: 'busy',
+      text: `Твой человек ещё нанят: ${days} дн. Он ночует у ворот и не просит есть.`,
+    })
+  } else if (state.player.money >= GUARD_PRICE) {
+    beats.push({
+      id: 'offer',
+      text: `— Охрана. ${GUARD_PRICE} монет, три дня, — говорит он, не поднимая глаз. — Драться буду, если придётся. Кормить не надо.`,
+      choices: [
+        {
+          id: 'hire',
+          text: `Нанять за ${GUARD_PRICE} монет`,
+          flag: 'guard.hired',
+          value: '1',
+          after:
+            'Он забирает монеты, не пересчитывая. У двери ждёт человек в стёганой куртке — молча берёт копьё и идёт к воротам.',
+          action: 'guild_hire',
+        },
+        {
+          id: 'later',
+          text: 'Позже',
+          flag: 'guard.hired',
+          value: '0',
+          after: '— Как надумаешь, — говорит он. — Я тут до темноты.',
+        },
+      ],
+    })
+  } else {
+    beats.push({
+      id: 'poor',
+      text: `— ${GUARD_PRICE} монет, — говорит он. Ты молчишь. Он кивает, будто и не ждал другого.`,
+    })
+  }
+
+  openDynamicStory({ id: 'guild_hall', title: 'Гильдия', beats })
+}
+
+function hireGuard(): void {
+  if (state.player.money < GUARD_PRICE) return
+  if (guardDays() > 0) return
+
+  state.player.money -= GUARD_PRICE
+  state.flags['guard.days'] = GUARD_DAYS
+  advanceTime(ACTION_MINUTES.talk)
+  addJournal(
+    'Нанял человека из гильдии. Он будет у ворот три дня. Я не спросил его имени — он не предложил.',
+  )
+  playCoin()
+  flash('Охрана нанята на три дня. Ночью у ворот будет кто-то, кроме меня.', 6000)
+}
+
 /** Одна из построек страдает от налёта. Возвращает имя, если что-то сломали. */
 function damageBuilding(): string | null {
   const candidates = state.world.buildings.filter((id) => !state.world.damaged.includes(id))
@@ -580,20 +679,28 @@ function startRaid(): void {
     payCost: 20,
     canPay: state.player.money >= 20,
     onFight: () => {
-      const towerReady =
-        state.world.buildings.includes('tower') && !state.world.damaged.includes('tower')
+      const towerReady = structureReady('tower')
+      const guardReady = guardDays() > 0
+
+      const logs: string[] = []
+      let penalty = 0
+
+      if (towerReady) {
+        penalty += 6
+        logs.push('Стража заметила их на дороге: первый удар был внезапным.')
+      }
+      if (guardReady) {
+        penalty += 6
+        logs.push('Нанятый человек встал рядом и ударил первым — главарю досталось.')
+      }
 
       beginCombat(
         BANDIT_LEADER,
-        towerReady
-          ? {
-              enemyHpPenalty: 6,
-              extraLog: ['Стража заметила их на дороге: первый удар был внезапным.'],
-            }
-          : {},
+        penalty > 0 ? { enemyHpPenalty: penalty, extraLog: logs } : {},
         'raid',
       )
-    },    onPay: () => {
+    },
+    onPay: () => {
       state.player.money -= 20
       state.flags['raid.done'] = true
       addJournal('Откупился от налётчиков. Двадцать монет ушли в чужие руки.')
@@ -603,6 +710,18 @@ function startRaid(): void {
       afterRaidScene()
     },
     onHide: () => {
+      if (guardDays() > 0) {
+        state.flags['raid.done'] = true
+        addJournal(
+          'Спрятались. Нанятый человек держал ворота, пока деревня уходила в лес. Он вернулся к утру — раненый, но живой.',
+        )
+        flash('Охрана прикрыла отход: припасы целы, люди целы.', 6000)
+        persist()
+        updateHud()
+        afterRaidScene()
+        return
+      }
+
       const stolen = loseSupplies(hasStoneWall() ? 0.2 : 0.4)
       state.village.population = Math.max(1, state.village.population - 1)
       state.flags['raid.done'] = true
@@ -822,7 +941,24 @@ function startStory(sceneId: string, startBeat = 0, onComplete?: () => void): vo
   const scene = sceneById(sceneId)
   if (!scene) return
 
-  state.story = { sceneId, beat: startBeat }
+  openStoryScene(scene, sceneId, startBeat, onComplete, true)
+}
+
+/** Сцена, собранная на месте: не сохраняется, живёт один разговор. */
+function openDynamicStory(scene: StoryScene, onComplete?: () => void): void {
+  openStoryScene(scene, scene.id, 0, onComplete, false)
+}
+
+function openStoryScene(
+  scene: StoryScene,
+  sceneId: string,
+  startBeat: number,
+  onComplete: ((() => void) | undefined) | undefined,
+  resumable: boolean,
+): void {
+  if (resumable) state.story = { sceneId, beat: startBeat }
+  else state.story = null
+
   storyOpen = true
   ambience.setDucked(true)
   recordJournal(scene, startBeat)
@@ -837,7 +973,9 @@ function startStory(sceneId: string, startBeat = 0, onComplete?: () => void): vo
     },
     onChoice: (_beat, choice) => {
       state.flags[choice.flag] = choice.value
+      if (choice.action === 'guild_hire') hireGuard()
       persist()
+      updateHud()
     },
     onFinish: () => {
       storyOpen = false
@@ -1404,6 +1542,34 @@ function plotAt(worldX: number, worldY: number): StructureDef | null {
   return null
 }
 
+/** Построенное здание, у которого есть дело: рынок и гильдия. */
+function builtStructureAt(worldX: number, worldY: number): StructureDef | null {
+  for (const structure of STRUCTURES) {
+    if (!state.world.buildings.includes(structure.id)) continue
+    if (structure.id !== 'market' && structure.id !== 'guild') continue
+
+    const x = structure.x * TILE
+    const y = structure.y * TILE
+    const w = structure.w * TILE
+    const h = structure.h * TILE
+
+    if (worldX >= x && worldX <= x + w && worldY >= y && worldY <= y + h) return structure
+  }
+
+  return null
+}
+
+function openBuiltStructure(structure: StructureDef): void {
+  if (structure.id === 'guild') {
+    openGuild()
+    return
+  }
+
+  if (structure.id === 'market') {
+    openTrade()
+  }
+}
+
 function openBuild(structure: StructureDef): void {
   openBuildScreen({
     name: structure.name,
@@ -1501,8 +1667,10 @@ function startBoss(spotId: string): void {
 }
 
 function openTrade(): void {
+  const bonus = marketBonus()
+
   openTradeScreen({
-    trader: { ...TRADER, generosity: 0 },
+    trader: { ...TRADER, generosity: bonus },
     orderText:
       state.flags['trader.order.done'] === true
         ? ''
@@ -1515,7 +1683,7 @@ function openTrade(): void {
       const offer = TRADER.sells.find((candidate) => candidate.itemId === itemId)
       if (!offer) return 'Такого товара нет'
 
-      const result = buy(state, offer, ITEM_BY_ID)
+      const result = buy(state, offer, ITEM_BY_ID, bonus)
       if (!result.ok) return result.reason
 
       dayStats.traded += 1
@@ -1527,7 +1695,7 @@ function openTrade(): void {
     onSell: (itemId) => {
       if (!daylightOk()) return 'Стемнело. Корней уже свернул товар.'
 
-      const result = sell(state, itemId, 1, ITEM_BY_ID)
+      const result = sell(state, itemId, 1, ITEM_BY_ID, bonus)
       if (!result.ok) return result.reason
 
       dayStats.traded += 1
@@ -1743,18 +1911,27 @@ function updateHover(event: PointerEvent): void {
   const node = npc === null && spot === null ? nodeAt(world.x, world.y) : null
   const plot =
     npc === null && spot === null && node === null ? plotAt(world.x, world.y) : null
+  const built =
+    npc === null && spot === null && node === null && plot === null
+      ? builtStructureAt(world.x, world.y)
+      : null
 
   hoveredNpcId = npc?.id ?? null
   hoveredSpotId = spot?.id ?? null
   hoveredNodeId = node?.id ?? null
   hoveredPlotId = plot?.id ?? null
   hoveredId =
-    npc === null && spot === null && node === null && plot === null
+    npc === null && spot === null && node === null && plot === null && built === null
       ? buildingAt(world.x, world.y)
       : null
 
   canvas.style.cursor =
-    npc !== null || spot !== null || node !== null || plot !== null || hoveredId !== null
+    npc !== null ||
+    spot !== null ||
+    node !== null ||
+    plot !== null ||
+    built !== null ||
+    hoveredId !== null
       ? 'pointer'
       : 'default'
 }
@@ -1850,11 +2027,20 @@ function endPointer(event: PointerEvent): void {
     const node = npc === null && spot === null ? nodeAt(world.x, world.y) : null
     const plot =
       npc === null && spot === null && node === null ? plotAt(world.x, world.y) : null
+    const built =
+      npc === null && spot === null && node === null && plot === null
+        ? builtStructureAt(world.x, world.y)
+        : null
 
     gathering = null
 
     if (plot) {
       openBuild(plot)
+      return
+    }
+
+    if (built) {
+      openBuiltStructure(built)
       return
     }
 

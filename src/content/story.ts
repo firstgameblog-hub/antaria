@@ -371,6 +371,31 @@ export const SOLDIERS: StoryScene = {
   ],
 }
 
+/** Восьмая глава: деревня становится посадом. */
+export const FREE_TOWN: StoryScene = {
+  id: 'free_town',
+  title: 'Вольный посад',
+  beats: [
+    {
+      id: 'gate',
+      text: 'Ворота больше не запирают на ночь. Стена осталась — но теперь она не для того, чтобы спрятаться, а для того, чтобы было что открыть.',
+    },
+    {
+      id: 'street',
+      text: 'По улице идут чужие люди: возчик с солью, писарь из города, двое в стёганых куртках без хозяина. Никто не спрашивает, чьи мы.',
+    },
+    {
+      id: 'name',
+      text: 'Корней говорит, что такому месту нужно имя, а не «деревня». Он предлагает записать нас в городские книги как посад. Вольный.',
+    },
+    {
+      id: 'answer',
+      text: 'Ты соглашаешься. К вечеру на воротах появляется доска: «Вольный посад». Буквы кривые — их вырезал Ондрей.',
+      journal: 'Деревня стала Вольным посадом. Теперь нас знают не только те, кто приходит за долей.',
+    },
+  ],
+}
+
 export const ALL_SCENES: readonly StoryScene[] = [
   PROLOGUE,
   MORNING,
@@ -386,6 +411,7 @@ export const ALL_SCENES: readonly StoryScene[] = [
   AGAFYA_AFTER,
   ONDREY_AFTER,
   SOLDIERS,
+  FREE_TOWN,
 ]
 
 export function sceneById(id: string): StoryScene | undefined {

@@ -240,6 +240,119 @@ function drawStall(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.fill()
 }
 
+/** Рынок: длинный прилавок под двумя навесами и бочка с товаром. */
+function drawMarket(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+  shadow(ctx, x, y, w, h)
+
+  const awningTop = y + h * 0.18
+
+  // Столбы
+  ctx.strokeStyle = PALETTE.woodDark
+  ctx.lineWidth = 3
+  ctx.beginPath()
+  for (const px of [0.1, 0.5, 0.9]) {
+    ctx.moveTo(x + w * px, y + h * 0.92)
+    ctx.lineTo(x + w * px, awningTop)
+  }
+  ctx.stroke()
+
+  // Два навеса
+  const stripes = 8
+  for (let index = 0; index < stripes; index += 1) {
+    const stripeWidth = (w * 0.98) / stripes
+    ctx.fillStyle = index % 2 === 0 ? '#8c6a4a' : '#dcc7a6'
+    ctx.fillRect(x + w * 0.01 + index * stripeWidth, y + h * 0.04, stripeWidth, h * 0.16)
+  }
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.6
+  ctx.strokeRect(x + w * 0.01, y + h * 0.04, w * 0.98, h * 0.16)
+
+  // Прилавок
+  ctx.fillStyle = PALETTE.wood
+  ctx.strokeStyle = INK
+  roundRect(ctx, x + w * 0.06, y + h * 0.56, w * 0.88, h * 0.16, 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Корзины и бочка
+  ctx.fillStyle = '#c9a36a'
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.4
+  for (const px of [0.22, 0.44, 0.66]) {
+    ctx.beginPath()
+    ctx.arc(x + w * px, y + h * 0.53, 2.6, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+  }
+
+  ctx.fillStyle = '#9a7248'
+  roundRect(ctx, x + w * 0.8, y + h * 0.44, w * 0.12, h * 0.16, 2)
+  ctx.fill()
+  ctx.stroke()
+}
+
+/** Гильдия: дом с доской объявлений у входа. */
+function drawGuild(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+  shadow(ctx, x, y, w, h)
+
+  // Стены
+  ctx.fillStyle = PALETTE.wood
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 2
+  roundRect(ctx, x + w * 0.08, y + h * 0.34, w * 0.84, h * 0.56, 3)
+  ctx.fill()
+  ctx.stroke()
+
+  // Брёвна
+  ctx.strokeStyle = 'rgba(58, 47, 36, 0.22)'
+  ctx.lineWidth = 1
+  for (let row = 1; row < 4; row += 1) {
+    const lineY = y + h * 0.34 + (h * 0.56 * row) / 4
+    ctx.beginPath()
+    ctx.moveTo(x + w * 0.1, lineY)
+    ctx.lineTo(x + w * 0.9, lineY)
+    ctx.stroke()
+  }
+
+  // Крыша
+  ctx.fillStyle = PALETTE.roofWood
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.8
+  ctx.beginPath()
+  ctx.moveTo(x + w * 0.02, y + h * 0.36)
+  ctx.lineTo(x + w * 0.5, y + h * 0.06)
+  ctx.lineTo(x + w * 0.98, y + h * 0.36)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Дверь
+  ctx.fillStyle = '#4a3a2a'
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.4
+  roundRect(ctx, x + w * 0.42, y + h * 0.6, w * 0.18, h * 0.3, 1)
+  ctx.fill()
+  ctx.stroke()
+
+  // Доска объявлений слева
+  ctx.fillStyle = '#b9976b'
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.4
+  roundRect(ctx, x + w * 0.13, y + h * 0.44, w * 0.2, h * 0.26, 1)
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.strokeStyle = 'rgba(58, 47, 36, 0.6)'
+  ctx.lineWidth = 1
+  for (let row = 0; row < 3; row += 1) {
+    const lineY = y + h * 0.49 + row * h * 0.06
+    ctx.beginPath()
+    ctx.moveTo(x + w * 0.15, lineY)
+    ctx.lineTo(x + w * 0.31, lineY)
+    ctx.stroke()
+  }
+}
+
 /** Сторожевая башня: каменное основание, деревянный верх, флаг. */
 function drawTower(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
   shadow(ctx, x, y, w, h)
@@ -324,6 +437,12 @@ export function drawStructure(
       break
     case 'tower':
       drawTower(ctx, x, y, w, h)
+      break
+    case 'market':
+      drawMarket(ctx, x, y, w, h)
+      break
+    case 'guild':
+      drawGuild(ctx, x, y, w, h)
       break
   }
 }
