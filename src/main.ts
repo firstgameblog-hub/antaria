@@ -135,6 +135,7 @@ let combat: CombatState | null = null
 let combatContext: 'wild' | 'raid' | 'boss' = 'wild'
 let raidPending = false
 let raidResolved = false
+let pendingSeasonScene: string | null = null
 let danger = 0
 let pendingAmbush = false
 const dayStats = { gathered: 0, crafted: 0, traded: 0, built: 0, fought: 0 }
@@ -238,6 +239,12 @@ function processNight(absoluteDayIndex: number): void {
   const grain = itemDef('grain')
   if (harvest > 0 && grain) addItems(state.village.storage, grain, harvest, 1, ITEM_BY_ID)
 
+  // Первая зима отмечается по календарю, а не по прошедшей ночи.
+  if (season === 'winter' && state.flags['chapter.first_winter'] !== true) {
+    state.flags['chapter.first_winter'] = true
+    pendingSeasonScene = 'first_winter'
+  }
+
   const result = applyDailyUpkeep(state.village.storage, state.village.population, season)
 
   if (result.lost > 0) {
@@ -294,6 +301,11 @@ function sleep(): void {
 
   advanceTime(after - before)
 
+  if (seasonOf(state.clock.day) === 'winter' && state.flags['chapter.first_winter'] !== true) {
+    state.flags['chapter.first_winter'] = true
+    pendingSeasonScene = 'first_winter'
+  }
+
   // Ночь лечит: без этого здоровье копилось бы до первой смерти.
   state.player.health.current = state.player.health.max
 
@@ -326,6 +338,12 @@ function sleep(): void {
   if (raidPending) {
     raidPending = false
     startRaid()
+  }
+
+  if (pendingSeasonScene !== null) {
+    const sceneId = pendingSeasonScene
+    pendingSeasonScene = null
+    startStory(sceneId)
   }
 }
 
@@ -720,6 +738,12 @@ function startCeremony(): void {
       state.flags['chapter.caravan'] = true
       startStory('first_caravan')
     }
+
+    // Стена поставлена: глава про людей за ней.
+    if (next.id === 'stage_stone_belt' && state.flags['chapter.stone_walls'] !== true) {
+      state.flags['chapter.stone_walls'] = true
+      startStory('stone_walls')
+    }
   })
 }
 
@@ -984,6 +1008,12 @@ function frame(time: number): void {
   if (notesChanged) updateHud()
 
   const walking = updateMovement(dt)
+
+  if (pendingSeasonScene !== null && combat === null && !storyOpen) {
+    const sceneId = pendingSeasonScene
+    pendingSeasonScene = null
+    startStory(sceneId)
+  }
 
   // Костёр слышно только вблизи: громкость считается по расстоянию (4.4.3).
   const fireDistance = distance(state.player.position, CAMPFIRE_POINT)
