@@ -126,6 +126,60 @@ export const STRUCTURES: readonly StructureDef[] = [
     minutes: 120,
     journal: 'Поставили дом гильдии. На двери — доска, на доске — имена тех, кто берётся за работу.',
   },
+  {
+    id: 'bank',
+    name: 'Банк',
+    kind: 'bank',
+    x: 8,
+    y: 17,
+    w: 2,
+    h: 2,
+    description:
+      'Дом, где считают не только своё. Даёт в долг под проценты — деньги сразу, расплата потом.',
+    cost: [
+      { itemId: 'stone', count: 20 },
+      { itemId: 'plank', count: 12 },
+      { itemId: 'steel', count: 2 },
+    ],
+    minutes: 120,
+    journal: 'Открылся банк. В окне сидит человек с чернильницей и ждёт, кто придёт первым.',
+  },
+  {
+    id: 'academy',
+    name: 'Академия',
+    kind: 'academy',
+    x: 31,
+    y: 17,
+    w: 3,
+    h: 2,
+    description:
+      'Школа для тех, кто останется здесь после нас. Пока учат немногому, но и это меняет исход боя.',
+    cost: [
+      { itemId: 'log', count: 12 },
+      { itemId: 'plank', count: 10 },
+      { itemId: 'stone', count: 8 },
+    ],
+    minutes: 150,
+    journal: 'Открыли академию. Первые семь человек сидят на скамьях и не знают, куда девать руки.',
+  },
+  {
+    id: 'court',
+    name: 'Суд',
+    kind: 'court',
+    x: 11,
+    y: 19,
+    w: 2,
+    h: 2,
+    description:
+      'Место, где решают споры и пишут письма соседям. Слово, сказанное отсюда, весит больше.',
+    cost: [
+      { itemId: 'stone', count: 14 },
+      { itemId: 'log', count: 8 },
+      { itemId: 'plank', count: 6 },
+    ],
+    minutes: 120,
+    journal: 'Поставили суд. Скамья, стол и человек, который записывает.',
+  },
 ]
 
 export function structureById(id: string): StructureDef | undefined {

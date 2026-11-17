@@ -353,6 +353,134 @@ function drawGuild(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   }
 }
 
+/**
+ * Общий каменный дом для банка, академии и суда: у каждого свой знак на двери.
+ * emblem рисуется в верхней части фасада.
+ */
+function drawCivicHouse(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  roof: string,
+  emblem: 'coins' | 'book' | 'scales',
+): void {
+  shadow(ctx, x, y, w, h)
+
+  // Стены
+  ctx.fillStyle = PALETTE.stone
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 2
+  roundRect(ctx, x + w * 0.06, y + h * 0.34, w * 0.88, h * 0.58, 3)
+  ctx.fill()
+  ctx.stroke()
+
+  // Кладка
+  ctx.strokeStyle = 'rgba(58, 47, 36, 0.22)'
+  ctx.lineWidth = 1
+  for (let row = 1; row < 4; row += 1) {
+    const lineY = y + h * 0.34 + (h * 0.58 * row) / 4
+    ctx.beginPath()
+    ctx.moveTo(x + w * 0.08, lineY)
+    ctx.lineTo(x + w * 0.92, lineY)
+    ctx.stroke()
+  }
+
+  // Крыша
+  ctx.fillStyle = roof
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.8
+  ctx.beginPath()
+  ctx.moveTo(x + w * 0.01, y + h * 0.36)
+  ctx.lineTo(x + w * 0.5, y + h * 0.05)
+  ctx.lineTo(x + w * 0.99, y + h * 0.36)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Дверь
+  ctx.fillStyle = '#4a3a2a'
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.4
+  roundRect(ctx, x + w * 0.42, y + h * 0.62, w * 0.16, h * 0.3, 1)
+  ctx.fill()
+  ctx.stroke()
+
+  const cx = x + w * 0.5
+  const cy = y + h * 0.5
+
+  if (emblem === 'coins') {
+    ctx.fillStyle = '#d8b264'
+    ctx.strokeStyle = INK
+    ctx.lineWidth = 1.2
+    for (const [dx, dy] of [
+      [0, 0],
+      [-w * 0.06, h * 0.03],
+      [w * 0.06, h * 0.03],
+    ] as const) {
+      ctx.beginPath()
+      ctx.arc(cx + dx, cy + dy, Math.min(w, h) * 0.06, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.stroke()
+    }
+    return
+  }
+
+  if (emblem === 'book') {
+    ctx.fillStyle = '#e0d3b6'
+    ctx.strokeStyle = INK
+    ctx.lineWidth = 1.3
+    roundRect(ctx, cx - w * 0.1, cy - h * 0.06, w * 0.2, h * 0.13, 1)
+    ctx.fill()
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(cx, cy - h * 0.06)
+    ctx.lineTo(cx, cy + h * 0.07)
+    ctx.stroke()
+    return
+  }
+
+  // Весы: стойка и две чаши.
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.4
+  ctx.beginPath()
+  ctx.moveTo(cx, cy - h * 0.07)
+  ctx.lineTo(cx, cy + h * 0.06)
+  ctx.moveTo(cx - w * 0.09, cy - h * 0.04)
+  ctx.lineTo(cx + w * 0.09, cy - h * 0.04)
+  ctx.stroke()
+
+  ctx.fillStyle = '#cbb894'
+  for (const dx of [-w * 0.09, w * 0.09]) {
+    ctx.beginPath()
+    ctx.arc(cx + dx, cy + h * 0.01, Math.min(w, h) * 0.045, 0, Math.PI)
+    ctx.fill()
+    ctx.stroke()
+  }
+}
+
+/** Банк: каменный дом, на фасаде — монеты. */
+function drawBank(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+  drawCivicHouse(ctx, x, y, w, h, '#8c7a63', 'coins')
+}
+
+/** Академия: каменный дом, на фасаде — раскрытая книга. */
+function drawAcademy(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): void {
+  drawCivicHouse(ctx, x, y, w, h, '#7f8f6a', 'book')
+}
+
+/** Суд: каменный дом, на фасаде — весы. */
+function drawCourt(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+  drawCivicHouse(ctx, x, y, w, h, '#9a6b52', 'scales')
+}
+
 /** Сторожевая башня: каменное основание, деревянный верх, флаг. */
 function drawTower(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
   shadow(ctx, x, y, w, h)
@@ -443,6 +571,15 @@ export function drawStructure(
       break
     case 'guild':
       drawGuild(ctx, x, y, w, h)
+      break
+    case 'bank':
+      drawBank(ctx, x, y, w, h)
+      break
+    case 'academy':
+      drawAcademy(ctx, x, y, w, h)
+      break
+    case 'court':
+      drawCourt(ctx, x, y, w, h)
       break
   }
 }

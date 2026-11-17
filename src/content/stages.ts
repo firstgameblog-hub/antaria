@@ -16,6 +16,8 @@ export interface StageDef {
   population: number
   /** Что нужно сдать на склад, чтобы созвать деревню. */
   requirements: readonly StageRequirement[]
+  /** Какие постройки должны стоять к обряду. */
+  structures?: readonly string[]
   /** Сцена перехода; пустая строка — перехода нет. */
   ceremonyScene: string
   journalOnEnter: string
@@ -78,6 +80,21 @@ export const STAGES: readonly StageDef[] = [
       { itemId: 'plank', count: 40 },
       { itemId: 'ore', count: 20 },
     ],
+    structures: ['bank', 'academy'],
+    ceremonyScene: 'white_city',
+    journalOnEnter: '',
+  },
+  {
+    id: 'stage_white_city',
+    name: 'Белый город',
+    population: 1200,
+    requirements: [
+      { itemId: 'steel', count: 6 },
+      { itemId: 'stone', count: 120 },
+      { itemId: 'plank', count: 60 },
+      { itemId: 'ore', count: 40 },
+    ],
+    structures: ['court', 'guild'],
     ceremonyScene: '',
     journalOnEnter: '',
   },

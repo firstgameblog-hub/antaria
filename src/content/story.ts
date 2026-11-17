@@ -371,6 +371,27 @@ export const SOLDIERS: StoryScene = {
   ],
 }
 
+/** Девятая глава: посад становится белым городом. */
+export const WHITE_CITY: StoryScene = {
+  id: 'white_city',
+  title: 'Белый город',
+  beats: [
+    {
+      id: 'lime',
+      text: 'Стены обмазали известью. Работали всей деревней, и к вечеру руки белые у всех — даже у тех, кто только носил воду.',
+    },
+    {
+      id: 'look',
+      text: 'С холма видно, как стена уходит вниз к реке. Издалека она похожа на чужую. Вблизи — на нашу: где-то положено криво, где-то переложено дважды.',
+    },
+    {
+      id: 'word',
+      text: 'Писарь из суда читает вслух письмо из Тихой Пади: нас больше не называют деревней. В бумагах мы — город. Пока на одной странице.',
+      journal: 'Наш посад стал Белым городом. В чужих бумагах нас впервые назвали городом.',
+    },
+  ],
+}
+
 /** Восьмая глава: деревня становится посадом. */
 export const FREE_TOWN: StoryScene = {
   id: 'free_town',
@@ -412,6 +433,7 @@ export const ALL_SCENES: readonly StoryScene[] = [
   ONDREY_AFTER,
   SOLDIERS,
   FREE_TOWN,
+  WHITE_CITY,
 ]
 
 export function sceneById(id: string): StoryScene | undefined {

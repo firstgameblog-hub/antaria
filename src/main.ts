@@ -370,10 +370,13 @@ const PLAYER_MIN_DAMAGE = 3
 const PLAYER_MAX_DAMAGE = 6
 
 function playerCombatStats(): { maxHp: number; minDamage: number; maxDamage: number } {
+  // Академия учит бить: не сильнее, а точнее — прибавка к верхней границе урона.
+  const learned = structureReady('academy') ? 1 : 0
+
   return {
     maxHp: state.player.health.max,
     minDamage: PLAYER_MIN_DAMAGE,
-    maxDamage: PLAYER_MAX_DAMAGE,
+    maxDamage: PLAYER_MAX_DAMAGE + learned,
   }
 }
 
@@ -642,6 +645,188 @@ function hireGuard(): void {
   flash('Охрана нанята на три дня. Ночью у ворот будет кто-то, кроме меня.', 6000)
 }
 
+const LOAN_AMOUNT = 150
+const LOAN_DEBT = 173
+const ENVOY_PRICE = 30
+const ENVOY_COOLDOWN_DAYS = 7
+
+function bankDebt(): number {
+  const value = state.flags['bank.debt']
+  return typeof value === 'number' ? Math.max(0, value) : 0
+}
+
+function openBank(): void {
+  if (!daylightOk()) {
+    flash('Банк закрыт. Ставни на ночь опускают даже здесь.')
+    return
+  }
+
+  const debt = bankDebt()
+  const beats: StoryBeat[] = [
+    {
+      id: 'window',
+      text: 'В банке пахнет чернилами и пылью. За окном сидит человек, который считает чужие монеты быстрее, чем ты свои.',
+    },
+  ]
+
+  if (debt > 0) {
+    if (state.player.money >= debt) {
+      beats.push({
+        id: 'debt',
+        text: `Он открывает книгу на нужной странице: — За тобой ${debt}. Можешь закрыть сейчас.`,
+        choices: [
+          {
+            id: 'pay',
+            text: `Отдать ${debt} монет`,
+            flag: 'bank.paid',
+            value: '1',
+            after: 'Он проводит черту, промокает её и ставит точку. — Свободен.',
+            action: 'bank_repay',
+          },
+          {
+            id: 'later',
+            text: 'Позже',
+            flag: 'bank.paid',
+            value: '0',
+            after: '— Твоё дело, — говорит он. — Счёт не растёт. Пока.',
+          },
+        ],
+      })
+    } else {
+      beats.push({
+        id: 'debt',
+        text: `Он смотрит в книгу, потом на тебя: — За тобой ${debt}. У тебя ${state.player.money}. Приходи, когда будет чем.`,
+      })
+    }
+  } else {
+    beats.push({
+      id: 'offer',
+      text: `— ${LOAN_AMOUNT} монет сейчас, — говорит он. — Вернёшь ${LOAN_DEBT}. Проценты не растут, растёт только моё терпение.`,
+      choices: [
+        {
+          id: 'take',
+          text: `Взять ${LOAN_AMOUNT} монет`,
+          flag: 'bank.loan',
+          value: '1',
+          after:
+            'Он отсчитывает монеты двумя стопками, будто нехотя. — Второй раз — только после расплаты.',
+          action: 'bank_loan',
+        },
+        {
+          id: 'later',
+          text: 'Позже',
+          flag: 'bank.loan',
+          value: '0',
+          after: '— Как знаешь, — говорит он и снова берётся за счёты.',
+        },
+      ],
+    })
+  }
+
+  openDynamicStory({ id: 'bank_hall', title: 'Банк', beats })
+}
+
+function takeLoan(): void {
+  if (bankDebt() > 0) return
+
+  state.player.money += LOAN_AMOUNT
+  state.flags['bank.debt'] = LOAN_DEBT
+  advanceTime(ACTION_MINUTES.talk)
+  addJournal(`Взял в банке ${LOAN_AMOUNT} монет. Долг — ${LOAN_DEBT}. Это первый раз, когда я должен не человеку.`)
+  playCoin()
+  flash(`Взято ${LOAN_AMOUNT} монет. Долг: ${LOAN_DEBT}.`, 6000)
+}
+
+function repayLoan(): void {
+  const debt = bankDebt()
+  if (debt === 0 || state.player.money < debt) return
+
+  state.player.money -= debt
+  state.flags['bank.debt'] = 0
+  advanceTime(ACTION_MINUTES.talk)
+  addJournal('Закрыл долг в банке. Книга стала на одну страницу легче.')
+  playCoin()
+  flash('Долг закрыт.', 5000)
+}
+
+/** Суд: споры и письма. Отсюда можно отправить посольство в Тихую Падь. */
+function openCourt(): void {
+  if (!daylightOk()) {
+    flash('Суд закрыт. Скамья пуста, чернильница закрыта.')
+    return
+  }
+
+  const today = Math.floor(absoluteMinutes(state.clock) / MINUTES_PER_DAY)
+  const last = state.flags['court.envoy_day']
+  const lastDay = typeof last === 'number' ? last : -100
+  const canSend = state.player.money >= ENVOY_PRICE && today - lastDay >= ENVOY_COOLDOWN_DAYS
+
+  const beats: StoryBeat[] = [
+    {
+      id: 'bench',
+      text: 'В суде вместо приговоров — стол, две чернильницы и человек, который записывает всё, что скажут. Говорят здесь мало.',
+    },
+  ]
+
+  if (canSend) {
+    beats.push({
+      id: 'envoy',
+      text: `— В Тихую Падь можно отправить человека, — говорит писарь. — ${ENVOY_PRICE} монет на дорогу и подарок. Вернётся через седмицу.`,
+      choices: [
+        {
+          id: 'send',
+          text: `Отправить посольство (${ENVOY_PRICE} монет)`,
+          flag: 'court.envoy',
+          value: '1',
+          after:
+            'Писарь пишет письмо коротко, без единого лишнего слова. Ты ставишь печать — она чужая, но другой нет.',
+          action: 'court_envoy',
+        },
+        {
+          id: 'later',
+          text: 'Позже',
+          flag: 'court.envoy',
+          value: '0',
+          after: '— Письмо подождёт, — говорит он. — Люди — нет.',
+        },
+      ],
+    })
+  } else if (state.player.money < ENVOY_PRICE) {
+    beats.push({
+      id: 'poor',
+      text: `— Посольство стоит ${ENVOY_PRICE} монет, — говорит писарь. — Даром такие письма не читают.`,
+    })
+  } else {
+    beats.push({
+      id: 'wait',
+      text: '— Твой человек ещё в дороге. Второго вслед не посылают: там решат, что мы торопимся.',
+    })
+  }
+
+  openDynamicStory({ id: 'court_hall', title: 'Суд', beats })
+}
+
+function sendEnvoy(): void {
+  if (state.player.money < ENVOY_PRICE) return
+
+  const today = Math.floor(absoluteMinutes(state.clock) / MINUTES_PER_DAY)
+  const last = state.flags['court.envoy_day']
+  if (typeof last === 'number' && today - last < ENVOY_COOLDOWN_DAYS) return
+
+  state.player.money -= ENVOY_PRICE
+  state.flags['court.envoy_day'] = today
+  state.world.tihaya.attitude = Math.max(
+    -100,
+    Math.min(100, state.world.tihaya.attitude + 10),
+  )
+  advanceTime(ACTION_MINUTES.talk)
+  addJournal(
+    'Отправил посольство в Тихую Падь. Письмо короткое: мы здесь, мы стоим, мы помним, кто первый пришёл с миром.',
+  )
+  playCoin()
+  flash('Посольство ушло в Тихую Падь. Отношения теплее.', 6000)
+}
+
 /** Одна из построек страдает от налёта. Возвращает имя, если что-то сломали. */
 function damageBuilding(): string | null {
   const candidates = state.world.buildings.filter((id) => !state.world.damaged.includes(id))
@@ -773,12 +958,29 @@ function openVillage(): void {
   openVillageScreen({
     getStageName: () => stageById(state.village.stageId)?.name ?? state.village.stageId,
     getNextStageName: () => nextStage(state.village.stageId)?.name ?? null,
-    getRequirements: () =>
-      (nextStage(state.village.stageId)?.requirements ?? []).map((requirement) => ({
-        label: itemName(requirement.itemId),
-        have: countOf(state.village.storage, requirement.itemId),
-        need: requirement.count,
-      })),
+    getRequirements: () => {
+      const target = nextStage(state.village.stageId)
+      const rows: { label: string; have: number; need: number }[] = []
+
+      for (const requirement of target?.requirements ?? []) {
+        rows.push({
+          label: itemName(requirement.itemId),
+          have: countOf(state.village.storage, requirement.itemId),
+          need: requirement.count,
+        })
+      }
+
+      for (const id of target?.structures ?? []) {
+        const structure = structureById(id)
+        rows.push({
+          label: `Постройка: ${structure?.name ?? id}`,
+          have: structureReady(id) ? 1 : 0,
+          need: 1,
+        })
+      }
+
+      return rows
+    },
     getDamaged: () =>
       state.world.damaged.map((id) => {
         const structure = structureById(id)
@@ -974,6 +1176,9 @@ function openStoryScene(
     onChoice: (_beat, choice) => {
       state.flags[choice.flag] = choice.value
       if (choice.action === 'guild_hire') hireGuard()
+      if (choice.action === 'bank_loan') takeLoan()
+      if (choice.action === 'bank_repay') repayLoan()
+      if (choice.action === 'court_envoy') sendEnvoy()
       persist()
       updateHud()
     },
@@ -1542,11 +1747,13 @@ function plotAt(worldX: number, worldY: number): StructureDef | null {
   return null
 }
 
-/** Построенное здание, у которого есть дело: рынок и гильдия. */
+/** Построенное здание, у которого есть дело: рынок, гильдия, банк, академия и суд. */
+const CIVIC_IDS = ['market', 'guild', 'bank', 'academy', 'court'] as const
+
 function builtStructureAt(worldX: number, worldY: number): StructureDef | null {
   for (const structure of STRUCTURES) {
     if (!state.world.buildings.includes(structure.id)) continue
-    if (structure.id !== 'market' && structure.id !== 'guild') continue
+    if (!CIVIC_IDS.includes(structure.id as (typeof CIVIC_IDS)[number])) continue
 
     const x = structure.x * TILE
     const y = structure.y * TILE
@@ -1567,6 +1774,26 @@ function openBuiltStructure(structure: StructureDef): void {
 
   if (structure.id === 'market') {
     openTrade()
+    return
+  }
+
+  if (structure.id === 'bank') {
+    openBank()
+    return
+  }
+
+  if (structure.id === 'court') {
+    openCourt()
+    return
+  }
+
+  if (structure.id === 'academy') {
+    flash(
+      structureReady('academy')
+        ? 'В академии идут занятия. Ученики учатся бить точно — урон в бою до 7.'
+        : 'Академия стоит разбитая. Нужен ремонт.',
+      6000,
+    )
   }
 }
 
@@ -2243,6 +2470,7 @@ if (import.meta.env.DEV) {
         if (npc) openNpc(npc)
         return Boolean(npc)
       },
+      stats: () => playerCombatStats(),
       ambushRoll: () => {
         tryAmbush()
         return { danger, pending: pendingAmbush, inCombat: combat !== null }
