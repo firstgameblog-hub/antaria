@@ -1921,6 +1921,218 @@ const CAMPFIRE: Draw = (ctx, w, h) => {
   vignette(ctx, w, h, 0.6)
 }
 
+/** Ты поднимаешься и оглядываешься: утро, деревня, люди. */
+const RISING: Draw = (ctx, w, h) => {
+  backdrop(ctx, w, h, '#9aa3a4', '#cfc9b6')
+
+  // Облака: рваные полосы утреннего неба.
+  ctx.fillStyle = 'rgba(228, 226, 216, 0.3)'
+  for (let i = 0; i < 5; i += 1) {
+    const y = h * (0.06 + i * 0.055)
+    ctx.beginPath()
+    ctx.ellipse(w * (0.2 + i * 0.16), y, w * (0.16 + (i % 3) * 0.05), h * 0.02, 0, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // Солнце сквозь дымку.
+  const sun = ctx.createRadialGradient(w * 0.78, h * 0.12, 4, w * 0.78, h * 0.12, h * 0.45)
+  sun.addColorStop(0, 'rgba(255, 240, 205, 0.45)')
+  sun.addColorStop(1, 'rgba(255, 240, 205, 0)')
+  ctx.fillStyle = sun
+  ctx.fillRect(0, 0, w, h * 0.6)
+
+  // Утренняя дымка.
+  const haze = ctx.createLinearGradient(0, h * 0.35, 0, h * 0.7)
+  haze.addColorStop(0, 'rgba(232, 230, 216, 0.55)')
+  haze.addColorStop(1, 'rgba(232, 230, 216, 0)')
+  ctx.fillStyle = haze
+  ctx.fillRect(0, h * 0.3, w, h * 0.45)
+
+  // Дальние избы.
+  ctx.fillStyle = '#6f6250'
+  for (const hut of [
+    { x: 0.04, w: 0.2 },
+    { x: 0.3, w: 0.16 },
+    { x: 0.66, w: 0.2 },
+    { x: 0.86, w: 0.12 },
+  ]) {
+    const hx = w * hut.x
+    const hw = w * hut.w
+    ctx.fillRect(hx, h * 0.44, hw, h * 0.12)
+    ctx.beginPath()
+    ctx.moveTo(hx - hw * 0.08, h * 0.44)
+    ctx.lineTo(hx + hw * 0.5, h * 0.34)
+    ctx.lineTo(hx + hw * 1.08, h * 0.44)
+    ctx.closePath()
+    ctx.fill()
+  }
+
+  // Частокол.
+  ctx.fillStyle = '#584330'
+  for (let x = 0; x < w; x += w * 0.024) {
+    const postH = h * 0.09 + ((x * 13) % 8)
+    ctx.fillRect(x, h * 0.58 - postH, w * 0.014, postH)
+  }
+
+  // Земля.
+  ctx.fillStyle = '#6d6450'
+  ctx.fillRect(0, h * 0.58, w, h * 0.42)
+
+  // Костёр слева.
+  const fire = ctx.createRadialGradient(w * 0.24, h * 0.62, 3, w * 0.24, h * 0.62, h * 0.24)
+  fire.addColorStop(0, 'rgba(240, 170, 80, 0.4)')
+  fire.addColorStop(1, 'rgba(240, 170, 80, 0)')
+  ctx.fillStyle = fire
+  ctx.fillRect(0, h * 0.35, w * 0.5, h * 0.5)
+
+  ctx.fillStyle = '#dd8a3e'
+  ctx.beginPath()
+  ctx.ellipse(w * 0.24, h * 0.63, w * 0.008, h * 0.025, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Две фигуры у огня — смотрят на тебя.
+  ctx.fillStyle = 'rgba(38, 30, 22, 0.9)'
+  for (const fx of [0.18, 0.3]) {
+    ctx.beginPath()
+    ctx.ellipse(w * fx, h * 0.63, w * 0.011, h * 0.02, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.moveTo(w * fx - w * 0.014, h * 0.66)
+    ctx.quadraticCurveTo(w * fx, h * 0.58, w * fx + w * 0.014, h * 0.66)
+    ctx.closePath()
+    ctx.fill()
+  }
+
+  // Ты: спиной к нам, только поднялся, голова повёрнута вбок.
+  const cx = w * 0.52
+  const skin = '#bb8b61'
+  const tunic = '#6f6654'
+  const tunicDark = '#575043'
+  const trousers = '#4a3d2f'
+  const outline = 'rgba(28, 20, 12, 0.85)'
+
+  ctx.strokeStyle = outline
+  ctx.lineWidth = 2.6
+
+  // Ноги: одна ещё согнута, вторая упирается.
+  ctx.fillStyle = trousers
+  ctx.beginPath()
+  ctx.moveTo(cx - w * 0.045, h * 0.78)
+  ctx.quadraticCurveTo(cx - w * 0.06, h * 0.92, cx - w * 0.045, h * 1.04)
+  ctx.lineTo(cx - w * 0.008, h * 1.04)
+  ctx.quadraticCurveTo(cx - w * 0.016, h * 0.9, cx - w * 0.012, h * 0.79)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(cx + w * 0.005, h * 0.79)
+  ctx.quadraticCurveTo(cx + w * 0.03, h * 0.9, cx + w * 0.05, h * 1.04)
+  ctx.lineTo(cx + w * 0.088, h * 1.04)
+  ctx.quadraticCurveTo(cx + w * 0.066, h * 0.9, cx + w * 0.048, h * 0.78)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Сапоги.
+  ctx.fillStyle = '#2b2119'
+  ctx.beginPath()
+  ctx.ellipse(cx - w * 0.028, h * 1.03, w * 0.03, h * 0.016, 0, 0, Math.PI * 2)
+  ctx.ellipse(cx + w * 0.07, h * 1.03, w * 0.03, h * 0.016, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Торс, наклонён вперёд.
+  ctx.fillStyle = tunic
+  ctx.beginPath()
+  ctx.moveTo(cx - w * 0.075, h * 0.55)
+  ctx.quadraticCurveTo(cx - w * 0.085, h * 0.68, cx - w * 0.055, h * 0.8)
+  ctx.lineTo(cx + w * 0.06, h * 0.8)
+  ctx.quadraticCurveTo(cx + w * 0.085, h * 0.68, cx + w * 0.07, h * 0.55)
+  ctx.quadraticCurveTo(cx, h * 0.5, cx - w * 0.075, h * 0.55)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Тень по спине.
+  ctx.fillStyle = tunicDark
+  ctx.globalAlpha = 0.5
+  ctx.beginPath()
+  ctx.moveTo(cx - w * 0.075, h * 0.55)
+  ctx.quadraticCurveTo(cx - w * 0.085, h * 0.68, cx - w * 0.055, h * 0.8)
+  ctx.lineTo(cx - w * 0.012, h * 0.8)
+  ctx.lineTo(cx - w * 0.018, h * 0.53)
+  ctx.closePath()
+  ctx.fill()
+  ctx.globalAlpha = 1
+
+  // Пояс.
+  ctx.fillStyle = '#3a2c1e'
+  ctx.fillRect(cx - w * 0.07, h * 0.72, w * 0.135, h * 0.02)
+
+  // Рука упирается в землю.
+  ctx.fillStyle = tunic
+  ctx.beginPath()
+  ctx.moveTo(cx - w * 0.07, h * 0.57)
+  ctx.quadraticCurveTo(cx - w * 0.12, h * 0.66, cx - w * 0.115, h * 0.76)
+  ctx.lineTo(cx - w * 0.088, h * 0.77)
+  ctx.quadraticCurveTo(cx - w * 0.09, h * 0.68, cx - w * 0.052, h * 0.6)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.fillStyle = skin
+  ctx.beginPath()
+  ctx.ellipse(cx - w * 0.102, h * 0.78, w * 0.018, h * 0.014, 0.2, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Вторая рука свободно опущена.
+  ctx.fillStyle = tunic
+  ctx.beginPath()
+  ctx.moveTo(cx + w * 0.062, h * 0.57)
+  ctx.quadraticCurveTo(cx + w * 0.1, h * 0.66, cx + w * 0.096, h * 0.74)
+  ctx.lineTo(cx + w * 0.072, h * 0.74)
+  ctx.quadraticCurveTo(cx + w * 0.076, h * 0.66, cx + w * 0.045, h * 0.59)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Шея.
+  ctx.fillStyle = skin
+  ctx.beginPath()
+  ctx.roundRect(cx - w * 0.018, h * 0.465, w * 0.036, h * 0.055, 5)
+  ctx.fill()
+  ctx.stroke()
+
+  // Голова повёрнута вправо: видно затылок и профиль.
+  ctx.fillStyle = skin
+  ctx.beginPath()
+  ctx.ellipse(cx + w * 0.004, h * 0.43, w * 0.038, h * 0.047, 0.08, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Нос и подбородок — по ним видно, что смотрит в сторону.
+  ctx.beginPath()
+  ctx.moveTo(cx + w * 0.042, h * 0.425)
+  ctx.lineTo(cx + w * 0.052, h * 0.437)
+  ctx.lineTo(cx + w * 0.04, h * 0.447)
+  ctx.stroke()
+
+  // Волосы.
+  ctx.fillStyle = '#3b2a1c'
+  ctx.beginPath()
+  ctx.ellipse(cx - w * 0.004, h * 0.415, w * 0.032, h * 0.036, 0.12, Math.PI * 0.7, Math.PI * 2.1)
+  ctx.fill()
+
+  // Тень на земле.
+  ctx.fillStyle = 'rgba(24, 18, 10, 0.22)'
+  ctx.beginPath()
+  ctx.ellipse(cx + w * 0.01, h * 1.04, w * 0.11, h * 0.03, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  vignette(ctx, w, h, 0.42)
+}
+
 const ILLUSTRATIONS: Record<string, Draw> = {
   room: ROOM,
   capsule: CAPSULE,
@@ -1933,6 +2145,7 @@ const ILLUSTRATIONS: Record<string, Draw> = {
   noexit: NOEXIT,
   village: VILLAGE,
   headman: HEADMAN,
+  rising: RISING,
   marta_roof: MARTA_ROOF,
   korney: KORNEY,
   road: ROAD,
