@@ -5,7 +5,7 @@
  * Все расчёты — в ядре, окно только показывает цены и передаёт намерение.
  */
 
-import { type Inventory } from '../core/inventory'
+import { type Inventory, qualityLabel } from '../core/inventory'
 import { buyPrice, sellPrice } from '../core/trade'
 import type { GameState } from '../core/state'
 import { ITEM_BY_ID, itemName } from '../content/items'
@@ -24,7 +24,7 @@ export interface TradeScreenOptions {
   trader: TraderView
   getState: () => GameState
   onBuy: (itemId: string) => string
-  onSell: (itemId: string) => string
+  onSell: (itemId: string, quality: number) => string
   /** Просьба торговца; у каравана её нет. */
   onOrder?: () => string
   /** Текст просьбы; пусто — блока нет. */
@@ -94,15 +94,19 @@ function renderSell(state: GameState, trader: TraderView): string {
     .map((stack) => {
       const def = ITEM_BY_ID.get(stack.id)
       if (!def) return ''
-      const price = sellPrice(def, state.world.trader.trust, trader.generosity)
+      const price = sellPrice(def, state.world.trader.trust, trader.generosity, stack.quality)
+      const quality =
+        stack.quality > 1
+          ? ` <small>· ${qualityLabel(stack.quality)}</small>`
+          : ''
 
       return `
         <li class="trade-row">
           <div class="trade-row__info">
-            <span class="trade-row__name">${escapeHtml(def.name)} <small>×${stack.count}</small></span>
+            <span class="trade-row__name">${escapeHtml(def.name)}${quality} <small>×${stack.count}</small></span>
             <span class="trade-row__meta">${price} монет за штуку</span>
           </div>
-          <button data-sell="${stack.id}">Продать</button>
+          <button data-sell="${stack.id}" data-quality="${stack.quality}">Продать</button>
         </li>
       `
     })
@@ -163,7 +167,8 @@ function render(): void {
     button.addEventListener('click', () => {
       const id = button.dataset['sell']
       if (!id || !options) return
-      status = options.onSell(id)
+      const quality = Number.parseInt(button.dataset['quality'] ?? '1', 10)
+      status = options.onSell(id, Number.isNaN(quality) ? 1 : quality)
       render()
     })
   })

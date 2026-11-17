@@ -10,7 +10,7 @@ import type { EquipmentSlot, ItemDef } from '../data/items'
 export interface Stack {
   id: string
   count: number
-  /** Качество 0..1. Для ресурсов это усреднённая оценка партии. */
+  /** Качество 1..3: обычное, хорошее, отличное. Влияет на цену у торговца. */
   quality: number
 }
 
@@ -53,6 +53,16 @@ export function freeSpaceKg(inventory: Inventory, defs: Defs): number {
   return Math.max(0, inventory.capacityKg - weightOf(inventory, defs))
 }
 
+export const MIN_QUALITY = 1
+export const MAX_QUALITY = 3
+
+/** Название качества для людей. */
+export function qualityLabel(quality: number): string {
+  if (quality >= MAX_QUALITY) return 'отличное'
+  if (quality >= 2) return 'хорошее'
+  return 'обычное'
+}
+
 /**
  * Кладёт предметы с учётом стека и веса.
  * Возвращает, сколько удалось положить; остаток не влез.
@@ -72,10 +82,11 @@ export function addItems(
   if (remaining === 0) return 0
 
   let added = 0
-  const safeQuality = Math.min(1, Math.max(0, quality))
+  const safeQuality = Math.min(MAX_QUALITY, Math.max(MIN_QUALITY, Math.round(quality)))
 
+  // Одинаковое качество лежит вместе, разное — отдельными стопками.
   for (const stack of inventory.stacks) {
-    if (stack.id !== def.id) continue
+    if (stack.id !== def.id || stack.quality !== safeQuality) continue
     const room = def.stack - stack.count
     if (room <= 0) continue
 
@@ -96,15 +107,23 @@ export function addItems(
   return added
 }
 
-/** Убирает до `count` штук. Возвращает, сколько убрано. */
+/**
+ * Убирает до `count` штук. Возвращает, сколько убрано.
+ * Сначала уходит худшее качество, чтобы хорошее оставалось у героя.
+ */
 export function removeItems(inventory: Inventory, id: string, count: number): number {
   let remaining = Math.max(0, Math.trunc(count))
   if (remaining === 0) return 0
 
   let removed = 0
+  const order = inventory.stacks
+    .map((stack, index) => ({ stack, index }))
+    .filter((entry) => entry.stack.id === id)
+    .sort((a, b) => a.stack.quality - b.stack.quality || b.index - a.index)
 
-  for (let index = inventory.stacks.length - 1; index >= 0 && remaining > 0; index -= 1) {
-    const stack = inventory.stacks[index]
+  for (const entry of order) {
+    if (remaining <= 0) break
+    const stack = inventory.stacks[entry.index]
     if (!stack || stack.id !== id) continue
 
     const take = Math.min(stack.count, remaining)
@@ -112,7 +131,7 @@ export function removeItems(inventory: Inventory, id: string, count: number): nu
     remaining -= take
     removed += take
 
-    if (stack.count === 0) inventory.stacks.splice(index, 1)
+    if (stack.count === 0) inventory.stacks.splice(entry.index, 1)
   }
 
   return removed
@@ -129,13 +148,19 @@ export function transfer(
   const def = defs.get(id)
   if (!def) return 0
 
+  // Качество берём у той стопки, из которой уходит товар.
+  const source = from.stacks
+    .filter((stack) => stack.id === id)
+    .sort((a, b) => a.quality - b.quality)[0]
+  const quality = source?.quality ?? MIN_QUALITY
+
   const removed = removeItems(from, id, Math.min(count, countOf(from, id)))
   if (removed === 0) return 0
 
-  const added = addItems(to, def, removed, 1, defs)
+  const added = addItems(to, def, removed, quality, defs)
 
   // Что не влезло — возвращаем обратно, чтобы не терять предметы.
-  if (added < removed) addItems(from, def, removed - added, 1, defs)
+  if (added < removed) addItems(from, def, removed - added, quality, defs)
 
   return added
 }

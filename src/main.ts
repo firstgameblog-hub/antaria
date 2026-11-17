@@ -2140,10 +2140,10 @@ function openTrade(): void {
       updateHud()
       return result.message
     },
-    onSell: (itemId) => {
+    onSell: (itemId, quality) => {
       if (!daylightOk()) return 'Стемнело. Корней уже свернул товар.'
 
-      const result = sell(state, itemId, 1, ITEM_BY_ID, bonus)
+      const result = sell(state, itemId, 1, ITEM_BY_ID, bonus, quality)
       if (!result.ok) return result.reason
 
       dayStats.traded += 1
@@ -2196,10 +2196,17 @@ function openCaravan(): void {
       updateHud()
       return result.message
     },
-    onSell: (itemId) => {
+    onSell: (itemId, quality) => {
       if (!daylightOk()) return 'Караван уже собирается в путь.'
 
-      const result = sell(state, itemId, 1, ITEM_BY_ID, CARAVAN.generosity + state.world.tihaya.attitude / 200)
+      const result = sell(
+        state,
+        itemId,
+        1,
+        ITEM_BY_ID,
+        CARAVAN.generosity + state.world.tihaya.attitude / 200,
+        quality,
+      )
       if (!result.ok) return result.reason
 
       dayStats.traded += 1

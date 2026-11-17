@@ -7,7 +7,7 @@
 
 import type { Recipe } from '../data/crafting'
 import type { ItemDef } from '../data/items'
-import { addItems, countOf, freeSpaceKg, removeItems, type Inventory } from './inventory'
+import { addItems, countOf, freeSpaceKg, MAX_QUALITY, qualityLabel, removeItems, type Inventory } from './inventory'
 import type { GameState } from './state'
 
 export type Defs = ReadonlyMap<string, ItemDef>
@@ -51,11 +51,22 @@ export function craftRecipe(state: GameState, recipe: Recipe, defs: Defs): Craft
   const outputDef = defs.get(recipe.output.itemId)
   if (!outputDef) return { ok: false, reason: 'Такого предмета нет в игре' }
 
+  // Качество: горн даёт одно деление, академия — второе.
+  const forgeReady =
+    state.world.buildings.includes('forge') && !state.world.damaged.includes('forge')
+  const academyReady =
+    state.world.buildings.includes('academy') && !state.world.damaged.includes('academy')
+
+  let quality = 1
+  if (recipe.station === 'forge' && forgeReady) quality += 1
+  if (academyReady) quality += 1
+  quality = Math.min(MAX_QUALITY, quality)
+
   for (const input of recipe.inputs) {
     removeItems(inventory, input.itemId, input.count)
   }
 
-  const added = addItems(inventory, outputDef, recipe.output.count, 1, defs)
+  const added = addItems(inventory, outputDef, recipe.output.count, quality, defs)
 
   if (added < recipe.output.count) {
     // Не влезло — возвращаем материалы, чтобы не пропали.
@@ -66,5 +77,11 @@ export function craftRecipe(state: GameState, recipe: Recipe, defs: Defs): Craft
     return { ok: false, reason: 'Не хватает места в грузе' }
   }
 
-  return { ok: true, message: `Готово: ${outputDef.name} ×${added}` }
+  return {
+    ok: true,
+    message:
+      quality > 1
+        ? `Готово: ${outputDef.name} ×${added} · ${qualityLabel(quality)}`
+        : `Готово: ${outputDef.name} ×${added}`,
+  }
 }
