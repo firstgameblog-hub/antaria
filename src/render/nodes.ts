@@ -171,6 +171,40 @@ function drawStone(ctx: CanvasRenderingContext2D, x: number, y: number, ready: b
   }
 }
 
+function drawOre(ctx: CanvasRenderingContext2D, x: number, y: number, ready: boolean): void {
+  drawShadow(ctx, x, y, 14, 5)
+
+  ctx.fillStyle = ready ? '#6f6a63' : '#8f8a80'
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 1.3
+
+  const stones = ready
+    ? [
+        [0, 0, 9, 6],
+        [-8, 2, 5.5, 3.6],
+        [8, 2, 5, 3.2],
+      ]
+    : [[0, 1, 6, 3.6]]
+
+  for (const [dx, dy, rx, ry] of stones) {
+    ctx.beginPath()
+    ctx.ellipse(x + (dx ?? 0), y + (dy ?? 0), rx ?? 5, ry ?? 3, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+  }
+
+  if (ready) {
+    ctx.strokeStyle = 'rgba(180, 160, 120, 0.85)'
+    ctx.lineWidth = 1.2
+    ctx.beginPath()
+    ctx.moveTo(x - 4, y - 2)
+    ctx.lineTo(x + 2, y + 1)
+    ctx.moveTo(x + 3, y - 3)
+    ctx.lineTo(x + 7, y - 1)
+    ctx.stroke()
+  }
+}
+
 export function drawGatheringNode(
   ctx: CanvasRenderingContext2D,
   kind: NodeKind,
@@ -193,6 +227,9 @@ export function drawGatheringNode(
       break
     case 'log':
       drawLogPile(ctx, x, y, ready)
+      break
+    case 'ore':
+      drawOre(ctx, x, y, ready)
       break
   }
 }

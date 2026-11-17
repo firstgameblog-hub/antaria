@@ -135,6 +135,25 @@ export const ITEMS: readonly ItemDef[] = [
     price: 5,
     tags: ['food'],
   },
+  {
+    id: 'ore',
+    name: 'Руда',
+    category: 'resource',
+    stack: 20,
+    weight: 2,
+    price: 9,
+    tags: ['ore', 'metal'],
+  },
+  {
+    id: 'pickaxe',
+    name: 'Кирка',
+    category: 'tool',
+    stack: 1,
+    weight: 2.5,
+    price: 40,
+    slot: 'tool',
+    tags: ['tool', 'ore'],
+  },
 ]
 
 export const ITEM_BY_ID: ReadonlyMap<string, ItemDef> = new Map(

@@ -12,7 +12,7 @@ import { STRUCTURES, structureById } from './content/buildings'
 import type { StructureDef } from './data/buildings'
 import { openBuildScreen, closeBuildScreen } from './ui/buildScreen'
 import { canCraft, craftRecipe } from './core/crafting'
-import { addItems, countOf, removeItems, transfer, weightOf } from './core/inventory'
+import { addItems, countOf, equip, removeItems, transfer, weightOf } from './core/inventory'
 import { describeRestore, isReady, markGathered, minutesUntilReady } from './core/gathering'
 import { distance, facingOf, findFreeSpot, movePlayer, stepToward, type Facing, type Point } from './core/movement'
 import { AUTO_SLOT, readBackup, readSlot, writeSlot } from './core/storage'
@@ -78,6 +78,7 @@ const GATHER_SECONDS: Record<NodeKind, number> = {
   branch: 1.8,
   stone: 2.6,
   log: 3.2,
+  ore: 3.6,
 }
 
 const root = document.querySelector<HTMLDivElement>('#app')
@@ -630,8 +631,17 @@ function openCraft(): void {
       const recipe = recipeById(recipeId)
       if (!recipe) return 'Такого рецепта нет'
 
+      if (recipe.station === 'forge' && !state.world.buildings.includes('forge')) {
+        return 'Для этого нужен горн. Построй его на участке.'
+      }
+
       const result = craftRecipe(state, recipe, ITEM_BY_ID)
       if (!result.ok) return result.reason
+
+      const madeDef = itemDef(recipe.output.itemId)
+      if (madeDef?.slot !== undefined) {
+        equip(state.player.equipment, madeDef)
+      }
 
       if (state.flags['journal.firstCraft'] !== true) {
         state.flags['journal.firstCraft'] = true
@@ -1193,6 +1203,12 @@ function nodeLabel(node: GatheringNodeDef, now: number): string {
 
 function startGathering(node: GatheringNodeDef): void {
   if (!daylightOk()) return
+
+  if (node.requiredTool !== undefined && state.player.equipment.tool !== node.requiredTool) {
+    const tool = itemDef(node.requiredTool)
+    flash(`Нужна ${tool ? tool.name.toLowerCase() : 'инструмент'}. Без неё здесь делать нечего.`)
+    return
+  }
 
   const now = absoluteMinutes(state.clock)
 

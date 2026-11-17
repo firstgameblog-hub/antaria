@@ -5,7 +5,7 @@
  * и возвращается через игровое время, а не по часам на стене (1.3.7).
  */
 
-export type NodeKind = 'herb' | 'berry' | 'branch' | 'stone' | 'log'
+export type NodeKind = 'herb' | 'berry' | 'branch' | 'stone' | 'log' | 'ore'
 
 export interface GatheringNodeDef {
   id: string
