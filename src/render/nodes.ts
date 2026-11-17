@@ -229,6 +229,43 @@ function drawClay(ctx: CanvasRenderingContext2D, x: number, y: number, ready: bo
   }
 }
 
+/** Рыба: тёмная вода, круги и поплавок. */
+function drawFish(ctx: CanvasRenderingContext2D, x: number, y: number, ready: boolean): void {
+  ctx.save()
+
+  ctx.fillStyle = ready ? 'rgba(88, 116, 118, 0.55)' : 'rgba(88, 116, 118, 0.3)'
+  ctx.beginPath()
+  ctx.ellipse(x, y, 17, 7, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.strokeStyle = ready ? 'rgba(210, 226, 226, 0.8)' : 'rgba(210, 226, 226, 0.4)'
+  ctx.lineWidth = 1.2
+  for (const [rx, ry] of [
+    [12, 5],
+    [7, 3],
+  ] as const) {
+    ctx.beginPath()
+    ctx.ellipse(x - 2, y - 1, rx, ry, 0, 0, Math.PI * 2)
+    ctx.stroke()
+  }
+
+  if (ready) {
+    ctx.fillStyle = '#d8b264'
+    ctx.beginPath()
+    ctx.arc(x + 3, y - 3, 1.8, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.strokeStyle = '#5a4632'
+    ctx.lineWidth = 1.1
+    ctx.beginPath()
+    ctx.moveTo(x + 3, y - 5)
+    ctx.lineTo(x + 3, y - 14)
+    ctx.stroke()
+  }
+
+  ctx.restore()
+}
+
 /** Глина, которой пока нет в узлах: используется только для отрисовки. */
 export function drawGatheringNode(
   ctx: CanvasRenderingContext2D,
@@ -258,6 +295,9 @@ export function drawGatheringNode(
       break
     case 'clay':
       drawClay(ctx, x, y, ready)
+      break
+    case 'fish':
+      drawFish(ctx, x, y, ready)
       break
   }
 }

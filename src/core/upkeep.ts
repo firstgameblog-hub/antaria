@@ -8,7 +8,14 @@
 import { countOf, removeItems, type Inventory } from './inventory'
 import type { Season } from './time'
 
-export const FOOD_ITEMS: readonly string[] = ['bread', 'broth', 'meat', 'berry', 'grain']
+export const FOOD_ITEMS: readonly string[] = [
+  'bread',
+  'broth',
+  'fish',
+  'meat',
+  'berry',
+  'grain',
+]
 export const FUEL_ITEMS: readonly string[] = ['log', 'branch']
 
 export interface DailyNeeds {

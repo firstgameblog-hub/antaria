@@ -15,7 +15,7 @@ import type { StructureDef } from './data/buildings'
 import { openBuildScreen, closeBuildScreen } from './ui/buildScreen'
 import { canCraft, craftRecipe } from './core/crafting'
 import { addItems, countOf, equip, removeItems, transfer, weightOf } from './core/inventory'
-import { describeRestore, dormantReason, isReady, markGathered, minutesUntilReady, seasonalYield } from './core/gathering'
+import { describeRestore, dormantReason, fishingIsGood, fishingYield, isReady, markGathered, minutesUntilReady, seasonalYield } from './core/gathering'
 import { distance, facingOf, findFreeSpot, movePlayer, stepToward, type Facing, type Point } from './core/movement'
 import { AUTO_SLOT, readBackup, readSlot, writeSlot } from './core/storage'
 import {
@@ -86,6 +86,7 @@ const GATHER_SECONDS: Record<NodeKind, number> = {
   log: 3.2,
   ore: 3.6,
   clay: 2.4,
+  fish: 4,
 }
 
 const root = document.querySelector<HTMLDivElement>('#app')
@@ -310,7 +311,11 @@ function processNight(absoluteDayIndex: number): void {
 function morningEvent(): void {
   const storage = state.village.storage
   const food =
-    countOf(storage, 'berry') + countOf(storage, 'meat') + countOf(storage, 'broth')
+    countOf(storage, 'berry') +
+    countOf(storage, 'meat') +
+    countOf(storage, 'broth') +
+    countOf(storage, 'fish') +
+    countOf(storage, 'bread')
 
   if (food === 0) {
     addJournal('Утро началось с пустого склада. Деревня молчит и ждёт еды.')
@@ -2281,13 +2286,27 @@ function nodeAt(worldX: number, worldY: number): GatheringNodeDef | null {
   return closest
 }
 
+/** Сколько даст узел сейчас: сезон, время суток, зима. */
+function nodeYield(node: GatheringNodeDef): number {
+  const season = seasonOf(state.clock.day)
+
+  if (node.kind === 'fish') {
+    return fishingYield(node.count, season, Math.floor(state.clock.minutes / 60))
+  }
+
+  return seasonalYield(node.count, node.kind, season)
+}
+
 function nodeLabel(node: GatheringNodeDef, now: number): string {
   const season = seasonOf(state.clock.day)
   const dormant = dormantReason(node.kind, season)
   if (dormant) return `${node.name} · ${dormant}`
 
+  const hour = Math.floor(state.clock.minutes / 60)
+  if (node.kind === 'fish' && fishingIsGood(hour)) return `${node.name} · клюёт`
+
   if (isReady(state.world.nodes, node.id, now)) {
-    const amount = seasonalYield(node.count, node.kind, season)
+    const amount = nodeYield(node)
     return amount < node.count ? `${node.name} · сейчас ${amount}` : node.name
   }
 
@@ -2341,7 +2360,7 @@ function finishGathering(): void {
     return
   }
 
-  const amount = seasonalYield(node.count, node.kind, seasonOf(state.clock.day))
+  const amount = nodeYield(node)
   if (amount === 0) {
     flash(`${node.name}: ${dormantReason(node.kind, seasonOf(state.clock.day)) ?? 'пусто'}.`)
     return

@@ -35,6 +35,29 @@ export function dormantReason(kind: NodeKind, season: Season): string | null {
   return 'сейчас здесь пусто'
 }
 
+/**
+ * Улов (6.12): зимой рыба берёт хуже, на рассвете и к вечеру — лучше.
+ * Ноль не бывает: у реки всегда можно просидеть до одной рыбы.
+ */
+export function fishingYield(base: number, season: Season, hour: number): number {
+  let count = base
+  if (season === 'winter') count -= 1
+
+  const dawn = hour >= 5 && hour < 9
+  const dusk = hour >= 17 && hour < 20
+  if (dawn || dusk) count += 1
+
+  return Math.max(1, count)
+}
+
+/** Клюёт ли сейчас лучше обычного. */
+export function fishingIsGood(hour: number): boolean {
+  const dawn = hour >= 5 && hour < 9
+  const dusk = hour >= 17 && hour < 20
+  return dawn || dusk
+}
+
+
 export function isReady(nodes: NodeReadyAt, id: string, now: number): boolean {
   const readyAt = nodes[id]
   return readyAt === undefined || now >= readyAt
