@@ -1788,12 +1788,14 @@ function frame(time: number): void {
         y: point.y,
         facing: npc.facing,
         kind: npc.kind,
+        name: npc.name,
       }
     }),
     spots: sceneSpots,
     nearby,
     stageId: state.village.stageId,
     season: seasonOf(state.clock.day),
+    zoom: camera.zoom,
     gateOpen: gateOpen(),
     buildings: state.world.buildings,
     drips: THREADS.filter(
@@ -1902,6 +1904,8 @@ interface ActiveNpc {
   y: number
   facing: Facing
   kind: 'trader' | 'villager'
+  /** Короткое имя для подписи на сцене. */
+  name: string
   label: string
 }
 
@@ -1930,6 +1934,7 @@ function activeNpcs(): ActiveNpc[] {
       y: traderPlace.y,
       facing: TRADER.facing,
       kind: 'trader',
+      name: TRADER.name,
       label: traderPlace.note
         ? `${TRADER.name} · ${traderPlace.note}`
         : `${TRADER.name} · ${TRADER.title}`,
@@ -1958,6 +1963,7 @@ function activeNpcs(): ActiveNpc[] {
       y: place.y,
       facing: 'left',
       kind: 'villager',
+      name: thread.npcName,
       label: done
         ? `${thread.npcName} · ${thread.followUpLabel ?? 'хочет поговорить'}`
         : `${thread.npcName} · ${thread.short}`,
@@ -1980,6 +1986,7 @@ function activeNpcs(): ActiveNpc[] {
         y: capitalPlace.y,
         facing: TRADER_CAPITAL.facing,
         kind: 'trader',
+        name: TRADER_CAPITAL.name,
         label: capitalPlace.note
           ? `${TRADER_CAPITAL.name} · ${capitalPlace.note}`
           : `${TRADER_CAPITAL.name} · ${TRADER_CAPITAL.title}`,
@@ -1994,6 +2001,7 @@ function activeNpcs(): ActiveNpc[] {
       y: CARAVAN.y,
       facing: 'up',
       kind: 'trader',
+      name: CARAVAN.name,
       label: `${CARAVAN.name} · ${CARAVAN.title}`,
     })
   }
@@ -2005,6 +2013,7 @@ function activeNpcs(): ActiveNpc[] {
       y: TIHaya_ENVOY.y,
       facing: 'down',
       kind: 'villager',
+      name: 'Посол',
       label: 'Посол Тихой Пади · ждёт ответа',
     })
   }

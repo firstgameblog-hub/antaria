@@ -561,6 +561,42 @@ export interface SceneNpc {
   y: number
   facing: Facing
   kind: 'trader' | 'villager'
+  /** Имя над головой: видно без наведения. */
+  name: string
+}
+
+/**
+ * Имя над человеком. Размер не зависит от масштаба камеры:
+ * на дальнем плане имя остаётся читаемым, а не превращается в точку.
+ */
+function drawNpcName(
+  ctx: CanvasRenderingContext2D,
+  name: string,
+  x: number,
+  y: number,
+  zoom: number,
+): void {
+  if (name === '') return
+
+  const scale = 1 / Math.max(0.4, zoom)
+  ctx.save()
+  ctx.translate(x, y - 34)
+  ctx.scale(scale, scale)
+
+  ctx.font = '600 10px "PT Serif", Georgia, serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+
+  const width = ctx.measureText(name).width + 10
+  ctx.fillStyle = 'rgba(24, 18, 12, 0.55)'
+  ctx.beginPath()
+  ctx.roundRect(-width / 2, -7, width, 14, 7)
+  ctx.fill()
+
+  ctx.fillStyle = 'rgba(240, 231, 214, 0.92)'
+  ctx.fillText(name, 0, 0.5)
+
+  ctx.restore()
 }
 
 export interface SceneDrip {
@@ -601,6 +637,8 @@ export interface SceneOptions {
   stageId: string
   /** Время года: от него зависит, что на полях. */
   season: Season
+  /** Масштаб камеры: по нему подгоняются подписи над людьми. */
+  zoom: number
   buildings: readonly string[]
   /** Ворота открыты: за частоколом больше не темнее, чем внутри. */
   gateOpen: boolean
@@ -845,6 +883,8 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
         } else {
           drawTrader(ctx, npc.x, npc.y, npc.facing, options.time)
         }
+
+        drawNpcName(ctx, npc.name, npc.x, npc.y, options.zoom)
       },
     })
   }

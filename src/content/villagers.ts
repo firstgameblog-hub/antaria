@@ -11,7 +11,7 @@ import type { ScheduleStop } from '../core/schedule'
 export const SCHEDULES: Record<string, readonly ScheduleStop[]> = {
   thread_roof: [
     { from: 6 * 60, x: 330, y: 545, note: 'у своего дома' },
-    { from: 9 * 60, x: 470, y: 300, note: 'у колодца' },
+    { from: 9 * 60, x: 420, y: 250, note: 'у колодца' },
     { from: 13 * 60, x: 330, y: 545, note: 'у своего дома' },
     { from: 18 * 60, x: 585, y: 600, note: 'у костра' },
   ],
