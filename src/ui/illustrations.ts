@@ -1282,6 +1282,233 @@ const VILLAGE: Draw = (ctx, w, h) => {
   vignette(ctx, w, h, 0.4)
 }
 
+/** Староста: старик с посохом, утро, деревня за спиной. */
+const HEADMAN: Draw = (ctx, w, h) => {
+  // Утреннее небо.
+  const sky = ctx.createLinearGradient(0, 0, 0, h * 0.55)
+  sky.addColorStop(0, '#8b949a')
+  sky.addColorStop(0.6, '#b9bcb2')
+  sky.addColorStop(1, '#d6d2c2')
+  ctx.fillStyle = sky
+  ctx.fillRect(0, 0, w, h * 0.55)
+
+  // Солнце сквозь дымку.
+  const sun = ctx.createRadialGradient(w * 0.2, h * 0.12, 4, w * 0.2, h * 0.12, h * 0.5)
+  sun.addColorStop(0, 'rgba(255, 240, 205, 0.5)')
+  sun.addColorStop(1, 'rgba(255, 240, 205, 0)')
+  ctx.fillStyle = sun
+  ctx.fillRect(0, 0, w, h * 0.6)
+
+  // Дальние крыши.
+  ctx.fillStyle = '#6b6255'
+  ctx.beginPath()
+  ctx.moveTo(0, h * 0.44)
+  ctx.lineTo(w * 0.16, h * 0.36)
+  ctx.lineTo(w * 0.3, h * 0.42)
+  ctx.lineTo(w * 0.46, h * 0.34)
+  ctx.lineTo(w * 0.62, h * 0.42)
+  ctx.lineTo(w * 0.78, h * 0.36)
+  ctx.lineTo(w, h * 0.44)
+  ctx.lineTo(w, h * 0.56)
+  ctx.lineTo(0, h * 0.56)
+  ctx.closePath()
+  ctx.fill()
+
+  // Дым над крышами.
+  ctx.strokeStyle = 'rgba(220, 220, 214, 0.12)'
+  ctx.lineWidth = 10
+  ctx.lineCap = 'round'
+  for (const x of [w * 0.2, w * 0.68]) {
+    ctx.beginPath()
+    ctx.moveTo(x, h * 0.36)
+    ctx.bezierCurveTo(x + 14, h * 0.3, x - 10, h * 0.24, x + 8, h * 0.16)
+    ctx.stroke()
+  }
+  ctx.lineCap = 'butt'
+
+  // Земля.
+  ctx.fillStyle = '#5d5344'
+  ctx.fillRect(0, h * 0.55, w, h * 0.45)
+
+  // Частокол за спиной.
+  ctx.fillStyle = '#4a3d2e'
+  for (let x = 0; x < w; x += w * 0.028) {
+    const postH = h * 0.1 + ((x * 11) % 9)
+    ctx.fillRect(x, h * 0.56 - postH, w * 0.016, postH)
+  }
+
+  // Фигура старосты: стоит, опираясь на посох.
+  const coat = '#584c3e'
+  const coatDark = '#3f3629'
+  const skin = '#b68a63'
+  const outline = 'rgba(30, 20, 12, 0.85)'
+
+  // Посох (за рукой, но перед кафтаном).
+  ctx.strokeStyle = '#5b452c'
+  ctx.lineWidth = 5
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(w * 0.63, h * 0.1)
+  ctx.lineTo(w * 0.615, h * 0.94)
+  ctx.stroke()
+  ctx.lineCap = 'butt'
+
+  // Ноги.
+  ctx.fillStyle = '#3b3128'
+  ctx.strokeStyle = outline
+  ctx.lineWidth = 2.2
+  ctx.beginPath()
+  ctx.moveTo(w * 0.445, h * 0.72)
+  ctx.lineTo(w * 0.44, h * 0.9)
+  ctx.lineTo(w * 0.472, h * 0.9)
+  ctx.lineTo(w * 0.482, h * 0.72)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(w * 0.518, h * 0.72)
+  ctx.lineTo(w * 0.528, h * 0.9)
+  ctx.lineTo(w * 0.56, h * 0.9)
+  ctx.lineTo(w * 0.555, h * 0.72)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Сапоги.
+  ctx.fillStyle = '#2a2119'
+  ctx.beginPath()
+  ctx.ellipse(w * 0.455, h * 0.905, w * 0.028, h * 0.016, 0, 0, Math.PI * 2)
+  ctx.ellipse(w * 0.54, h * 0.905, w * 0.028, h * 0.016, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Кафтан: от плеч к подолу, чуть расширяется.
+  ctx.fillStyle = coat
+  ctx.strokeStyle = outline
+  ctx.lineWidth = 2.6
+  ctx.beginPath()
+  ctx.moveTo(w * 0.4, h * 0.38)
+  ctx.quadraticCurveTo(w * 0.37, h * 0.55, w * 0.365, h * 0.73)
+  ctx.lineTo(w * 0.635, h * 0.73)
+  ctx.quadraticCurveTo(w * 0.63, h * 0.55, w * 0.6, h * 0.38)
+  ctx.quadraticCurveTo(w * 0.5, h * 0.33, w * 0.4, h * 0.38)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Тень на левой половине кафтана.
+  ctx.fillStyle = coatDark
+  ctx.globalAlpha = 0.45
+  ctx.beginPath()
+  ctx.moveTo(w * 0.4, h * 0.38)
+  ctx.quadraticCurveTo(w * 0.37, h * 0.55, w * 0.365, h * 0.73)
+  ctx.lineTo(w * 0.48, h * 0.73)
+  ctx.lineTo(w * 0.47, h * 0.37)
+  ctx.closePath()
+  ctx.fill()
+  ctx.globalAlpha = 1
+
+  // Пояс.
+  ctx.fillStyle = '#33281c'
+  ctx.fillRect(w * 0.375, h * 0.53, w * 0.255, h * 0.022)
+  ctx.strokeStyle = 'rgba(20, 14, 8, 0.6)'
+  ctx.lineWidth = 1.2
+  ctx.strokeRect(w * 0.375, h * 0.53, w * 0.255, h * 0.022)
+
+  // Рукав и рука на посохе.
+  ctx.fillStyle = coat
+  ctx.strokeStyle = outline
+  ctx.lineWidth = 2.4
+  ctx.beginPath()
+  ctx.moveTo(w * 0.585, h * 0.4)
+  ctx.quadraticCurveTo(w * 0.63, h * 0.44, w * 0.635, h * 0.5)
+  ctx.lineTo(w * 0.6, h * 0.51)
+  ctx.quadraticCurveTo(w * 0.58, h * 0.46, w * 0.555, h * 0.44)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.fillStyle = skin
+  ctx.beginPath()
+  ctx.ellipse(w * 0.622, h * 0.5, w * 0.017, h * 0.02, 0.3, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Вторая рука вдоль тела.
+  ctx.fillStyle = coat
+  ctx.beginPath()
+  ctx.moveTo(w * 0.41, h * 0.4)
+  ctx.quadraticCurveTo(w * 0.375, h * 0.48, w * 0.385, h * 0.55)
+  ctx.lineTo(w * 0.415, h * 0.55)
+  ctx.quadraticCurveTo(w * 0.405, h * 0.47, w * 0.435, h * 0.41)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Шея и воротник.
+  ctx.fillStyle = skin
+  ctx.beginPath()
+  ctx.roundRect(w * 0.487, h * 0.33, w * 0.026, h * 0.055, 3)
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.fillStyle = '#cfc7b6'
+  ctx.beginPath()
+  ctx.moveTo(w * 0.47, h * 0.375)
+  ctx.quadraticCurveTo(w * 0.5, h * 0.4, w * 0.53, h * 0.375)
+  ctx.quadraticCurveTo(w * 0.5, h * 0.39, w * 0.47, h * 0.375)
+  ctx.fill()
+
+  // Голова.
+  ctx.fillStyle = skin
+  ctx.beginPath()
+  ctx.ellipse(w * 0.5, h * 0.275, w * 0.042, h * 0.048, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Борода: ниже подбородка, тяжёлая.
+  ctx.fillStyle = 'rgba(206, 198, 182, 0.95)'
+  ctx.beginPath()
+  ctx.moveTo(w * 0.462, h * 0.29)
+  ctx.quadraticCurveTo(w * 0.5, h * 0.365, w * 0.538, h * 0.29)
+  ctx.quadraticCurveTo(w * 0.52, h * 0.33, w * 0.5, h * 0.34)
+  ctx.quadraticCurveTo(w * 0.48, h * 0.33, w * 0.462, h * 0.29)
+  ctx.closePath()
+  ctx.fill()
+
+  // Шапка с меховой опушкой.
+  ctx.fillStyle = '#4a3b2b'
+  ctx.beginPath()
+  ctx.ellipse(w * 0.5, h * 0.245, w * 0.048, h * 0.036, 0, Math.PI, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = '#6b5a44'
+  ctx.fillRect(w * 0.452, h * 0.24, w * 0.096, h * 0.014)
+
+  // Глаза под шапкой — две короткие тени.
+  ctx.strokeStyle = 'rgba(40, 26, 16, 0.85)'
+  ctx.lineWidth = 1.8
+  ctx.beginPath()
+  ctx.moveTo(w * 0.478, h * 0.27)
+  ctx.lineTo(w * 0.488, h * 0.268)
+  ctx.moveTo(w * 0.512, h * 0.268)
+  ctx.lineTo(w * 0.522, h * 0.27)
+  ctx.stroke()
+
+  // Тёплый свет утра сбоку.
+  ctx.globalAlpha = 0.18
+  ctx.fillStyle = '#ffe9bd'
+  ctx.beginPath()
+  ctx.moveTo(w * 0.16, 0)
+  ctx.lineTo(w * 0.42, 0)
+  ctx.lineTo(w * 0.34, h)
+  ctx.lineTo(w * 0.06, h)
+  ctx.closePath()
+  ctx.fill()
+  ctx.globalAlpha = 1
+
+  vignette(ctx, w, h, 0.55)
+}
+
 const ILLUSTRATIONS: Record<string, Draw> = {
   room: ROOM,
   capsule: CAPSULE,
@@ -1293,6 +1520,7 @@ const ILLUSTRATIONS: Record<string, Draw> = {
   father: FATHER,
   noexit: NOEXIT,
   village: VILLAGE,
+  headman: HEADMAN,
 }
 
 export function hasIllustration(id: string): boolean {
