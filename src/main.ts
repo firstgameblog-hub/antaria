@@ -276,6 +276,13 @@ function processNight(absoluteDayIndex: number): void {
 
   morningEvent()
 
+  // Глава, отложенная до утра: рынок после посада, стража после града.
+  const nextChapter = state.flags['chapter.next']
+  if (typeof nextChapter === 'string' && nextChapter !== '') {
+    state.flags['chapter.next'] = ''
+    pendingSeasonScene = nextChapter
+  }
+
   // Нанятая охрана служит три ночи и уходит.
   const guard = state.flags['guard.days']
   if (typeof guard === 'number' && guard > 0) {
@@ -1265,11 +1272,20 @@ function startCeremony(): void {
     updateHud()
     flash(`Деревня стала: ${next.name}`, 6000)
 
-    // Сразу после первого дыма — гость у ворот: начало второй главы.
-    if (next.id === 'stage_first_smoke' && state.flags['stranger.met'] !== true) {
-      state.flags['stranger.met'] = true
-      startStory('stranger')
-    }
+      // Сразу после первого дыма — гость у ворот: начало второй главы.
+      if (next.id === 'stage_first_smoke' && state.flags['stranger.met'] !== true) {
+        state.flags['stranger.met'] = true
+        startStory('stranger')
+      }
+
+      // Главы внутри стадии приходят следующим утром, а не сразу за обрядом.
+      if (next.id === 'stage_free_town' && state.flags['chapter.free_market'] !== true) {
+        state.flags['chapter.next'] = 'free_market'
+      }
+
+      if (next.id === 'stage_capital' && state.flags['chapter.night_watch'] !== true) {
+        state.flags['chapter.next'] = 'night_watch'
+      }
 
     // Дорога ожила: первый караван приходит сразу после перехода.
     if (next.id === 'stage_trade_road' && state.flags['chapter.caravan'] !== true) {
@@ -1408,6 +1424,15 @@ function openStoryScene(
       if (sceneId === 'morning') {
         state.flags['chapter1.morning.done'] = true
         flash('Марта ждёт веток. Все просьбы — в «Хронике» внизу.', 6000)
+      }
+
+      // Главы внутри стадий отмечаются, чтобы не приходить дважды.
+      if (
+        sceneId === 'free_market' ||
+        sceneId === 'first_court' ||
+        sceneId === 'night_watch'
+      ) {
+        state.flags[`chapter.${sceneId}`] = true
       }
 
       persist()
@@ -2138,6 +2163,15 @@ function openBuild(structure: StructureDef): void {
       if (structure.id === 'tower' && state.flags['chapter.soldiers'] !== true) {
         state.flags['chapter.soldiers'] = true
         startStory('soldiers')
+      }
+
+      // Суд в Белом городе — повод для главы о первом разбирательстве.
+      if (
+        structure.id === 'court' &&
+        stageAtLeast('stage_white_city') &&
+        state.flags['chapter.first_court'] !== true
+      ) {
+        startStory('first_court')
       }
 
       return ''
