@@ -8,7 +8,7 @@ import { STRUCTURES } from '../content/buildings'
 import { drawPlot, drawStructure } from './structures'
 import type { NodeKind } from '../data/gathering'
 import type { Facing, Point, Rect } from '../core/movement'
-import { drawBuilding } from './buildings'
+import { drawBuilding, stageTier } from './buildings'
 import { drawGatheringNode, drawLair, drawTracks } from './nodes'
 import { drawTrader, drawVillager } from './npc'
 import { PALETTE } from './palette'
@@ -880,6 +880,7 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
           structure.w * TILE,
           structure.h * TILE,
           options.time,
+          stageTier(options.stageId),
         )
       },
     })

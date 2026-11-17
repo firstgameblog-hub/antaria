@@ -39,19 +39,40 @@ function shadow(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, 
   ctx.fill()
 }
 
-function drawWell(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+function drawWell(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  tier: number,
+): void {
   shadow(ctx, x, y, w, h)
 
   const cx = x + w / 2
   const cy = y + h * 0.72
+  const stone = tier >= 2
 
-  ctx.fillStyle = PALETTE.stone
+  ctx.fillStyle = stone ? '#b3aa9a' : PALETTE.stone
   ctx.strokeStyle = INK
   ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.ellipse(cx, cy, w * 0.42, h * 0.24, 0, 0, Math.PI * 2)
+  ctx.ellipse(cx, cy, w * 0.42, h * (stone ? 0.28 : 0.24), 0, 0, Math.PI * 2)
   ctx.fill()
   ctx.stroke()
+
+  if (stone) {
+    // Кладка: колодец обложен камнем, а не собран из первого, что нашли.
+    ctx.strokeStyle = 'rgba(58, 47, 36, 0.25)'
+    ctx.lineWidth = 1
+    for (let row = 1; row <= 2; row += 1) {
+      const lineY = cy - h * 0.28 + (h * 0.56 * row) / 3
+      ctx.beginPath()
+      ctx.moveTo(cx - w * 0.36, lineY)
+      ctx.lineTo(cx + w * 0.36, lineY)
+      ctx.stroke()
+    }
+  }
 
   ctx.fillStyle = '#3f3a33'
   ctx.beginPath()
@@ -68,12 +89,12 @@ function drawWell(ctx: CanvasRenderingContext2D, x: number, y: number, w: number
   ctx.lineTo(cx + w * 0.34, y + h * 0.28)
   ctx.stroke()
 
-  ctx.fillStyle = PALETTE.roofWood
+  ctx.fillStyle = tier >= 3 ? '#a4543f' : PALETTE.roofWood
   ctx.strokeStyle = INK
   ctx.lineWidth = 1.6
   ctx.beginPath()
   ctx.moveTo(cx - w * 0.46, y + h * 0.32)
-  ctx.lineTo(cx, y + h * 0.06)
+  ctx.lineTo(cx, y + h * (tier >= 2 ? 0.02 : 0.06))
   ctx.lineTo(cx + w * 0.46, y + h * 0.32)
   ctx.closePath()
   ctx.fill()
@@ -102,21 +123,49 @@ function drawWell(ctx: CanvasRenderingContext2D, x: number, y: number, w: number
   ctx.stroke()
 }
 
-function drawBarn(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+function drawBarn(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  tier: number,
+): void {
   shadow(ctx, x, y, w, h)
 
   const wallTop = y + h * 0.5
+  const stone = tier >= 2
 
-  ctx.fillStyle = '#8f6a45'
+  ctx.fillStyle = stone ? (tier >= 3 ? '#e2dac9' : '#c3b596') : '#8f6a45'
   ctx.strokeStyle = INK
   ctx.lineWidth = 2
   roundRect(ctx, x + w * 0.05, wallTop, w * 0.9, h * 0.48, 2)
   ctx.fill()
   ctx.stroke()
 
+  if (stone) {
+    // Каменный низ: амбар перестал быть просто сараем.
+    ctx.fillStyle = '#a8a094'
+    ctx.strokeStyle = INK
+    ctx.lineWidth = 1.4
+    roundRect(ctx, x + w * 0.05, wallTop + h * 0.3, w * 0.9, h * 0.18, 1)
+    ctx.fill()
+    ctx.stroke()
+
+    ctx.strokeStyle = 'rgba(58, 47, 36, 0.22)'
+    ctx.lineWidth = 1
+    for (let row = 1; row < 2; row += 1) {
+      const lineY = wallTop + h * 0.3 + (h * 0.18 * row) / 2
+      ctx.beginPath()
+      ctx.moveTo(x + w * 0.06, lineY)
+      ctx.lineTo(x + w * 0.94, lineY)
+      ctx.stroke()
+    }
+  }
+
   // Крыша
   const eave = wallTop + 4
-  ctx.fillStyle = PALETTE.roofWood
+  ctx.fillStyle = tier >= 3 ? '#a4543f' : PALETTE.roofWood
   ctx.beginPath()
   ctx.moveTo(x, eave)
   ctx.lineTo(x + w * 0.5, y + h * 0.08)
@@ -124,6 +173,18 @@ function drawBarn(ctx: CanvasRenderingContext2D, x: number, y: number, w: number
   ctx.closePath()
   ctx.fill()
   ctx.stroke()
+
+  if (tier >= 2) {
+    ctx.strokeStyle = 'rgba(58, 47, 36, 0.2)'
+    ctx.lineWidth = 1
+    for (let row = 1; row < 4; row += 1) {
+      const lineY = y + h * 0.08 + ((eave - y - h * 0.08) * row) / 4
+      ctx.beginPath()
+      ctx.moveTo(x + (w * row) / 16, lineY)
+      ctx.lineTo(x + w - (w * row) / 16, lineY)
+      ctx.stroke()
+    }
+  }
 
   ctx.strokeStyle = 'rgba(255, 246, 230, 0.28)'
   ctx.lineWidth = 1.4
@@ -137,19 +198,39 @@ function drawBarn(ctx: CanvasRenderingContext2D, x: number, y: number, w: number
   ctx.fillStyle = '#5c4229'
   ctx.strokeStyle = INK
   ctx.lineWidth = 1.6
-  roundRect(ctx, x + w * 0.5 - doorW / 2, wallTop + h * 0.06, doorW, h * 0.38, 1)
+  roundRect(ctx, x + w * 0.5 - doorW / 2, wallTop + h * 0.06, doorW, h * 0.26, 1)
   ctx.fill()
   ctx.stroke()
+
+  // Крестовина на воротах: у крепкого амбара створки набраны из досок.
+  if (tier >= 2) {
+    ctx.strokeStyle = 'rgba(255, 240, 200, 0.35)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(x + w * 0.5 - doorW / 2, wallTop + h * 0.08)
+    ctx.lineTo(x + w * 0.5 + doorW / 2, wallTop + h * 0.3)
+    ctx.moveTo(x + w * 0.5 + doorW / 2, wallTop + h * 0.08)
+    ctx.lineTo(x + w * 0.5 - doorW / 2, wallTop + h * 0.3)
+    ctx.stroke()
+  }
 
   ctx.strokeStyle = 'rgba(255, 240, 200, 0.4)'
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.moveTo(x + w * 0.5, wallTop + h * 0.08)
-  ctx.lineTo(x + w * 0.5, wallTop + h * 0.42)
+  ctx.lineTo(x + w * 0.5, wallTop + h * 0.3)
   ctx.stroke()
 }
 
-function drawForge(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, time: number): void {
+function drawForge(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  time: number,
+  tier: number,
+): void {
   shadow(ctx, x, y, w, h)
 
   const baseY = y + h * 0.86
@@ -188,6 +269,20 @@ function drawForge(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.fill()
   ctx.stroke()
 
+  // С эпохи посада над горном стоит навес: работают не под дождём.
+  if (tier >= 2) {
+    ctx.fillStyle = tier >= 3 ? '#a4543f' : PALETTE.roofWood
+    ctx.strokeStyle = INK
+    ctx.lineWidth = 1.6
+    ctx.beginPath()
+    ctx.moveTo(x + w * 0.02, y + h * 0.2)
+    ctx.lineTo(x + w * 0.5, y + h * 0.04)
+    ctx.lineTo(x + w * 0.98, y + h * 0.2)
+    ctx.closePath()
+    ctx.fill()
+    ctx.stroke()
+  }
+
   // Наковальня
   ctx.fillStyle = '#4b4b4f'
   ctx.strokeStyle = INK
@@ -197,7 +292,14 @@ function drawForge(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.stroke()
 }
 
-function drawStall(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+function drawStall(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  tier: number,
+): void {
   shadow(ctx, x, y, w, h)
 
   const postTop = y + h * 0.3
@@ -212,17 +314,31 @@ function drawStall(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.lineTo(x + w * 0.92, postTop)
   ctx.stroke()
 
-  // Навес в полоску
-  const stripes = 6
-  for (let index = 0; index < stripes; index += 1) {
-    const stripeWidth = (w * 0.94) / stripes
-    ctx.fillStyle = index % 2 === 0 ? '#b96f5a' : '#e0cbb0'
-    ctx.fillRect(x + w * 0.03 + index * stripeWidth, y + h * 0.12, stripeWidth, h * 0.22)
-  }
+  if (tier >= 2) {
+    // Ткань сменилась тёсом: навес стал крышей.
+    ctx.fillStyle = tier >= 3 ? '#a4543f' : PALETTE.roofWood
+    ctx.strokeStyle = INK
+    ctx.lineWidth = 1.6
+    ctx.beginPath()
+    ctx.moveTo(x + w * 0.01, y + h * 0.32)
+    ctx.lineTo(x + w * 0.5, y + h * 0.06)
+    ctx.lineTo(x + w * 0.99, y + h * 0.32)
+    ctx.closePath()
+    ctx.fill()
+    ctx.stroke()
+  } else {
+    // Навес в полоску
+    const stripes = 6
+    for (let index = 0; index < stripes; index += 1) {
+      const stripeWidth = (w * 0.94) / stripes
+      ctx.fillStyle = index % 2 === 0 ? '#b96f5a' : '#e0cbb0'
+      ctx.fillRect(x + w * 0.03 + index * stripeWidth, y + h * 0.12, stripeWidth, h * 0.22)
+    }
 
-  ctx.strokeStyle = INK
-  ctx.lineWidth = 1.6
-  ctx.strokeRect(x + w * 0.03, y + h * 0.12, w * 0.94, h * 0.22)
+    ctx.strokeStyle = INK
+    ctx.lineWidth = 1.6
+    ctx.strokeRect(x + w * 0.03, y + h * 0.12, w * 0.94, h * 0.22)
+  }
 
   // Прилавок
   ctx.fillStyle = PALETTE.wood
@@ -292,11 +408,18 @@ function drawMarket(ctx: CanvasRenderingContext2D, x: number, y: number, w: numb
 }
 
 /** Гильдия: дом с доской объявлений у входа. */
-function drawGuild(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+function drawGuild(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  tier: number,
+): void {
   shadow(ctx, x, y, w, h)
 
   // Стены
-  ctx.fillStyle = PALETTE.wood
+  ctx.fillStyle = tier >= 3 ? '#e6ded0' : PALETTE.wood
   ctx.strokeStyle = INK
   ctx.lineWidth = 2
   roundRect(ctx, x + w * 0.08, y + h * 0.34, w * 0.84, h * 0.56, 3)
@@ -304,18 +427,20 @@ function drawGuild(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.stroke()
 
   // Брёвна
-  ctx.strokeStyle = 'rgba(58, 47, 36, 0.22)'
-  ctx.lineWidth = 1
-  for (let row = 1; row < 4; row += 1) {
-    const lineY = y + h * 0.34 + (h * 0.56 * row) / 4
-    ctx.beginPath()
-    ctx.moveTo(x + w * 0.1, lineY)
-    ctx.lineTo(x + w * 0.9, lineY)
-    ctx.stroke()
+  if (tier < 3) {
+    ctx.strokeStyle = 'rgba(58, 47, 36, 0.22)'
+    ctx.lineWidth = 1
+    for (let row = 1; row < 4; row += 1) {
+      const lineY = y + h * 0.34 + (h * 0.56 * row) / 4
+      ctx.beginPath()
+      ctx.moveTo(x + w * 0.1, lineY)
+      ctx.lineTo(x + w * 0.9, lineY)
+      ctx.stroke()
+    }
   }
 
   // Крыша
-  ctx.fillStyle = PALETTE.roofWood
+  ctx.fillStyle = tier >= 2 ? '#a4543f' : PALETTE.roofWood
   ctx.strokeStyle = INK
   ctx.lineWidth = 1.8
   ctx.beginPath()
@@ -365,11 +490,12 @@ function drawCivicHouse(
   h: number,
   roof: string,
   emblem: 'coins' | 'book' | 'scales',
+  tier: number,
 ): void {
   shadow(ctx, x, y, w, h)
 
   // Стены
-  ctx.fillStyle = PALETTE.stone
+  ctx.fillStyle = tier >= 3 ? '#ece5d8' : PALETTE.stone
   ctx.strokeStyle = INK
   ctx.lineWidth = 2
   roundRect(ctx, x + w * 0.06, y + h * 0.34, w * 0.88, h * 0.58, 3)
@@ -461,8 +587,15 @@ function drawCivicHouse(
 }
 
 /** Банк: каменный дом, на фасаде — монеты. */
-function drawBank(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
-  drawCivicHouse(ctx, x, y, w, h, '#8c7a63', 'coins')
+function drawBank(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  tier: number,
+): void {
+  drawCivicHouse(ctx, x, y, w, h, tier >= 2 ? '#a4543f' : '#8c7a63', 'coins', tier)
 }
 
 /** Академия: каменный дом, на фасаде — раскрытая книга. */
@@ -472,23 +605,38 @@ function drawAcademy(
   y: number,
   w: number,
   h: number,
+  tier: number,
 ): void {
-  drawCivicHouse(ctx, x, y, w, h, '#7f8f6a', 'book')
+  drawCivicHouse(ctx, x, y, w, h, tier >= 2 ? '#6f7f5a' : '#7f8f6a', 'book', tier)
 }
 
 /** Суд: каменный дом, на фасаде — весы. */
-function drawCourt(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
-  drawCivicHouse(ctx, x, y, w, h, '#9a6b52', 'scales')
+function drawCourt(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  tier: number,
+): void {
+  drawCivicHouse(ctx, x, y, w, h, tier >= 2 ? '#8e4f3c' : '#9a6b52', 'scales', tier)
 }
 
 /** Сторожевая башня: каменное основание, деревянный верх, флаг. */
-function drawTower(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+function drawTower(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  tier: number,
+): void {
   shadow(ctx, x, y, w, h)
 
   const cx = x + w / 2
   const baseTop = y + h * 0.42
 
-  ctx.fillStyle = PALETTE.stone
+  ctx.fillStyle = tier >= 3 ? '#ded6c6' : PALETTE.stone
   ctx.strokeStyle = INK
   ctx.lineWidth = 2
   roundRect(ctx, x + w * 0.22, baseTop, w * 0.56, h * 0.5, 2)
@@ -549,37 +697,38 @@ export function drawStructure(
   w: number,
   h: number,
   time: number,
+  tier = 0,
 ): void {
   switch (kind) {
     case 'well':
-      drawWell(ctx, x, y, w, h)
+      drawWell(ctx, x, y, w, h, tier)
       break
     case 'barn':
-      drawBarn(ctx, x, y, w, h)
+      drawBarn(ctx, x, y, w, h, tier)
       break
     case 'forge':
-      drawForge(ctx, x, y, w, h, time)
+      drawForge(ctx, x, y, w, h, time, tier)
       break
     case 'stall':
-      drawStall(ctx, x, y, w, h)
+      drawStall(ctx, x, y, w, h, tier)
       break
     case 'tower':
-      drawTower(ctx, x, y, w, h)
+      drawTower(ctx, x, y, w, h, tier)
       break
     case 'market':
       drawMarket(ctx, x, y, w, h)
       break
     case 'guild':
-      drawGuild(ctx, x, y, w, h)
+      drawGuild(ctx, x, y, w, h, tier)
       break
     case 'bank':
-      drawBank(ctx, x, y, w, h)
+      drawBank(ctx, x, y, w, h, tier)
       break
     case 'academy':
-      drawAcademy(ctx, x, y, w, h)
+      drawAcademy(ctx, x, y, w, h, tier)
       break
     case 'court':
-      drawCourt(ctx, x, y, w, h)
+      drawCourt(ctx, x, y, w, h, tier)
       break
   }
 }
