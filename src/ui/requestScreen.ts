@@ -15,6 +15,8 @@ export interface RequestScreenOptions {
   getInventory: () => Inventory
   /** Вернуть сообщение об итоге; пустая строка — закрыть. */
   onDeliver: () => string
+  /** Отказ: просьба закрывается навсегда, со своими последствиями. */
+  onRefuse?: () => string
   onClose: () => void
 }
 
@@ -64,6 +66,11 @@ function render(): void {
 
       <footer class="request__foot">
         <button data-request="deliver" ${canDeliver ? '' : 'disabled'}>Помочь</button>
+        ${
+          options.onRefuse
+            ? '<button data-request="refuse" class="request__refuse">Отказать</button>'
+            : ''
+        }
         <button data-request="later">Позже</button>
       </footer>
 
@@ -84,6 +91,12 @@ function render(): void {
   overlay.querySelector('[data-request="deliver"]')?.addEventListener('click', () => {
     if (!options) return
     status = options.onDeliver()
+    render()
+  })
+
+  overlay.querySelector('[data-request="refuse"]')?.addEventListener('click', () => {
+    if (!options?.onRefuse) return
+    status = options.onRefuse()
     render()
   })
 }

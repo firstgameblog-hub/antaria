@@ -31,6 +31,10 @@ export interface ThreadDef {
   followUpScene?: string
   /** Подпись, когда просьба выполнена, а разговор ещё не случился. */
   followUpLabel?: string
+  /** Сколько дней просьба ждёт ответа. По умолчанию четверо суток. */
+  patienceDays?: number
+  /** Что случилось, если не помочь. */
+  failText?: string
 }
 
 export const ROOF_THREAD: ThreadDef = {
@@ -50,6 +54,9 @@ export const ROOF_THREAD: ThreadDef = {
   journalDone: 'Марта закрыла крышу. Ночью я слышал, как в её доме впервые за неделю смеются.',
   followUpScene: 'marta_after',
   followUpLabel: 'хочет поговорить',
+  patienceDays: 4,
+  failText:
+    'Крыша Марты провалилась ночью. Она ушла с детьми к родне в соседнюю деревню — не попрощавшись.',
 }
 
 export const THREADS: readonly ThreadDef[] = [
@@ -70,6 +77,9 @@ export const THREADS: readonly ThreadDef[] = [
     journalDone: 'Агафья накормила внуков. Вечером она принесла мне горсть сушёных яблок и ничего не сказала.',
     followUpScene: 'agafya_after',
     followUpLabel: 'ждёт у порога',
+    patienceDays: 3,
+    failText:
+      'Агафья больше не выходит на порог. Внуков забрали соседи, а её саму не стало к утру — тихо, как она и хотела.',
   },
   {
     id: 'thread_plough',
@@ -87,6 +97,9 @@ export const THREADS: readonly ThreadDef[] = [
     journalDone: 'Плуг починили. Ондрей сказал, что поле вспашут до конца недели, и впервые за месяц посмотрел мне в глаза.',
     followUpScene: 'ondrey_after',
     followUpLabel: 'зовёт к полю',
+    patienceDays: 5,
+    failText:
+      'Ондрей бросил сломанный плуг у межи. Утром его не было ни в поле, ни в деревне — ушёл на юг, как его брат.',
   },
   {
     id: 'thread_fence',
@@ -104,6 +117,7 @@ export const THREADS: readonly ThreadDef[] = [
     rewardMoney: 9,
     journalDone: 'Плетень подняли. Прохор обвязал его верёвкой и сказал, что теперь до весны.',
     followUpLabel: 'хочет сказать спасибо',
+    failText: 'Плетень так и остался лежать. Огород потоптали соседские свиньи, и Прохор неделю молчал.',
   },
   {
     id: 'thread_child',
@@ -120,6 +134,9 @@ export const THREADS: readonly ThreadDef[] = [
     ],
     rewardMoney: 6,
     journalDone: 'Ребёнок Федоры уснул к вечеру. Она вышла во двор и долго стояла, ничего не говоря.',
+    patienceDays: 2,
+    failText:
+      'Ребёнка Федоры не спасли. Она не вышла на улицу ни на похороны, ни после — и больше со мной не здоровается.',
   },
   {
     id: 'thread_well',
@@ -136,6 +153,7 @@ export const THREADS: readonly ThreadDef[] = [
     ],
     rewardMoney: 11,
     journalDone: 'Сруб обложили камнем. Мирон проверил ведром: вода чистая, стенки держат.',
+    failText: 'Сруб колодца просел ещё на ладонь. Вода пошла с песком, и её теперь отстаивают перед каждым ведром.',
   },
   {
     id: 'thread_charcoal',
@@ -152,6 +170,7 @@ export const THREADS: readonly ThreadDef[] = [
     ],
     rewardMoney: 12,
     journalDone: 'Угольную яму обложили. Тихон поджёг первую кучу и сказал, что дыма будет на всю округу.',
+    failText: 'Угольная яма осыпалась. Тихон махнул рукой и ушёл работать к соседям — там платят за то же самое.',
   },
   {
     id: 'thread_road',
@@ -168,6 +187,8 @@ export const THREADS: readonly ThreadDef[] = [
     ],
     rewardMoney: 16,
     journalDone: 'Гать выложили за один день. Староста прошёл по ней туда и обратно, будто не верил.',
+    patienceDays: 6,
+    failText: 'Колею на южном повороте размыло совсем. Телега с солью застряла на два дня, и её разгружали вручную.',
   },
   {
     id: 'thread_wagon',
@@ -184,6 +205,8 @@ export const THREADS: readonly ThreadDef[] = [
     ],
     rewardMoney: 14,
     journalDone: 'Ось связали и подтесали. Возчик уехал к вечеру, оставив на память медную пуговицу.',
+    patienceDays: 3,
+    failText: 'Возчик не дождался и ушёл пешком, бросив телегу. Телега стоит у ворот до сих пор — никто не знает, чья.',
   },
   {
     id: 'thread_wall_gap',

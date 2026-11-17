@@ -883,6 +883,18 @@ body {
   cursor: default;
 }
 
+/* Отказ: видно, что это другой выбор, а не «ещё одна кнопка». */
+.request__foot button.request__refuse {
+  margin-left: auto;
+  color: #8a4a3a;
+  border-color: rgba(138, 74, 58, 0.35);
+}
+
+.request__foot button.request__refuse:hover:not(:disabled) {
+  background: rgba(138, 74, 58, 0.12);
+  border-color: #8a4a3a;
+}
+
 /* ---------- Ремесло ---------- */
 
 .recipes {

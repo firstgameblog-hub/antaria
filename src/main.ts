@@ -283,6 +283,26 @@ function processNight(absoluteDayIndex: number): void {
     pendingSeasonScene = nextChapter
   }
 
+  // Просьбы не ждут вечно: не помог — человек справляется сам, как может.
+  for (const thread of THREADS) {
+    if (thread.requiresStage !== undefined && !stageAtLeast(thread.requiresStage)) continue
+    if (state.flags[`${thread.id}.done`] === true) continue
+    if (state.flags[`${thread.id}.refused`] === true) continue
+    if (state.flags[`${thread.id}.failed`] === true) continue
+
+    const since = state.flags[`${thread.id}.since`]
+    if (typeof since !== 'number') {
+      state.flags[`${thread.id}.since`] = absoluteDayIndex
+      continue
+    }
+
+    if (absoluteDayIndex - since < (thread.patienceDays ?? 4)) continue
+
+    state.flags[`${thread.id}.failed`] = true
+    state.village.population = Math.max(1, state.village.population - 1)
+    addJournal(thread.failText ?? 'Просьба осталась без ответа. Кто-то собрал узел и ушёл.')
+  }
+
   // Нанятая охрана служит три ночи и уходит.
   const guard = state.flags['guard.days']
   if (typeof guard === 'number' && guard > 0) {
@@ -1327,6 +1347,8 @@ function startCeremony(): void {
 
   for (const thread of THREADS) {
     if (state.flags[`${thread.id}.done`] === true) continue
+    if (state.flags[`${thread.id}.refused`] === true) continue
+    if (state.flags[`${thread.id}.failed`] === true) continue
     if (thread.requiresStage !== undefined && !stageAtLeast(thread.requiresStage)) continue
 
     const list = thread.requirements
@@ -1918,6 +1940,11 @@ function activeNpcs(): ActiveNpc[] {
 
     const done = state.flags[`${thread.id}.done`] === true
     const talked = state.flags[`${thread.id}.talked`] === true
+    const closed =
+      state.flags[`${thread.id}.refused`] === true ||
+      state.flags[`${thread.id}.failed`] === true
+
+    if (closed) continue
 
     if (done && (thread.followUpScene === undefined || talked)) continue
 
@@ -2053,6 +2080,16 @@ function openThread(thread: ThreadDef): void {
       addJournal(thread.journalDone)
 
       flash(`${thread.npcName} благодарит. +${thread.rewardMoney} монет.`)
+      closeRequestScreen()
+      persist()
+      updateHud()
+      return ''
+    },
+    onRefuse: () => {
+      state.flags[`${thread.id}.refused`] = true
+      state.village.population = Math.max(1, state.village.population - 1)
+      addJournal(thread.failText ?? `${thread.npcName} не дождался помощи и ушёл.`)
+      flash(`${thread.npcName} больше не ждёт. Деревня стала меньше на одного человека.`, 7000)
       closeRequestScreen()
       persist()
       updateHud()
