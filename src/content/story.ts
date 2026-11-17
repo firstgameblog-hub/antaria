@@ -509,6 +509,27 @@ export const FINALE: StoryScene = {
   ],
 }
 
+/** Тринадцатая глава: первый столичный гость. */
+export const CAPITAL_TRADER: StoryScene = {
+  id: 'capital_trader',
+  title: 'Столичный гость',
+  beats: [
+    {
+      id: 'cart',
+      text: 'У рынка стоит чужая телега: не наша, с высокими бортами и чужой печатью на тюках. Возчик уже ушёл спать, а хозяин сам разложил товар.',
+    },
+    {
+      id: 'offer',
+      text: '— Фрол, — говорит он, не поднимая головы. — Из столицы. Слышал, у вас тут научились варить сталь, которая не крошится.',
+    },
+    {
+      id: 'deal',
+      text: 'Он берёт с прилавка гвоздь, гнёт его и выпрямляет. — Возьму всё, что дадите. Плачу сразу и не торгуюсь. Только не заставляйте ждать.',
+      journal: 'В городе появился столичный купец Фрол. Он покупает сталь и не торгуется — редкое свойство для здешних мест.',
+    },
+  ],
+}
+
 export const ALL_SCENES: readonly StoryScene[] = [
   PROLOGUE,
   MORNING,
@@ -530,6 +551,7 @@ export const ALL_SCENES: readonly StoryScene[] = [
   CAPITAL,
   ANTARIA,
   FINALE,
+  CAPITAL_TRADER,
 ]
 
 export function sceneById(id: string): StoryScene | undefined {

@@ -143,6 +143,7 @@ export const SIEGE_CAPTAIN: EnemyDef = {
   enrages: true,
   loot: [
     { itemId: 'steel', count: 2 },
+    { itemId: 'captain_banner', count: 1 },
     { itemId: 'hide', count: 1 },
   ],
 }
@@ -161,6 +162,7 @@ export const NORTHERN_WARLORD: EnemyDef = {
   enrages: true,
   loot: [
     { itemId: 'steel', count: 3 },
+    { itemId: 'northern_seal', count: 1 },
     { itemId: 'hide', count: 2 },
   ],
 }

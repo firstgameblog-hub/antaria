@@ -33,7 +33,7 @@ import type { GatheringNodeDef, NodeKind } from './data/gathering'
 import { GATHERING_NODES } from './content/gathering'
 import { ITEM_BY_ID, itemDef, itemName } from './content/items'
 import { recipeById } from './content/recipes'
-import { TRADER } from './content/trader'
+import { TRADER, TRADER_CAPITAL } from './content/trader'
 import { CARAVAN } from './content/caravan'
 import { openDiplomacyScreen } from './ui/diplomacyScreen'
 import { sceneById } from './content/story'
@@ -416,10 +416,15 @@ function playerCombatStats(): { maxHp: number; minDamage: number; maxDamage: num
   // Академия учит бить: не сильнее, а точнее — прибавка к верхней границе урона.
   const learned = structureReady('academy') ? 1 : 0
 
+  // Оружие в руке прибавляет к удару столько, сколько записано в предмете.
+  const weaponId = state.player.equipment.weapon
+  const weapon = weaponId ? itemDef(weaponId) : undefined
+  const power = weapon?.power ?? 0
+
   return {
     maxHp: state.player.health.max,
-    minDamage: PLAYER_MIN_DAMAGE,
-    maxDamage: PLAYER_MAX_DAMAGE + learned,
+    minDamage: PLAYER_MIN_DAMAGE + power,
+    maxDamage: PLAYER_MAX_DAMAGE + learned + power,
   }
 }
 
@@ -1906,6 +1911,29 @@ function activeNpcs(): ActiveNpc[] {
     })
   }
 
+  // Столичный купец приходит, когда деревня становится городом.
+  if (stageAtLeast('stage_white_city')) {
+    const capitalPlace = placeOf(
+      TRADER_CAPITAL.id,
+      TRADER_CAPITAL.x,
+      TRADER_CAPITAL.y,
+      minutes,
+    )
+
+    if (capitalPlace) {
+      list.push({
+        id: TRADER_CAPITAL.id,
+        x: capitalPlace.x,
+        y: capitalPlace.y,
+        facing: TRADER_CAPITAL.facing,
+        kind: 'trader',
+        label: capitalPlace.note
+          ? `${TRADER_CAPITAL.name} · ${capitalPlace.note}`
+          : `${TRADER_CAPITAL.name} · ${TRADER_CAPITAL.title}`,
+      })
+    }
+  }
+
   if (isCaravanDay()) {
     list.push({
       id: CARAVAN.id,
@@ -1939,6 +1967,18 @@ function openNpc(npc: ActiveNpc): void {
 
   if (npc.id === CARAVAN.id) {
     openCaravan()
+    return
+  }
+
+  if (npc.id === TRADER_CAPITAL.id) {
+    // Первый разговор — не про товар, а про то, зачем он пришёл.
+    if (state.flags['capital.trader_met'] !== true) {
+      state.flags['capital.trader_met'] = true
+      startStory('capital_trader', 0, () => openCapitalTrade())
+      return
+    }
+
+    openCapitalTrade()
     return
   }
 
@@ -2230,6 +2270,58 @@ function openTrade(): void {
         addJournal('Впервые выполнил чью-то просьбу. Не за награду — потому что обещал.')
       }
 
+      playCoin()
+      persist()
+      updateHud()
+      return result.message
+    },
+  })
+}
+
+function openCapitalTrade(): void {
+  const bonus = marketBonus() + 0.05
+
+  openTradeScreen({
+    trader: { ...TRADER_CAPITAL, generosity: bonus },
+    orderText:
+      state.flags['capital.trader_order.done'] === true
+        ? ''
+        : `Просьба Фрола. Нужно ${TRADER_CAPITAL.order.count} × ${itemName(TRADER_CAPITAL.order.itemId)} — заплатит ${TRADER_CAPITAL.order.reward} монет.`,
+    orderReady:
+      countOf(state.player.inventory, TRADER_CAPITAL.order.itemId) >= TRADER_CAPITAL.order.count,
+    getState: () => state,
+    onBuy: (itemId) => {
+      if (!daylightOk()) return 'Фрол закрыл ставни: ночью он не торгует.'
+
+      const offer = TRADER_CAPITAL.sells.find((candidate) => candidate.itemId === itemId)
+      if (!offer) return 'Такого товара нет'
+
+      const result = buy(state, offer, ITEM_BY_ID, bonus)
+      if (!result.ok) return result.reason
+
+      dayStats.traded += 1
+      playCoin()
+      persist()
+      updateHud()
+      return result.message
+    },
+    onSell: (itemId, quality) => {
+      if (!daylightOk()) return 'Фрол закрыл ставни: ночью он не торгует.'
+
+      const result = sell(state, itemId, 1, ITEM_BY_ID, bonus, quality)
+      if (!result.ok) return result.reason
+
+      dayStats.traded += 1
+      playCoin()
+      persist()
+      updateHud()
+      return result.message
+    },
+    onOrder: () => {
+      const result = completeOrder(state, TRADER_CAPITAL.order, ITEM_BY_ID, 'capital.trader_order.done')
+      if (!result.ok) return result.reason
+
+      addJournal('Фрол взял сталь и заплатил сразу, не торгуясь. Сказал: «С таким городом можно иметь дело».')
       playCoin()
       persist()
       updateHud()

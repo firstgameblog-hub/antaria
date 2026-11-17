@@ -110,6 +110,12 @@ export const SCHEDULES: Record<string, readonly ScheduleStop[]> = {
     { from: 12 * 60, x: 760, y: 860, note: 'у брода, с бревном' },
     { from: 18 * 60, x: 700, y: 900, note: 'у брода' },
   ],
+  capital_trader: [
+    { from: 6 * 60, x: 820, y: 640, note: 'раскладывает товар' },
+    { from: 12 * 60, x: 780, y: 600, note: 'у рынка, ест' },
+    { from: 13 * 60, x: 820, y: 640, note: 'торгует' },
+    { from: 19 * 60, x: 820, y: 640, note: 'считает выручку' },
+  ],
 }
 
 export function scheduleOf(id: string): readonly ScheduleStop[] | undefined {

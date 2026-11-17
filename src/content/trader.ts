@@ -38,3 +38,21 @@ export const TRADER: TraderDef = {
   buys: ['branch', 'log', 'herb', 'berry', 'hide', 'meat', 'plank', 'rope', 'stone'],
   order: { itemId: 'rope', count: 2, reward: 12 },
 }
+
+/** Столичный купец: приходит, когда посад становится городом. */
+export const TRADER_CAPITAL: TraderDef = {
+  id: 'capital_trader',
+  name: 'Фрол',
+  title: 'столичный купец',
+  x: 820,
+  y: 640,
+  facing: 'left',
+  sells: [
+    { itemId: 'steel', price: 18 },
+    { itemId: 'bread', price: 5 },
+    { itemId: 'plank', price: 6 },
+    { itemId: 'rope', price: 5 },
+  ],
+  buys: ['steel', 'hide', 'meat', 'fish', 'bread', 'plank', 'rope', 'clay', 'grain'],
+  order: { itemId: 'steel', count: 3, reward: 60 },
+}

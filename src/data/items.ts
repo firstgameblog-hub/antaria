@@ -20,6 +20,8 @@ export interface ItemDef {
   price: number
   /** В какой слот надевается, если это снаряжение. */
   slot?: EquipmentSlot
+  /** Насколько оружие усиливает удар: прибавка к урону. */
+  power?: number
   /** Теги для рецептов и условий: «дерево», «съедобное», «трава». */
   tags?: readonly string[]
 }

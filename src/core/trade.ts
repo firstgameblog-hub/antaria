@@ -96,7 +96,12 @@ export function sell(
   return { ok: true, message: `Продано: ${def.name} ×${count} за ${price}` }
 }
 
-export function completeOrder(state: GameState, order: TradeOrder, defs: Defs): TradeResult {
+export function completeOrder(
+  state: GameState,
+  order: TradeOrder,
+  defs: Defs,
+  flagId = 'trader.order.done',
+): TradeResult {
   const def = defs.get(order.itemId)
   if (!def) return { ok: false, reason: 'Такого товара нет' }
 
@@ -107,7 +112,7 @@ export function completeOrder(state: GameState, order: TradeOrder, defs: Defs): 
   removeItems(state.player.inventory, order.itemId, order.count)
   state.player.money += order.reward
   state.world.trader.trust = Math.min(100, state.world.trader.trust + 10)
-  state.flags['trader.order.done'] = true
+  state.flags[flagId] = true
 
   return { ok: true, message: `Заказ выполнен: +${order.reward} монет` }
 }
