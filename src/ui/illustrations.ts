@@ -2069,24 +2069,24 @@ const RISING: Draw = (ctx, w, h) => {
   ctx.fillStyle = '#3a2c1e'
   ctx.fillRect(cx - w * 0.07, h * 0.72, w * 0.135, h * 0.02)
 
-  // Рука упирается в землю.
+  // Рука упирается в землю: по ней видно, что он только поднялся.
   ctx.fillStyle = tunic
   ctx.beginPath()
   ctx.moveTo(cx - w * 0.07, h * 0.57)
-  ctx.quadraticCurveTo(cx - w * 0.12, h * 0.66, cx - w * 0.115, h * 0.76)
-  ctx.lineTo(cx - w * 0.088, h * 0.77)
-  ctx.quadraticCurveTo(cx - w * 0.09, h * 0.68, cx - w * 0.052, h * 0.6)
+  ctx.quadraticCurveTo(cx - w * 0.115, h * 0.72, cx - w * 0.125, h * 0.9)
+  ctx.lineTo(cx - w * 0.096, h * 0.905)
+  ctx.quadraticCurveTo(cx - w * 0.088, h * 0.75, cx - w * 0.052, h * 0.6)
   ctx.closePath()
   ctx.fill()
   ctx.stroke()
 
   ctx.fillStyle = skin
   ctx.beginPath()
-  ctx.ellipse(cx - w * 0.102, h * 0.78, w * 0.018, h * 0.014, 0.2, 0, Math.PI * 2)
+  ctx.ellipse(cx - w * 0.11, h * 0.915, w * 0.02, h * 0.015, 0.15, 0, Math.PI * 2)
   ctx.fill()
   ctx.stroke()
 
-  // Вторая рука свободно опущена.
+  // Вторая рука свободно опущена, кисть на конце рукава.
   ctx.fillStyle = tunic
   ctx.beginPath()
   ctx.moveTo(cx + w * 0.062, h * 0.57)
@@ -2097,17 +2097,23 @@ const RISING: Draw = (ctx, w, h) => {
   ctx.fill()
   ctx.stroke()
 
-  // Шея.
   ctx.fillStyle = skin
   ctx.beginPath()
-  ctx.roundRect(cx - w * 0.018, h * 0.465, w * 0.036, h * 0.055, 5)
+  ctx.ellipse(cx + w * 0.085, h * 0.755, w * 0.018, h * 0.015, -0.2, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Шея: короткая и толстая, без жирафьей длины.
+  ctx.fillStyle = skin
+  ctx.beginPath()
+  ctx.roundRect(cx - w * 0.024, h * 0.468, w * 0.048, h * 0.055, 5)
   ctx.fill()
   ctx.stroke()
 
   // Голова повёрнута вправо: видно затылок и профиль.
   ctx.fillStyle = skin
   ctx.beginPath()
-  ctx.ellipse(cx + w * 0.004, h * 0.43, w * 0.038, h * 0.047, 0.08, 0, Math.PI * 2)
+  ctx.ellipse(cx + w * 0.004, h * 0.438, w * 0.04, h * 0.05, 0.08, 0, Math.PI * 2)
   ctx.fill()
   ctx.stroke()
 
