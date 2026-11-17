@@ -1306,6 +1306,7 @@ function startCeremony(): void {
 
   for (const thread of THREADS) {
     if (state.flags[`${thread.id}.done`] === true) continue
+    if (thread.requiresStage !== undefined && !stageAtLeast(thread.requiresStage)) continue
 
     const list = thread.requirements
       .map((requirement) => `${itemName(requirement.itemId)} — ${requirement.count} шт.`)
@@ -1883,6 +1884,8 @@ function activeNpcs(): ActiveNpc[] {
   }
 
   for (const thread of THREADS) {
+    if (thread.requiresStage !== undefined && !stageAtLeast(thread.requiresStage)) continue
+
     const done = state.flags[`${thread.id}.done`] === true
     const talked = state.flags[`${thread.id}.talked`] === true
 

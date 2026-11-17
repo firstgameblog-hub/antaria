@@ -18,6 +18,8 @@ export interface ThreadDef {
   /** Где стоит человек. */
   x: number
   y: number
+  /** С какой стадии просьба появляется. Без поля — с самого начала. */
+  requiresStage?: string
   /** Где видна беда: лужа под протекающей крышей. Не у каждой нити есть. */
   drip?: { x: number; y: number }
   title: string
@@ -85,6 +87,103 @@ export const THREADS: readonly ThreadDef[] = [
     journalDone: 'Плуг починили. Ондрей сказал, что поле вспашут до конца недели, и впервые за месяц посмотрел мне в глаза.',
     followUpScene: 'ondrey_after',
     followUpLabel: 'зовёт к полю',
+  },
+  {
+    id: 'thread_fence',
+    npcName: 'Прохор',
+    short: 'подпирает плетень',
+    x: 610,
+    y: 700,
+    requiresStage: 'stage_first_smoke',
+    title: 'Поваленный плетень',
+    text: 'Ночью ветер положил плетень у огорода. Прохор держит его плечом и говорит, что так и стоять будет, если не подвязать. Веток у него нет: старые сгнили ещё до зимы.',
+    requirements: [
+      { itemId: 'branch', count: 6 },
+      { itemId: 'rope', count: 2 },
+    ],
+    rewardMoney: 9,
+    journalDone: 'Плетень подняли. Прохор обвязал его верёвкой и сказал, что теперь до весны.',
+    followUpLabel: 'хочет сказать спасибо',
+  },
+  {
+    id: 'thread_child',
+    npcName: 'Федора',
+    short: 'держит ребёнка на руках',
+    x: 790,
+    y: 760,
+    requiresStage: 'stage_first_smoke',
+    title: 'Жар у ребёнка',
+    text: 'У Федоры младший горит третий день. Она не плачет — просто сидит и держит его, будто теплом можно вылечить. Нужен отвар и травы, которых у неё нет.',
+    requirements: [
+      { itemId: 'herb', count: 4 },
+      { itemId: 'broth', count: 1 },
+    ],
+    rewardMoney: 6,
+    journalDone: 'Ребёнок Федоры уснул к вечеру. Она вышла во двор и долго стояла, ничего не говоря.',
+  },
+  {
+    id: 'thread_well',
+    npcName: 'Мирон',
+    short: 'смотрит в колодец',
+    x: 480,
+    y: 340,
+    requiresStage: 'stage_first_smoke',
+    title: 'Ослабший сруб',
+    text: 'Сруб колодца поехал набок. Мирон говорит, что вода пока есть, но сруб надо обложить камнем, пока он не сложился внутрь. Камня в деревне мало.',
+    requirements: [
+      { itemId: 'stone', count: 4 },
+      { itemId: 'plank', count: 2 },
+    ],
+    rewardMoney: 11,
+    journalDone: 'Сруб обложили камнем. Мирон проверил ведром: вода чистая, стенки держат.',
+  },
+  {
+    id: 'thread_charcoal',
+    npcName: 'Тихон',
+    short: 'копает угольную яму',
+    x: 450,
+    y: 470,
+    requiresStage: 'stage_trade_road',
+    title: 'Угольная яма',
+    text: 'Тихон хочет жечь уголь, чтобы кузня не вставала. Яма уже выкопана, но обложить её нечем: нужны брёвна на укрепление и камень на подпор.',
+    requirements: [
+      { itemId: 'log', count: 4 },
+      { itemId: 'stone', count: 2 },
+    ],
+    rewardMoney: 12,
+    journalDone: 'Угольную яму обложили. Тихон поджёг первую кучу и сказал, что дыма будет на всю округу.',
+  },
+  {
+    id: 'thread_road',
+    npcName: 'Староста',
+    short: 'меряет дорогу шагами',
+    x: 700,
+    y: 380,
+    requiresStage: 'stage_trade_road',
+    title: 'Разбитая дорога',
+    text: 'Староста ходит по дороге и считает шаги. На южном повороте телеги продавили колею: после дождя там стоит вода по колено. Нужна гать.',
+    requirements: [
+      { itemId: 'stone', count: 6 },
+      { itemId: 'plank', count: 4 },
+    ],
+    rewardMoney: 16,
+    journalDone: 'Гать выложили за один день. Староста прошёл по ней туда и обратно, будто не верил.',
+  },
+  {
+    id: 'thread_wagon',
+    npcName: 'Возчик',
+    short: 'кричит на ось',
+    x: 600,
+    y: 820,
+    requiresStage: 'stage_trade_road',
+    title: 'Лопнувшая ось',
+    text: 'Возчик пришёл с юга и встал у ворот: ось лопнула на повороте. Он говорит, что до города не доедет, а без товара ему нечем платить за постой.',
+    requirements: [
+      { itemId: 'plank', count: 3 },
+      { itemId: 'rope', count: 2 },
+    ],
+    rewardMoney: 14,
+    journalDone: 'Ось связали и подтесали. Возчик уехал к вечеру, оставив на память медную пуговицу.',
   },
 ]
 
