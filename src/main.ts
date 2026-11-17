@@ -35,6 +35,7 @@ import { ITEM_BY_ID, itemDef, itemName } from './content/items'
 import { recipeById } from './content/recipes'
 import { TRADER } from './content/trader'
 import { CARAVAN } from './content/caravan'
+import { openDiplomacyScreen } from './ui/diplomacyScreen'
 import { sceneById } from './content/story'
 import type { StoryScene } from './data/story'
 import { buy, completeOrder, sell } from './core/trade'
@@ -1238,10 +1239,26 @@ function activeNpcs(): ActiveNpc[] {
     })
   }
 
+  if (state.village.stageId === 'stage_trade_road' && state.flags['tihaya.choice'] === undefined) {
+    list.push({
+      id: TIHaya_ENVOY.id,
+      x: TIHaya_ENVOY.x,
+      y: TIHaya_ENVOY.y,
+      facing: 'down',
+      kind: 'villager',
+      label: 'Посол Тихой Пади · ждёт ответа',
+    })
+  }
+
   return list
 }
 
 function openNpc(npc: ActiveNpc): void {
+  if (npc.id === TIHaya_ENVOY.id) {
+    openDiplomacy()
+    return
+  }
+
   if (npc.id === CARAVAN.id) {
     openCaravan()
     return
@@ -1453,8 +1470,10 @@ function openTrade(): void {
 }
 
 function openCaravan(): void {
+  const generosity = CARAVAN.generosity + state.world.tihaya.attitude / 200
+
   openTradeScreen({
-    trader: CARAVAN,
+    trader: { ...CARAVAN, generosity },
     getState: () => state,
     onBuy: (itemId) => {
       if (!daylightOk()) return 'Караван уже собирается в путь.'
@@ -1462,7 +1481,7 @@ function openCaravan(): void {
       const offer = CARAVAN.sells.find((candidate) => candidate.itemId === itemId)
       if (!offer) return 'Такого товара нет'
 
-      const result = buy(state, offer, ITEM_BY_ID, CARAVAN.generosity)
+      const result = buy(state, offer, ITEM_BY_ID, CARAVAN.generosity + state.world.tihaya.attitude / 200)
       if (!result.ok) return result.reason
 
       dayStats.traded += 1
@@ -1474,7 +1493,7 @@ function openCaravan(): void {
     onSell: (itemId) => {
       if (!daylightOk()) return 'Караван уже собирается в путь.'
 
-      const result = sell(state, itemId, 1, ITEM_BY_ID, CARAVAN.generosity)
+      const result = sell(state, itemId, 1, ITEM_BY_ID, CARAVAN.generosity + state.world.tihaya.attitude / 200)
       if (!result.ok) return result.reason
 
       dayStats.traded += 1
@@ -1486,10 +1505,52 @@ function openCaravan(): void {
   })
 }
 
-/** Караван стоит у ворот раз в пять дней, пока светло. */
+/** Караван стоит у ворот: чаще при союзе, реже при вражде. */
+function caravanPeriod(): number {
+  const attitude = state.world.tihaya.attitude
+  if (attitude >= 20) return 3
+  if (attitude < 0) return 7
+  return 5
+}
+
 function isCaravanDay(): boolean {
   const day = Math.floor(absoluteMinutes(state.clock) / MINUTES_PER_DAY)
-  return day % 5 === 0 && isWorkingHours(state.clock)
+  return day % caravanPeriod() === 0 && isWorkingHours(state.clock)
+}
+
+const TIHaya_ENVOY = { id: 'tihaya_envoy', x: 700, y: 1130 }
+
+function openDiplomacy(): void {
+  openDiplomacyScreen({
+    text: 'Посол стоит у ворот с самого утра — сухой, в дорожной пыли, с грамотой за пазухой. Тихая Падь предлагает выбор: торговый союз, дань или ничего. Последнее он произносит без злости, как человек, который уже знает, чем это кончится.',
+    tributeCost: 30,
+    canPay: state.player.money >= 30,
+    onAlly: () => {
+      state.world.tihaya.attitude = Math.min(100, state.world.tihaya.attitude + 30)
+      state.flags['tihaya.choice'] = 'ally'
+      addJournal('С Тихой Падью заключили торговый союз. Караваны теперь ходят чаще.')
+      flash('Союз с Тихой Падью. Караваны будут приходить чаще.', 6000)
+      persist()
+      updateHud()
+    },
+    onTribute: () => {
+      state.player.money -= 30
+      state.world.tihaya.attitude = Math.min(100, state.world.tihaya.attitude + 10)
+      state.flags['tihaya.choice'] = 'tribute'
+      addJournal('Заплатил Тихой Пади дань. Тридцать монет — за тишину на дороге.')
+      flash('Дань уплачена. Пока о нас не вспоминают.', 6000)
+      persist()
+      updateHud()
+    },
+    onRefuse: () => {
+      state.world.tihaya.attitude = Math.max(-100, state.world.tihaya.attitude - 30)
+      state.flags['tihaya.choice'] = 'refuse'
+      addJournal('Послу Тихой Пади отказали. Он кивнул так, будто ждал этого с самого начала.')
+      flash('Тихая Падь запомнит отказ.', 6000)
+      persist()
+      updateHud()
+    },
+  })
 }
 
 function nodeAt(worldX: number, worldY: number): GatheringNodeDef | null {
@@ -1898,6 +1959,7 @@ if (import.meta.env.DEV) {
       obstacleCount: () => obstacles.length,
       ambush: () => startAmbush(),
       hasScene: (id: string) => Boolean(sceneById(id)),
+      npcs: () => activeNpcs().map((npc) => ({ id: npc.id, x: npc.x, y: npc.y })),
       ambushRoll: () => {
         tryAmbush()
         return { danger, pending: pendingAmbush, inCombat: combat !== null }

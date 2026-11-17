@@ -88,6 +88,12 @@ const migrations: Record<number, Migration> = {
     version: 9,
     world: { ...asRecord(data['world']), damaged: [] },
   }),
+  // 9 → 10: отношения с Тихой Падью (10.1).
+  9: (data) => ({
+    ...data,
+    version: 10,
+    world: { ...asRecord(data['world']), tihaya: { attitude: 0 } },
+  }),
 }
 
 export class MigrationError extends Error {}

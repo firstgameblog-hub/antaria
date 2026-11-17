@@ -225,6 +225,14 @@ export function normalizeSave(data: SaveRecord): GameState {
       },
       buildings: normalizeBuildings(asRecord(data['world'])['buildings']),
       damaged: normalizeBuildings(asRecord(data['world'])['damaged']),
+      tihaya: {
+        attitude: asInt(
+          asRecord(asRecord(data['world'])['tihaya'])['attitude'],
+          0,
+          -100,
+          100,
+        ),
+      },
     },
     flags: normalizeFlags(data['flags']),
     journal: normalizeJournal(data['journal']),

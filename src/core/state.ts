@@ -10,7 +10,7 @@ import type { NodeReadyAt } from './gathering'
 import type { Facing, Point } from './movement'
 
 /** Версия формата сохранения. Поднимается при несовместимом изменении структуры. */
-export const SAVE_VERSION = 9
+export const SAVE_VERSION = 10
 
 export interface ClockState {
   /** Год от начала игры. */
@@ -87,6 +87,8 @@ export interface WorldState {
   buildings: string[]
   /** Какие постройки повреждены и не работают, пока их не починят. */
   damaged: string[]
+  /** Отношения с Тихой Падью (10.1, 10.4). */
+  tihaya: { attitude: number }
 }
 
 export interface TraderState {
@@ -121,7 +123,7 @@ export function createInitialState(now: number = Date.now()): GameState {
       population: 20,
       storage: createInventory(VILLAGE_STORAGE_KG),
     },
-    world: { nodes: {}, trader: { trust: 0 }, buildings: [], damaged: [] },
+    world: { nodes: {}, trader: { trust: 0 }, buildings: [], damaged: [], tihaya: { attitude: 0 } },
     flags: {},
     journal: [],
     story: null,
