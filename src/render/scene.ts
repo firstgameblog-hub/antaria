@@ -9,7 +9,7 @@ import { drawPlot, drawStructure } from './structures'
 import type { NodeKind } from '../data/gathering'
 import type { Facing, Point, Rect } from '../core/movement'
 import { drawBuilding } from './buildings'
-import { drawGatheringNode, drawTracks } from './nodes'
+import { drawGatheringNode, drawLair, drawTracks } from './nodes'
 import { drawTrader, drawVillager } from './npc'
 import { PALETTE } from './palette'
 import { drawPlayer } from './player'
@@ -540,6 +540,7 @@ export interface SceneSpot {
   x: number
   y: number
   ready: boolean
+  kind: 'tracks' | 'lair'
 }
 
 export function buildObstacles(built: readonly string[]): Rect[] {
@@ -816,7 +817,11 @@ export function drawVillage(ctx: CanvasRenderingContext2D, options: SceneOptions
       baseY: spot.y,
       bounds: { x: spot.x - 18, y: spot.y - 10, w: 36, h: 14 },
       draw: () => {
-        drawTracks(ctx, spot.x, spot.y, spot.ready)
+        if (spot.kind === 'lair') {
+          drawLair(ctx, spot.x, spot.y)
+        } else {
+          drawTracks(ctx, spot.x, spot.y, spot.ready)
+        }
       },
     })
   }

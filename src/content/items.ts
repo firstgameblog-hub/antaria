@@ -154,6 +154,15 @@ export const ITEMS: readonly ItemDef[] = [
     slot: 'tool',
     tags: ['tool', 'ore'],
   },
+  {
+    id: 'wolf_fang',
+    name: 'Клык старого волка',
+    category: 'resource',
+    stack: 5,
+    weight: 0.2,
+    price: 60,
+    tags: ['trophy'],
+  },
 ]
 
 export const ITEM_BY_ID: ReadonlyMap<string, ItemDef> = new Map(

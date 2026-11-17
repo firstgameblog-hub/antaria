@@ -234,6 +234,40 @@ export function drawGatheringNode(
   }
 }
 
+/** Логово: тёмная нора, кости у входа. */
+export function drawLair(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  ctx.save()
+
+  ctx.fillStyle = 'rgba(58, 47, 36, 0.16)'
+  ctx.beginPath()
+  ctx.ellipse(x, y + 2, 20, 8, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  const hole = ctx.createRadialGradient(x, y - 4, 2, x, y - 4, 18)
+  hole.addColorStop(0, '#201913')
+  hole.addColorStop(0.75, '#3a2f24')
+  hole.addColorStop(1, 'rgba(58, 47, 36, 0)')
+
+  ctx.fillStyle = hole
+  ctx.beginPath()
+  ctx.ellipse(x, y - 4, 18, 11, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Кости у входа
+  ctx.strokeStyle = '#d8cdb6'
+  ctx.lineWidth = 1.8
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(x - 14, y + 4)
+  ctx.lineTo(x - 6, y + 2)
+  ctx.moveTo(x + 6, y + 5)
+  ctx.lineTo(x + 14, y + 3)
+  ctx.stroke()
+  ctx.lineCap = 'butt'
+
+  ctx.restore()
+}
+
 /** Следы зверя: пара отпечатков, уходящих в сторону. */
 export function drawTracks(
   ctx: CanvasRenderingContext2D,

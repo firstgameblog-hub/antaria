@@ -1,7 +1,8 @@
 import './styles.css'
 import { createInitialState, SPAWN_POINT, type GameState } from './core/state'
 import { createCombat, resolveTurn, type CombatState } from './core/combat'
-import { WOLF, DEER, BANDIT_LEADER, WILD_ENCOUNTERS } from './content/enemies'
+import { WOLF, DEER, BANDIT_LEADER, OLD_WOLF, WILD_ENCOUNTERS } from './content/enemies'
+import { BOSS_SPOTS } from './content/bosses'
 import { openRaidScreen } from './ui/raidScreen'
 import type { CombatAction, EnemyDef } from './data/combat'
 import { HUNT_SPOTS, type HuntSpot } from './content/hunting'
@@ -129,7 +130,7 @@ let storyOpen = false
 let audioGreeted = false
 let lastFireDistance = -1
 let combat: CombatState | null = null
-let combatContext: 'wild' | 'raid' = 'wild'
+let combatContext: 'wild' | 'raid' | 'boss' = 'wild'
 let raidPending = false
 let danger = 0
 let pendingAmbush = false
@@ -282,6 +283,9 @@ function sleep(): void {
 
   advanceTime(after - before)
 
+  // Ночь лечит: без этого здоровье копилось бы до первой смерти.
+  state.player.health.current = state.player.health.max
+
   danger = 0
   pendingAmbush = false
 
@@ -337,7 +341,7 @@ function playerCombatStats(): { maxHp: number; minDamage: number; maxDamage: num
 function beginCombat(
   enemy: EnemyDef,
   options: { playerFirst?: boolean } = {},
-  context: 'wild' | 'raid' = 'wild',
+  context: 'wild' | 'raid' | 'boss' = 'wild',
 ): void {
   if (combat) return
 
@@ -452,8 +456,7 @@ function finishCombat(): void {
     }
 
     // Налёт: поражение и бегство стоят деревне дорого.
-    if (context === 'raid') {
-      if (result.outcome === 'victory') {
+    if (context === 'raid') {      if (result.outcome === 'victory') {
         state.flags['raid.done'] = true
         flash('Налёт отбит. Деревня стоит.', 6000)
       } else if (result.outcome === 'defeat') {
@@ -468,6 +471,15 @@ function finishCombat(): void {
         state.flags['raid.done'] = true
         addJournal(`Ты ушёл с ворот. Налётчики взяли ${stolen} припасов и одного человека.`)
         flash(`Налёт: −${stolen} припасов, −1 человек.`, 7000)
+      }
+    }
+
+    if (context === 'boss' && result.outcome === 'victory') {
+      const boss = BOSS_SPOTS.find((candidate) => candidate.enemyId === result.enemy.id)
+      if (boss) {
+        state.flags[boss.flag] = true
+        addJournal(boss.journal)
+        flash('Логово опустело. Трофей твой.', 6000)
       }
     }
   }
@@ -942,15 +954,19 @@ function frame(time: number): void {
       : GATHERING_NODES.find((node) => node.id === hoveredNodeId)
 
   const hoveredSpotDef =
-    hoveredSpotId === null ? undefined : HUNT_SPOTS.find((spot) => spot.id === hoveredSpotId)
+    hoveredSpotId === null
+      ? undefined
+      : activeSpots().find((spot) => spot.id === hoveredSpotId)
 
   const hoveredPlotDef = hoveredPlotId === null ? undefined : structureById(hoveredPlotId)
 
-  const sceneSpots = HUNT_SPOTS.map((spot) => ({
+  const sceneSpots = activeSpots().map((spot) => ({
     id: spot.id,
     x: spot.x,
     y: spot.y,
-    ready: isReady(state.world.nodes, spot.id, now),
+    kind: spot.kind,
+    ready:
+      spot.kind === 'lair' ? true : isReady(state.world.nodes, spot.id, now),
   }))
 
   // Подсветка того, что рядом можно тронуть: без значков, но заметно и на телефоне.
@@ -1214,10 +1230,36 @@ function openBuild(structure: StructureDef): void {
   })
 }
 
-function spotAt(worldX: number, worldY: number): HuntSpot | null {  let closest: HuntSpot | null = null
+interface SpotHit {
+  id: string
+  x: number
+  y: number
+  label: string
+  kind: 'tracks' | 'lair'
+}
+
+function activeSpots(): SpotHit[] {
+  const list: SpotHit[] = HUNT_SPOTS.map((spot) => ({
+    id: spot.id,
+    x: spot.x,
+    y: spot.y,
+    label: spot.label,
+    kind: 'tracks',
+  }))
+
+  for (const boss of BOSS_SPOTS) {
+    if (state.flags[boss.flag] === true) continue
+    list.push({ id: boss.id, x: boss.x, y: boss.y, label: boss.label, kind: 'lair' })
+  }
+
+  return list
+}
+
+function spotAt(worldX: number, worldY: number): SpotHit | null {
+  let closest: SpotHit | null = null
   let closestDistance = 22
 
-  for (const spot of HUNT_SPOTS) {
+  for (const spot of activeSpots()) {
     const d = Math.hypot(worldX - spot.x, worldY - spot.y)
     if (d <= closestDistance) {
       closest = spot
@@ -1226,6 +1268,18 @@ function spotAt(worldX: number, worldY: number): HuntSpot | null {  let closest:
   }
 
   return closest
+}
+
+function startBoss(spotId: string): void {
+  if (!daylightOk()) return
+
+  const boss = BOSS_SPOTS.find((candidate) => candidate.id === spotId)
+  if (!boss || state.flags[boss.flag] === true) return
+
+  const enemy = boss.enemyId === 'old_wolf' ? OLD_WOLF : undefined
+  if (!enemy) return
+
+  beginCombat(enemy, {}, 'boss')
 }
 
 function openTrade(): void {
@@ -1497,8 +1551,14 @@ function endPointer(event: PointerEvent): void {
 
     if (spot) {
       const spotDistance = distance(state.player.position, { x: spot.x, y: spot.y })
+
       if (spotDistance <= INTERACT_RANGE) {
-        startHunt(spot)
+        if (spot.kind === 'lair') {
+          startBoss(spot.id)
+        } else {
+          const hunt = HUNT_SPOTS.find((candidate) => candidate.id === spot.id)
+          if (hunt) startHunt(hunt)
+        }
       } else {
         pendingNodeId = null
         moveTarget = { x: spot.x, y: spot.y }

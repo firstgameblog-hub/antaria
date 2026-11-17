@@ -160,7 +160,38 @@ export const STRANGER: StoryScene = {
   ],
 }
 
-export const ALL_SCENES: readonly StoryScene[] = [PROLOGUE, MORNING, FIRST_SMOKE, STRANGER]
+/** Переход на «Торговый путь» (стадия 2, M3.7). */
+export const TRADE_ROAD: StoryScene = {
+  id: 'trade_road',
+  title: 'Торговый путь',
+  beats: [
+    {
+      id: 'fang',
+      text: 'Клык старого волка висит над воротами. Каждый, кто проходит мимо, видит его и прибавляет шагу.',
+    },
+    {
+      id: 'carts',
+      text: 'Из Тихой Пади приходят первые телеги — не с угрозами, а с солью и железом. С ними приходят люди, которые хотят остаться.',
+    },
+    {
+      id: 'korney',
+      text: 'Корней ставит навес у дороги. Впервые за всё время он говорит «мы», а не «я».',
+    },
+    {
+      id: 'road',
+      text: 'Дорога ожила. Теперь про эту деревню знают не только те, кто хочет её ограбить.',
+      journal: 'Торговый путь открыт. Сорок душ, соль, железо и клык над воротами.',
+    },
+  ],
+}
+
+export const ALL_SCENES: readonly StoryScene[] = [
+  PROLOGUE,
+  MORNING,
+  FIRST_SMOKE,
+  STRANGER,
+  TRADE_ROAD,
+]
 
 export function sceneById(id: string): StoryScene | undefined {
   return ALL_SCENES.find((scene) => scene.id === id)

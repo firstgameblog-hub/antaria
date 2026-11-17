@@ -40,6 +40,18 @@ export const STAGES: readonly StageDef[] = [
       { itemId: 'plank', count: 2 },
       { itemId: 'stone', count: 4 },
     ],
+    ceremonyScene: 'trade_road',
+    journalOnEnter: '',
+  },
+  {
+    id: 'stage_trade_road',
+    name: 'Торговый путь',
+    population: 40,
+    requirements: [
+      { itemId: 'wolf_fang', count: 1 },
+      { itemId: 'ore', count: 6 },
+      { itemId: 'plank', count: 6 },
+    ],
     ceremonyScene: '',
     journalOnEnter: '',
   },

@@ -77,4 +77,23 @@ export const BANDIT_LEADER: EnemyDef = {
   loot: [{ itemId: 'meat', count: 2 }, { itemId: 'hide', count: 1 }],
 }
 
-export const ENEMIES: readonly EnemyDef[] = [WOLF, DEER, DOG, BANDIT_LEADER]
+/** Старый волк: босс ближнего леса. Толще, злее и с клыком, за который платят. */
+export const OLD_WOLF: EnemyDef = {
+  id: 'old_wolf',
+  name: 'Старый волк',
+  maxHp: 30,
+  minDamage: 3,
+  maxDamage: 5,
+  initiative: 1,
+  intro: 'Логово пахнет костями. Волк выходит не спеша — он старше тебя и тяжелее вдвое. У него нет правого глаза, и это единственное, что даёт тебе шанс.',
+  weakness: 'Правый глаз вытек — с этой стороны он тебя не видит.',
+  weakMultiplier: 1.7,
+  enrages: true,
+  loot: [
+    { itemId: 'wolf_fang', count: 1 },
+    { itemId: 'hide', count: 2 },
+    { itemId: 'meat', count: 2 },
+  ],
+}
+
+export const ENEMIES: readonly EnemyDef[] = [WOLF, DEER, DOG, BANDIT_LEADER, OLD_WOLF]
