@@ -15,6 +15,9 @@ export const WOLF: EnemyDef = {
   maxDamage: 4,
   initiative: 1,
   intro: 'Из кустов выходит худой волк. Он не рычит — просто смотрит и ждёт, когда ты ошибёшься.',
+  weakness: 'Левую лапу он бережёт и не ставит на неё — по ней и надо бить.',
+  weakMultiplier: 1.8,
+  enrages: true,
   loot: [
     { itemId: 'hide', count: 1 },
     { itemId: 'meat', count: 1, chance: 0.7 },
@@ -31,6 +34,8 @@ export const DEER: EnemyDef = {
   initiative: 0,
   intro: 'Следы выводят на поляну. Косуля вскидывает голову — ты успеваешь ударить первым.',
   escapesWhenHurt: true,
+  weakness: 'Она хромает на заднюю ногу — далеко не уйдёт, если бить точно.',
+  weakMultiplier: 1.6,
   loot: [
     { itemId: 'meat', count: 2 },
     { itemId: 'hide', count: 1, chance: 0.8 },
@@ -46,6 +51,8 @@ export const DOG: EnemyDef = {
   maxDamage: 2,
   initiative: 1,
   intro: 'Из-под частокола выбирается тощая собака. Она не лает — только скалится и отходит на шаг, если шагнуть к ней.',
+  weakness: 'У неё разорвано ухо, и с той стороны она почти не видит.',
+  weakMultiplier: 1.7,
   loot: [{ itemId: 'meat', count: 1, chance: 0.4 }],
 }
 
@@ -64,6 +71,9 @@ export const BANDIT_LEADER: EnemyDef = {
   maxDamage: 6,
   initiative: 1,
   intro: 'Он стоит впереди и не прячет лица. Значит, не боится, что его запомнят.',
+  weakness: 'Под кольчугой на боку прореха — старая и плохо зашитая.',
+  weakMultiplier: 1.9,
+  enrages: true,
   loot: [{ itemId: 'meat', count: 2 }, { itemId: 'hide', count: 1 }],
 }
 

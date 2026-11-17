@@ -591,6 +591,7 @@ body {
   display: flex;
   gap: 0.6rem;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .combat__button {

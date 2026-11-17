@@ -16,6 +16,10 @@ export interface CombatState {
   defending: boolean
   /** Охотник бьёт первым: враг отвечает только со второго хода. */
   playerFirst: boolean
+  /** Слабое место найдено: можно бить точно. */
+  revealed: boolean
+  /** Враг разъярён. */
+  enraged: boolean
   outcome: CombatOutcome | null
   log: string[]
 }
@@ -50,6 +54,8 @@ export function createCombat(
     playerMaxHp: stats.maxHp,
     defending: false,
     playerFirst: options.playerFirst ?? false,
+    revealed: false,
+    enraged: false,
     outcome: null,
     log: [enemy.intro],
   }
@@ -84,10 +90,27 @@ export function resolveTurn(
     pushLog(state, 'Ты пробуешь уйти — и слышишь за спиной быстрые шаги.')
   }
 
-  if (action === 'attack') {
-    const damage = roll(stats.minDamage, stats.maxDamage)
+  if (action === 'observe') {
+    if (state.enemy.weakness !== undefined) {
+      state.revealed = true
+      pushLog(state, `Ты смотришь внимательно. ${state.enemy.weakness}`)
+    } else {
+      pushLog(state, 'Ты смотришь — ничего особенного не замечаешь.')
+    }
+  }
+
+  if (action === 'attack' || action === 'weak') {
+    let damage = roll(stats.minDamage, stats.maxDamage)
+    const weak = action === 'weak' && state.revealed
+
+    if (weak) {
+      damage = Math.round(damage * (state.enemy.weakMultiplier ?? 1.5))
+      pushLog(state, `Ты бьёшь точно в слабое место: ${damage} урона.`)
+    } else {
+      pushLog(state, `Ты бьёшь: ${damage} урона.`)
+    }
+
     state.enemyHp -= damage
-    pushLog(state, `Ты бьёшь: ${damage} урона.`)
     checkOutcome(state)
     if (state.outcome !== null) return state
 
@@ -100,6 +123,15 @@ export function resolveTurn(
       pushLog(state, `${state.enemy.name} вырывается и уходит в кусты.`)
       state.outcome = 'escaped'
       return state
+    }
+
+    if (
+      state.enemy.enrages === true &&
+      !state.enraged &&
+      state.enemyHp <= state.enemy.maxHp / 2
+    ) {
+      state.enraged = true
+      pushLog(state, `${state.enemy.name} приходит в ярость.`)
     }
   }
 
@@ -116,7 +148,7 @@ export function resolveTurn(
   }
 
   // Ответ врага
-  const raw = roll(state.enemy.minDamage, state.enemy.maxDamage)
+  const raw = roll(state.enemy.minDamage, state.enemy.maxDamage) + (state.enraged ? 1 : 0)
   const damage = state.defending ? Math.max(1, Math.floor(raw / 2)) : raw
   state.playerHp -= damage
   pushLog(state, `${state.enemy.name} достаёт тебя: ${damage} урона.`)

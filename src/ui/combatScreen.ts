@@ -65,6 +65,11 @@ function render(): void {
              <button class="combat__button" data-action="continue">Дальше</button>`
           : `<div class="combat__actions">
                <button class="combat__button" data-combat="attack">Ударить</button>
+               ${
+                 state.revealed
+                   ? '<button class="combat__button" data-combat="weak">Бить в слабое место</button>'
+                   : '<button class="combat__button" data-combat="observe">Присмотреться</button>'
+               }
                <button class="combat__button" data-combat="defend">Закрыться</button>
                <button class="combat__button" data-combat="flee">Бежать</button>
              </div>`
