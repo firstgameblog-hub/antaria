@@ -58,6 +58,7 @@ import { openSaveScreen } from './ui/saveScreen'
 import { openCraftScreen } from './ui/craftScreen'
 import { openTradeScreen } from './ui/tradeScreen'
 import { openStoryScreen } from './ui/storyScreen'
+import { openThought } from './ui/thought'
 import { openJournalScreen } from './ui/journalScreen'
 import { openCombatScreen } from './ui/combatScreen'
 import { audio } from './audio/engine'
@@ -1446,6 +1447,16 @@ function openStoryScene(
       if (sceneId === 'morning') {
         state.flags['chapter1.morning.done'] = true
         flash('Марта ждёт веток. Все просьбы — в «Хронике» внизу.', 6000)
+
+        // Первый раз на ногах: герой ещё ничего не понимает и говорит это себе.
+        if (state.flags['thought.intro'] !== true) {
+          state.flags['thought.intro'] = true
+          openThought({
+            text: 'Как странно…\nКажется, я нахожусь в теле сына этого старика.\nНо раз я в игре — значит, надо изучать её.\n\nЧто там старик сказал… Помочь Марте и найти Корнея… Кажется, так.',
+            size: 'medium',
+            onClose: () => persist(),
+          })
+        }
       }
 
       // Главы внутри стадий отмечаются, чтобы не приходить дважды.
